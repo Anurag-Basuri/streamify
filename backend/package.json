@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "New just for learning",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "javascript",
+    "Anurag Basuri"
+  ],
+  "author": "Anurag Basuri",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
