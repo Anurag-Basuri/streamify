@@ -1,10 +1,12 @@
 import mongoose, { Schema } from "mongoose";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
     {
         username: {
             type: String,
-            required: true,
+            required: [true, "Username is required"],
             unique: true,
             trim: true,
             minlength: 3,
@@ -17,7 +19,7 @@ const userSchema = new Schema(
         },
         email: {
             type: String,
-            required: true,
+            required: [true, "Email is required"],
             unique: true,
             trim: true,
             lowercase: true,
@@ -25,7 +27,7 @@ const userSchema = new Schema(
         },
         fullName: {
             type: String,
-            required: true,
+            required: [true, "Full Name is required"],
             trim: true,
             minlength: 2,
             maxlength: 30,
@@ -54,5 +56,7 @@ const userSchema = new Schema(
         timestamps: true,
     }
 );
+
+userSchema.pre("")
 
 export const User = mongoose.model("User", userSchema);
