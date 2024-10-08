@@ -9,8 +9,8 @@ const userSchema = new Schema(
             required: [true, "Username is required"],
             unique: true,
             trim: true,
-            minlength: 3,
-            maxlength: 30,
+            minlength: [3, "minimum 3"],
+            maxlength: [30, "maximum 30"],
             match: [
                 /^[a-zA-Z0-9_]+$/,
                 "Username can only contain letters, numbers, and underscores",
@@ -29,8 +29,8 @@ const userSchema = new Schema(
             type: String,
             required: [true, "Full Name is required"],
             trim: true,
-            minlength: 2,
-            maxlength: 30,
+            minlength: [3, "minimum 3"],
+            maxlength: [30, "maximum 30"],
             index: true,
         },
         avatar: {
@@ -57,6 +57,15 @@ const userSchema = new Schema(
     }
 );
 
-userSchema.pre("")
+userSchema.pre("save", async function (next){
+    if(!this.isModified("password")) return next()
+
+    this.password = bcrypt(this.password, 10)
+    next()
+})
+
+userSchema.methods.isPasswordCorrect = async function (password){
+    return await bcrypt.compare(password, this.password)
+}
 
 export const User = mongoose.model("User", userSchema);
