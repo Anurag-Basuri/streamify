@@ -1,6 +1,6 @@
+import cookieParser from "cookie-parser"; // Import cookie-parser
 import cors from "cors";
 import express from "express";
-import cookieParser from "cookie-parser"; // Import cookie-parser
 
 const app = express();
 
@@ -23,6 +23,5 @@ import userRouter from "./routes/user.routes.js";
 // use routes
 // http://localhost:8000/api/v1/users/.....
 app.use("/api/v1/users", userRouter);
-
 
 export { app };
