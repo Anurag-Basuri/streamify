@@ -26,24 +26,26 @@ const registerUser = asynchandler(async (req, res, next) => {
     }
 
     // Step 4: Check if avatar is provided
-    const avatarLocalPath = req.files?.avatar?.[0];
+    const avatarFile = req.files?.avatar?.[0]; // Get the file object
     let avatarUrl = null;
 
     // Step 5: Upload avatar to Cloudinary (if provided)
-    if (avatarLocalPath) {
-        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
+    if (avatarFile) {
+        const avatarLocalPath = avatarFile.path; // Get the path from the file object
+        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath); // Upload to Cloudinary
         avatarUrl = avatarUploadResult.secure_url;
     } else {
         return next(new APIerror(400, "Avatar is required"));
     }
 
     // Step 6: Handle coverImage (optional)
-    const coverImageLocalPath = req.files?.coverImage?.[0];
+    const coverImageFile = req.files?.coverImage?.[0];
     let coverImageUrl = null;
 
-    if (coverImageLocalPath) {
+    if (coverImageFile) {
+        const coverImageLocalPath = coverImageFile.path; // Get the path from the file object
         const coverImageUploadResult =
-            await uploadOnCloudinary(coverImageLocalPath);
+            await uploadOnCloudinary(coverImageLocalPath); // Upload to Cloudinary
         coverImageUrl = coverImageUploadResult.secure_url;
     }
 
@@ -74,8 +76,9 @@ const registerUser = asynchandler(async (req, res, next) => {
 
     // Step 10: Return success response
     res.status(201).json(
-        APIresponse(200, userResponse, "User registered successfully")
+        new APIresponse(200, userResponse, "User registered successfully")
     );
 });
+
 
 export { registerUser };
