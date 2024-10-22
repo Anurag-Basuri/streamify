@@ -5,6 +5,34 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
+// Generate Refresh and Access token
+const generate_Access_Refresh_token = async (userID) => {
+    try {
+        // Fetch user by ID
+        const user = await User.findById(userID);
+
+        // Check if the user exists
+        if (!user) {
+            throw new APIerror(404, "User not found");
+        }
+
+        // Generate access and refresh tokens
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        // Assign refresh token to the user and save
+        user.refreshToken = refreshToken;
+        await user.save(); // Save the updated user with the new refresh token
+
+        // Return the tokens
+        return { refreshToken, accessToken };
+    } catch (error) {
+        // Throw an API error for any failures
+        throw new APIerror(500, "Something went wrong, please try again");
+    }
+};
+
+
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
     // Step 1: Get user details from the frontend
@@ -80,5 +108,34 @@ const registerUser = asynchandler(async (req, res, next) => {
     );
 });
 
+// Function to handle user login
+const loginUser = asynchandler(async (req, res, next) => {
+    // Step 1: Get user details from the frontend
+    const { userName, email, password } = req.body;
+
+    // Step 2: Handle validation results from express-validator
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return next(new APIerror(400, "Validation Error", errors.array()));
+    }
+
+    // step 3: Check the user name and email if they are in the registered
+    const user = await User.findOne({
+        $or: [{ userName }, { email }],
+    });
+
+    if (!user) {
+        throw new APIerror(404, "User does not exist");
+    }
+
+    // step 4: If the user exists then validate the password
+    const pswd = await user.isPasswordCorrect(password);
+
+    if (!pswd) {
+        return next(new APIerror(401, "Incorrect password"));
+    }
+
+    //
+});
 
 export { registerUser };
