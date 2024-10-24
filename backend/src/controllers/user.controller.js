@@ -22,7 +22,7 @@ const generate_Access_Refresh_token = async (userID) => {
 
         // Assign refresh token to the user and save
         user.refreshToken = refreshToken;
-        await user.save(); // Save the updated user with the new refresh token
+        await user.save({ validateBeforeSave: false }); // Save the updated user with the new refresh token
 
         // Return the tokens
         return { refreshToken, accessToken };
@@ -31,7 +31,6 @@ const generate_Access_Refresh_token = async (userID) => {
         throw new APIerror(500, "Something went wrong, please try again");
     }
 };
-
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
@@ -119,23 +118,48 @@ const loginUser = asynchandler(async (req, res, next) => {
         return next(new APIerror(400, "Validation Error", errors.array()));
     }
 
-    // step 3: Check the user name and email if they are in the registered
+    // Step 3: Check if the user exists by username or email
     const user = await User.findOne({
         $or: [{ userName }, { email }],
     });
 
     if (!user) {
-        throw new APIerror(404, "User does not exist");
+        return next(new APIerror(404, "User does not exist"));
     }
 
-    // step 4: If the user exists then validate the password
+    // Step 4: If the user exists, validate the password
     const pswd = await user.isPasswordCorrect(password);
 
     if (!pswd) {
         return next(new APIerror(401, "Incorrect password"));
     }
 
-    //
+    // Step 5: Generate Refresh and Access Tokens
+    const { refreshToken, accessToken } = await generate_Access_Refresh_token(user._id);
+
+    // Step 6: Remove sensitive fields (password, refreshToken) from the user object
+    const loggedInUser = {
+        _id: user._id,
+        userName: user.userName,
+        fullName: user.fullName,
+        email: user.email,
+        avatar: user.avatar,
+        coverImage: user.coverImage,
+    };
+
+    // Step 7: Set options for the cookie
+    const options = {
+        httpOnly: true,
+        secure: true, // Set to true in production when using HTTPS
+        sameSite: "Strict",
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+    };
+
+    // Step 8: Send a JSON response with the access token and user info
+    return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, options) // Set the refresh token as a cookie
+        .json(new APIresponse(200, { accessToken, user: loggedInUser }, "User successfully logged in"));
 });
 
 export { registerUser };
