@@ -4,33 +4,7 @@ import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-
-// Generate Refresh and Access token
-const generate_Access_Refresh_token = async (userID) => {
-    try {
-        // Fetch user by ID
-        const user = await User.findById(userID);
-
-        // Check if the user exists
-        if (!user) {
-            throw new APIerror(404, "User not found");
-        }
-
-        // Generate access and refresh tokens
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-
-        // Assign refresh token to the user and save
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false }); // Save the updated user with the new refresh token
-
-        // Return the tokens
-        return { refreshToken, accessToken };
-    } catch (error) {
-        // Throw an API error for any failures
-        throw new APIerror(500, "Something went wrong, please try again");
-    }
-};
+import { generate_Access_Refresh_token } from "../utils/tokens.js";
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
@@ -135,7 +109,9 @@ const loginUser = asynchandler(async (req, res, next) => {
     }
 
     // Step 5: Generate Refresh and Access Tokens
-    const { refreshToken, accessToken } = await generate_Access_Refresh_token(user._id);
+    const { refreshToken, accessToken } = await generate_Access_Refresh_token(
+        user._id
+    );
 
     // Step 6: Remove sensitive fields (password, refreshToken) from the user object
     const loggedInUser = {
@@ -159,7 +135,37 @@ const loginUser = asynchandler(async (req, res, next) => {
     return res
         .status(200)
         .cookie("refreshToken", refreshToken, options) // Set the refresh token as a cookie
-        .json(new APIresponse(200, { accessToken, user: loggedInUser }, "User successfully logged in"));
+        .json(
+            new APIresponse(
+                200,
+                { accessToken, user: loggedInUser },
+                "User successfully logged in"
+            )
+        );
 });
 
-export { registerUser };
+// Function to handle user log out
+const logoutUser = asynchandler(async (req, res, next) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: {
+                refreshToken: undefined,
+            },
+        });
+
+        // Clear the refresh token cookie
+        const options = {
+            httpOnly: true,
+            secure: true, // Set to true in production when using HTTPS
+            sameSite: "Strict",
+        };
+
+        res.clearCookie("refreshToken", options);
+
+        return res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+        return next(new APIerror(500, "Logout failed"));
+    }
+});
+
+export { loginUser, logoutUser, registerUser };
