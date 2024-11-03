@@ -1,4 +1,5 @@
 import { validationResult } from "express-validator";
+import jwt from "jasonwebtoken";
 import { User } from "../models/user.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
@@ -166,6 +167,33 @@ const logoutUser = asynchandler(async (req, res, next) => {
     } catch (error) {
         return next(new APIerror(500, "Logout failed"));
     }
+});
+
+const refreshAccessToken = asynchandler(async (req, res, next) => {
+    const incoming = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!incoming) {
+        next(new APIerror(401, "unauthorized request"));
+    }
+
+    try {
+        const decodedToken = jwt.verify(
+            incoming,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
+        const user = await User.findById(decodedToken?._id);
+
+        if (!user) {
+            next(new APIerror(401, "Invalid refresh token"));
+        }
+
+        if (incoming !== user) {
+            next(new APIerror(401, "Refresh token is expired or used"));
+        }
+
+        
+    } catch (error) {}
 });
 
 export { loginUser, logoutUser, registerUser };
