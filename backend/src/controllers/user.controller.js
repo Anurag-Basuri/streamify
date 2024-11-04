@@ -188,12 +188,32 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
             next(new APIerror(401, "Invalid refresh token"));
         }
 
-        if (incoming !== user) {
+        if (incoming !== user?.refreshToken) {
             next(new APIerror(401, "Refresh token is expired or used"));
         }
 
-        
-    } catch (error) {}
+        const options = {
+            httpOnly: true,
+            secure: true,
+        };
+
+        const { accessToken, refreshToken } =
+            await generate_Access_Refresh_token(user._id);
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json(
+                new APIresponse(
+                    200,
+                    { accessToken, refreshToken },
+                    "Access Token refreshed"
+                )
+            );
+    } catch (error) {
+        next(new APIerror(401, error?.message || "Inavlid refreshToken"));
+    }
 });
 
-export { loginUser, logoutUser, registerUser };
+export { loginUser, logoutUser, registerUser, refreshAccessToken };
