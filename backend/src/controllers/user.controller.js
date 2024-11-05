@@ -238,4 +238,20 @@ const change_current_password = asynchandler(async (req, res, next) => {
         .json(new APIresponse(200, null, "Password changed successfully"));
 });
 
-export { loginUser, logoutUser, refreshAccessToken, registerUser };
+// Get current User
+const get_current_user = asynchandler(async (req, res, next) => {
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, req.user, "Current user fetched successfully")
+        );
+});
+
+export {
+    change_current_password,
+    get_current_user,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    registerUser,
+};
