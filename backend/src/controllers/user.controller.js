@@ -1,5 +1,5 @@
 import { validationResult } from "express-validator";
-import jwt from "jasonwebtoken";
+import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
@@ -169,11 +169,12 @@ const logoutUser = asynchandler(async (req, res, next) => {
     }
 });
 
+// Function for refreshing Token to keep the user login
 const refreshAccessToken = asynchandler(async (req, res, next) => {
     const incoming = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!incoming) {
-        next(new APIerror(401, "unauthorized request"));
+        return next(new APIerror(401, "unauthorized request"));
     }
 
     try {
@@ -184,12 +185,8 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
 
         const user = await User.findById(decodedToken?._id);
 
-        if (!user) {
-            next(new APIerror(401, "Invalid refresh token"));
-        }
-
-        if (incoming !== user?.refreshToken) {
-            next(new APIerror(401, "Refresh token is expired or used"));
+        if (!user || incoming !== user?.refreshToken) {
+            return next(new APIerror(401, "Invalid or expired refresh token"));
         }
 
         const options = {
@@ -212,8 +209,19 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
                 )
             );
     } catch (error) {
-        next(new APIerror(401, error?.message || "Inavlid refreshToken"));
+        return next(
+            new APIerror(401, error?.message || "Inavlid refresh token")
+        );
     }
 });
 
-export { loginUser, logoutUser, registerUser, refreshAccessToken };
+// Function for changing the current password
+const change_current_password = asynchandler(async (req, res, next) => {
+    const { oldPassword, newPassword1, newPassword2 } = req.body;
+
+    if (newPassword1 != newPassword2) {
+        next(new APIerror(400, "New passwords do not match"));
+    }
+});
+
+export { loginUser, logoutUser, refreshAccessToken, registerUser };
