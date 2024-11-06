@@ -247,6 +247,59 @@ const get_current_user = asynchandler(async (req, res, next) => {
         );
 });
 
+const update_account_details = asynchandler(async (req, res, next) => {
+    const { userName, email, fullName } = req.body;
+    const userID = req.user?._id;
+
+    // Step 1: Validate input (e.g., userName and email should be unique)
+    const existingUser = await User.findOne({
+        $or: [{ userName }, { email }],
+        _id: { $ne: userID }, // Ensure it doesn't match the current user
+    });
+
+    if (existingUser) {
+        return next(new APIerror(409, "Username or Email already exists"));
+    }
+
+    // Step 2: Prepare update object for selected fields
+    const update = {};
+    if (userName) update.userName = userName;
+    if (email) update.email = email;
+    if (fullName) update.fullName = fullName;
+
+    // Step 3: Update the user details in the database
+    const updatedUser = await User.findByIdAndUpdate(userID, update, {
+        new: true, // Return the updated user document
+        runValidators: true, // Apply schema validators on update
+    });
+
+    // Handle case where user is not found
+    if (!updatedUser) {
+        return next(new APIerror(404, "User not found"));
+    }
+
+    // Step 4: Prepare user response without sensitive data
+    const userResponse = {
+        _id: updatedUser._id,
+        userName: updatedUser.userName,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+        avatar: updatedUser.avatar,
+        coverImage: updatedUser.coverImage,
+    };
+
+    // Step 5: Return the user response
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                userResponse,
+                "Account details updated successfully"
+            )
+        );
+});
+
 export {
     change_current_password,
     get_current_user,
@@ -254,4 +307,5 @@ export {
     logoutUser,
     refreshAccessToken,
     registerUser,
+    update_account_details,
 };
