@@ -49,7 +49,8 @@ const registerUser = asynchandler(async (req, res, next) => {
 
     if (coverImageFile) {
         const coverImageLocalPath = coverImageFile.path;
-        const coverImageUploadResult = await uploadOnCloudinary(coverImageLocalPath);
+        const coverImageUploadResult =
+            await uploadOnCloudinary(coverImageLocalPath);
         coverImageUrl = coverImageUploadResult.secure_url;
         coverImagePublicId = coverImageUploadResult.public_id;
     }
@@ -63,7 +64,7 @@ const registerUser = asynchandler(async (req, res, next) => {
         avatar: avatarUrl,
         avatarPublicId: avatarPublicId, // Store avatar public ID for future reference
         coverImage: coverImageUrl,
-        coverImagePublicId: coverImagePublicId // Store cover image public ID if available
+        coverImagePublicId: coverImagePublicId, // Store cover image public ID if available
     });
 
     // Step 8: Check if user was created
@@ -279,7 +280,7 @@ const update_account_details = asynchandler(async (req, res, next) => {
         runValidators: true, // Apply schema validators on update
     });
 
-    // Handle case where user is not found
+    // Throw a 404 error if no user is found
     if (!updatedUser) {
         return next(new APIerror(404, "User not found"));
     }
@@ -313,7 +314,7 @@ const change_Avatar = asynchandler(async (req, res, next) => {
     // Step 1: Check if an avatar file is provided
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
-        next(new APIerror(400, "Avatar image is required"));
+        return next(new APIerror(400, "Avatar image is required"));
     }
 
     try {
@@ -353,7 +354,57 @@ const change_Avatar = asynchandler(async (req, res, next) => {
     }
 });
 
+// Change Cover Image
+const change_CoverImage = asynchandler(async (req, res, next) => {
+    const userID = req.user?._id;
+
+    // Step 1: Check if a cover image file is provided
+    const coverImageLocalPath = req.file?.path;
+    if (!coverImageLocalPath) {
+        return next(new APIerror(400, "Cover image is required"));
+    }
+
+    try {
+        // Step 2: Retrieve the user's current cover image public_id from the database
+        const user = await User.findById(userID);
+        if (!user) {
+            return next(new APIerror(404, "User not found"));
+        }
+
+        // Step 3: Delete existing cover image from Cloudinary if it exists
+        if (user.coverImage) {
+            await cloudinary.uploader.destroy(user.coverImagePublicId);
+        }
+
+        // Step 4: Upload new cover image file to Cloudinary
+        const coverImageUploadResult =
+            await uploadOnCloudinary(coverImageLocalPath);
+        const coverImageUrl = coverImageUploadResult.secure_url;
+        const coverImagePublicId = coverImageUploadResult.public_id;
+
+        // Step 5: Update the cover image details in the database
+        user.coverImage = coverImageUrl;
+        user.coverImagePublicId = coverImagePublicId;
+        await user.save();
+
+        // Step 6: Return the updated user info
+        return res
+            .status(200)
+            .json(
+                new APIresponse(
+                    200,
+                    { coverImage: user.coverImage },
+                    "Cover image updated successfully"
+                )
+            );
+    } catch (error) {
+        return next(new APIerror(500, "Failed to update cover image"));
+    }
+});
+
 export {
+    change_Avatar,
+    change_CoverImage,
     change_current_password,
     get_current_user,
     loginUser,
