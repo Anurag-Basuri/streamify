@@ -34,11 +34,27 @@ const userSchema = new Schema(
             index: true,
         },
         avatar: {
-            type: String, // cloudinary URL
+            type: String, // Cloudinary URL
+            required: true,
+            match: [
+                /^(https?:\/\/.*\.(?:png|jpg|jpeg))$/i,
+                "Invalid URL format for avatar",
+            ],
+        },
+        avatarPublicId: {
+            type: String, // Cloudinary public ID for avatar image
             required: true,
         },
         coverImage: {
-            type: String, // cloudinary URL
+            type: String, // Cloudinary URL
+            match: [
+                /^(https?:\/\/.*\.(?:png|jpg|jpeg))$/i,
+                "Invalid URL format for cover image",
+            ],
+        },
+        coverImagePublicId: {
+            type: String, // Cloudinary public ID for cover image
+            required: true,
         },
         watchHistory: {
             type: Schema.Types.ObjectId,

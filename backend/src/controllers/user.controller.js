@@ -28,14 +28,16 @@ const registerUser = asynchandler(async (req, res, next) => {
     }
 
     // Step 4: Check if avatar is provided
-    const avatarFile = req.files?.avatar?.[0]; // Get the file object
+    const avatarFile = req.files?.avatar?.[0];
     let avatarUrl = null;
+    let avatarPublicId = null;
 
     // Step 5: Upload avatar to Cloudinary (if provided)
     if (avatarFile) {
-        const avatarLocalPath = avatarFile.path; // Get the path from the file object
-        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath); // Upload to Cloudinary
+        const avatarLocalPath = avatarFile.path;
+        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
         avatarUrl = avatarUploadResult.secure_url;
+        avatarPublicId = avatarUploadResult.public_id;
     } else {
         return next(new APIerror(400, "Avatar is required"));
     }
@@ -43,12 +45,13 @@ const registerUser = asynchandler(async (req, res, next) => {
     // Step 6: Handle coverImage (optional)
     const coverImageFile = req.files?.coverImage?.[0];
     let coverImageUrl = null;
+    let coverImagePublicId = null;
 
     if (coverImageFile) {
-        const coverImageLocalPath = coverImageFile.path; // Get the path from the file object
-        const coverImageUploadResult =
-            await uploadOnCloudinary(coverImageLocalPath); // Upload to Cloudinary
+        const coverImageLocalPath = coverImageFile.path;
+        const coverImageUploadResult = await uploadOnCloudinary(coverImageLocalPath);
         coverImageUrl = coverImageUploadResult.secure_url;
+        coverImagePublicId = coverImageUploadResult.public_id;
     }
 
     // Step 7: Create user object
@@ -58,7 +61,9 @@ const registerUser = asynchandler(async (req, res, next) => {
         email,
         password, // Password will be hashed automatically in the model
         avatar: avatarUrl,
+        avatarPublicId: avatarPublicId, // Store avatar public ID for future reference
         coverImage: coverImageUrl,
+        coverImagePublicId: coverImagePublicId // Store cover image public ID if available
     });
 
     // Step 8: Check if user was created
@@ -66,7 +71,7 @@ const registerUser = asynchandler(async (req, res, next) => {
         return next(new APIerror(500, "User creation failed"));
     }
 
-    // Step 9: Remove sensitive fields (password) from the response
+    // Step 9: Prepare user response without sensitive fields
     const userResponse = {
         _id: newUser._id,
         userName: newUser.userName,
@@ -78,7 +83,7 @@ const registerUser = asynchandler(async (req, res, next) => {
 
     // Step 10: Return success response
     res.status(201).json(
-        new APIresponse(200, userResponse, "User registered successfully")
+        new APIresponse(201, userResponse, "User registered successfully")
     );
 });
 
@@ -247,6 +252,7 @@ const get_current_user = asynchandler(async (req, res, next) => {
         );
 });
 
+// Update account details
 const update_account_details = asynchandler(async (req, res, next) => {
     const { userName, email, fullName } = req.body;
     const userID = req.user?._id;
@@ -298,6 +304,53 @@ const update_account_details = asynchandler(async (req, res, next) => {
                 "Account details updated successfully"
             )
         );
+});
+
+// Change Avatar image
+const change_Avatar = asynchandler(async (req, res, next) => {
+    const userID = req.user?._id;
+
+    // Step 1: Check if an avatar file is provided
+    const avatarLocalPath = req.file?.path;
+    if (!avatarLocalPath) {
+        next(new APIerror(400, "Avatar image is required"));
+    }
+
+    try {
+        // Step 2: Retrieve the user's current avatar public_id from the database
+        const user = await User.findById(userID);
+        if (!user) {
+            return next(new APIerror(404, "User not found"));
+        }
+
+        // Step 3: Delete existing avatar from Cloudinary if it exists
+        if (user.avatar) {
+            await cloudinary.uploader.destroy(user.avatarPublicId);
+        }
+
+        // Step 4: Upload new avatar file to cludinary
+        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
+        const avatarUrl = avatarUploadResult.secure_url;
+        const avatarPublicId = avatarUploadResult.public_id;
+
+        // Step 5: Update on the database
+        user.avatar = avatarUrl;
+        user.avatarPublicId = avatarPublicId;
+        await user.save();
+
+        // Step 6: return the updated user info
+        return res
+            .status(200)
+            .json(
+                new APIresponse(
+                    200,
+                    { avatar: user.avatar },
+                    "Avatar updated successfully"
+                )
+            );
+    } catch (error) {
+        return next(new APIerror(500, "Failed to update avatar"));
+    }
 });
 
 export {
