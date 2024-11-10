@@ -489,4 +489,5 @@ export {
     refreshAccessToken,
     registerUser,
     update_account_details,
+    get_user_profile,
 };
