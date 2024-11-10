@@ -34,9 +34,9 @@ const verifyAccessToken = asynchandler(async (req, res, next) => {
         );
 
         if (!user) {
-             return next(
-                 new APIerror(401, "Unauthorized - Invalid access token")
-             );
+            return next(
+                new APIerror(401, "Unauthorized - Invalid access token")
+            );
         }
 
         req.user = user;

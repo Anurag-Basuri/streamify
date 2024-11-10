@@ -6,6 +6,7 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
+import(subscription);
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
@@ -32,7 +33,7 @@ const registerUser = asynchandler(async (req, res, next) => {
     let avatarUrl = null;
     let avatarPublicId = null;
 
-    // Step 5: Upload avatar to Cloudinary (if provided)
+    // Step 5: Upload avatar to Cloudinary (if provided)n
     if (avatarFile) {
         const avatarLocalPath = avatarFile.path;
         const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
@@ -399,6 +400,82 @@ const change_CoverImage = asynchandler(async (req, res, next) => {
             );
     } catch (error) {
         return next(new APIerror(500, "Failed to update cover image"));
+    }
+});
+
+// Get user channel details
+const get_user_profile = asynchandler(async (req, res, next) => {
+    const { userName } = req.params;
+
+    if (!userName?.trim()) {
+        return next(new APIerror(400, "Username is missing"));
+    }
+
+    try {
+        const channel = await User.aggregate([
+            {
+                $match: { userName },
+            },
+            {
+                $lookup: {
+                    from: "subscription",
+                    localField: "_id",
+                    foreignField: "channel",
+                    as: "subscribers",
+                },
+            },
+            {
+                $lookup: {
+                    from: "subscription",
+                    localField: "_id",
+                    foreignField: "subscriber",
+                    as: "subscribed",
+                },
+            },
+            {
+                $addFields: {
+                    subscribersCount: { $size: "$subscribers" },
+                    channelsSubscribedToCount: { $size: "$subscribed" },
+                    isSubscribed: {
+                        $cond: {
+                            if: {
+                                $in: [req.user?._id, "$subscribers.subscriber"],
+                            },
+                            then: true,
+                            else: false,
+                        },
+                    },
+                },
+            },
+            {
+                $project: {
+                    fullName: 1,
+                    userName: 1,
+                    subscribersCount: 1,
+                    channelsSubscribedToCount: 1,
+                    isSubscribed: 1,
+                    avatar: 1,
+                    coverImage: 1,
+                    email: 1,
+                },
+            },
+        ]);
+
+        if (!channel.length) {
+            return next(new APIerror(404, "Channel does not exist"));
+        }
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    channel[0],
+                    "User channel fetched successfully"
+                )
+            ); // Return the first (and only) matched document
+    } catch (error) {
+        next(error); // Pass any aggregation errors to error-handling middleware
     }
 });
 
