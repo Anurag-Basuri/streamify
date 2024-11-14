@@ -325,15 +325,15 @@ const change_Avatar = asynchandler(async (req, res, next) => {
             return next(new APIerror(404, "User not found"));
         }
 
-        // Step 3: Delete existing avatar from Cloudinary if it exists
-        if (user.avatar) {
-            await cloudinary.uploader.destroy(user.avatarPublicId);
-        }
-
-        // Step 4: Upload new avatar file to cludinary
+        // Step 3: Upload new avatar file to cludinary
         const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
         const avatarUrl = avatarUploadResult.secure_url;
         const avatarPublicId = avatarUploadResult.public_id;
+        
+        // Step 4: Delete existing avatar from Cloudinary if it exists
+        if (user.avatar) {
+            await cloudinary.uploader.destroy(user.avatarPublicId);
+        }
 
         // Step 5: Update on the database
         user.avatar = avatarUrl;
