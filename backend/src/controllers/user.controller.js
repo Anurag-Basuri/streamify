@@ -329,7 +329,7 @@ const change_Avatar = asynchandler(async (req, res, next) => {
         const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
         const avatarUrl = avatarUploadResult.secure_url;
         const avatarPublicId = avatarUploadResult.public_id;
-        
+
         // Step 4: Delete existing avatar from Cloudinary if it exists
         if (user.avatar) {
             await cloudinary.uploader.destroy(user.avatarPublicId);
