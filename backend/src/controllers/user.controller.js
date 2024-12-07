@@ -6,7 +6,6 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
-import(subscription);
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
