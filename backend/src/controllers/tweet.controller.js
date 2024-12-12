@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { APIerror } from "../utils/ApiError.js";
-import { APIresponse } from "../utils/ApiResponse.js";
+import { APIerror } from "../utils/APIerror.js";
+import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { Tweet } from "../models/tweet.model.js";
 
