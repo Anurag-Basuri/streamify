@@ -7,7 +7,7 @@ import { Tweet } from "../models/tweet.model.js";
 const createTweet = asynchandler(async (req, res) => {
     const { content } = req.body;
 
-    if (!content || content.trim().length() < 1) {
+    if (!content || content.trim().length < 1) {
         throw new APIerror(400, "Tweet content is required");
     }
 
@@ -18,7 +18,7 @@ const createTweet = asynchandler(async (req, res) => {
 
     return res
         .status(201)
-        .json(new APIresponse(201, tweet, "Tweet is successfully"));
+        .json(new APIresponse(201, tweet, "Tweet created successfully"));
 });
 
 const get_user_tweet = asynchandler(async (req, res) => {
@@ -34,7 +34,7 @@ const get_user_tweet = asynchandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, tweets, "User tweets fetched successfully"));
+        .json(new APIresponse(200, tweets, "User tweets fetched successfully"));
 });
 
 const updateTweet = asynchandler(async (req, res) => {
@@ -45,11 +45,11 @@ const updateTweet = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid tweet ID");
     }
 
-    if (!content || content.trim().length() < 1) {
-        throw new APIerror(400, "Updated successfully");
+    if (!content || content.trim().length < 1) {
+        throw new APIerror(400, "Content is required for updating the tweet");
     }
 
-    const tweet = await Tweet.findByIdAndUpdate(
+    const tweet = await Tweet.findOneAndUpdate(
         { _id: tweetId, owner: req.user._id },
         { content },
         { new: true, runValidators: true }
@@ -59,28 +59,30 @@ const updateTweet = asynchandler(async (req, res) => {
         throw new APIerror(404, "Tweet not found or you don't own this tweet");
     }
 
-    return res.status(200).json(200, tweet, "Tweet updated successfully");
+    return res
+        .status(200)
+        .json(new APIresponse(200, tweet, "Tweet updated successfully"));
 });
 
 const deleteTweet = asynchandler(async (req, res) => {
     const { tweetId } = req.params;
 
     if (!mongoose.isValidObjectId(tweetId)) {
-        throw new ApiError(400, "Invalid tweet ID");
+        throw new APIerror(400, "Invalid tweet ID");
     }
 
-    const tweet = await Tweet.findByIdAndDelete({
+    const tweet = await Tweet.findOneAndDelete({
         _id: tweetId,
         owner: req.user._id,
     });
 
     if (!tweet) {
-        throw new APIerror(400, "Tweet not found or you don't own this Tweet");
+        throw new APIerror(404, "Tweet not found or you don't own this tweet");
     }
 
     return res
-        .status(201)
-        .json(new APIresponse(200, null, "Tweet deleted successfully"));
+        .status(204)
+        .json(new APIresponse(204, null, "Tweet deleted successfully"));
 });
 
 export { createTweet, get_user_tweet, updateTweet, deleteTweet };
