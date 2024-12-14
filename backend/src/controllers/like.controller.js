@@ -76,7 +76,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid tweet ID");
     }
 
-    const tweet = await Comment.findById(tweetId);
+    const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
         throw new APIerror(400, "Tweet not found");
     }
