@@ -24,7 +24,7 @@ const toggleVideoLike = asynchandler(async (req, res) => {
         likedEntity: videoId,
         entiyType: "video",
     });
-    if (!existLike) {
+    if (existLike) {
         await existLike.remove();
         res.status(200).json(new APIresponse(200, null, "Video unliked"));
     }
@@ -55,7 +55,7 @@ const toggleCommentLike = asynchandler(async (req, res) => {
         likedEntity: commentId,
         entiyType: "comment",
     });
-    if (!existLike) {
+    if (existLike) {
         await existLike.remove();
         res.status(200).json(new APIresponse(200, null, "Comment unliked"));
     }
@@ -86,7 +86,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
         likedEntity: tweetId,
         entiyType: "tweet",
     });
-    if (!existLike) {
+    if (existLike) {
         await existLike.remove();
         res.status(200).json(new APIresponse(200, null, "Tweet unliked"));
     }
