@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
-import { APIerror, ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { APIerror } from "../utils/APIerror.js";
+import { APIresponse } from "../utils/APIresponse.js";
+import { asynchandler } from "../utils/asynchandler.js";
 
 // Get all comments for a video
-const getEntityComments = asyncHandler(async (req, res) => {
+const getEntityComments = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -66,7 +66,7 @@ const getEntityComments = asyncHandler(async (req, res) => {
 });
 
 // Add a comment to an entity (Video or Tweet)
-const addComment = asyncHandler(async (req, res) => {
+const addComment = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
     const { content } = req.body;
 
@@ -97,7 +97,7 @@ const addComment = asyncHandler(async (req, res) => {
 });
 
 // Update a comment
-const updateComment = asyncHandler(async (req, res) => {
+const updateComment = asynchandler(async (req, res) => {
     const { commentId } = req.params;
     const { content } = req.body;
 
@@ -128,7 +128,7 @@ const updateComment = asyncHandler(async (req, res) => {
 });
 
 // Delete a comment
-const deleteComment = asyncHandler(async (req, res) => {
+const deleteComment = asynchandler(async (req, res) => {
     const { commentId } = req.params;
 
     if (!mongoose.isValidObjectId(commentId)) {

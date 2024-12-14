@@ -1,10 +1,12 @@
-import { asynchandler } from "../utils/asynchandler";
-import { APIerror } from "../ustils/APIerror";
-import { APIresponse } from "../utils/APIresponse";
-import { Video } from "../models/video.model";
-import { User } from "../models/user.model";
-import { uploadOnCloudinary } from "../utils/cloudinary";
-import mongoose, { isValidObjectId } from "mongoose";
+import { asynchandler } from "../utils/asynchandler.js";
+import { APIerror } from "../utils/APIerror.js";
+import { APIresponse } from "../utils/APIresponse.js";
+import { Video } from "../models/video.model.js";
+import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
+// Increment video views with rate limiting
+import rateLimit from "express-rate-limit";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
@@ -223,33 +225,40 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         );
 });
 
+// Create a rate limiter middleware
+const videoRateLimiter = rateLimit({
+    windowMs: 10 * 1000, // 10 seconds
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: "Too many requests, please try again later.", // Custom error message
+});
+
 // Increment video views with rate limiting
-const incrementVideoViews = [
-    rateLimiter({ maxRequests: 5, timeWindow: "10s" }), // Hypothetical rate limiter
-    asynchandler(async (req, res) => {
-        const { videoId } = req.params;
+const incrementVideoViews = asynchandler(async (req, res) => {
+    const { videoId } = req.params;
 
-        if (!mongoose.isValidObjectId(videoId)) {
-            throw new APIerror(400, "Invalid video ID");
-        }
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new APIerror(400, "Invalid video ID");
+    }
 
-        const video = await Video.findOneAndUpdate(
-            { _id: videoId, isDeleted: false },
-            { $inc: { views: 1 } },
-            { new: true }
+    const video = await Video.findOneAndUpdate(
+        { _id: videoId, isDeleted: false },
+        { $inc: { views: 1 } },
+        { new: true }
+    );
+
+    if (!video) {
+        throw new APIerror(404, "Video not found or has been deleted");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, video, "Video view incremented successfully")
         );
+});
 
-        if (!video) {
-            throw new APIerror(404, "Video not found or has been deleted");
-        }
-
-        return res
-            .status(200)
-            .json(
-                new APIresponse(200, video, "Video view incremented successfully")
-            );
-    }),
-];
+// Apply the rate limiter middleware to the increment views route
+incrementVideoViews.rateLimiter = videoRateLimiter;
 
 export {
     create_new_video,

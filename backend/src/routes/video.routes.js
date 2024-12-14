@@ -1,7 +1,7 @@
 import Router from "express";
-import { body, param } from "express-validator"; // Include param for validation
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import { body, param } from "express-validator";
 import { upload } from "../middlewares/multer.middleware.js";
+import { verifyAccessToken } from "../middlewares/auth.middleware.js"; // Import access token middleware
 import {
     create_new_video,
     get_videos,
@@ -10,7 +10,7 @@ import {
     delete_video,
     togglePublishStatus,
     incrementVideoViews,
-} from "../controllers/video.controller.js"; // Fixed missing '.js' extension for imports
+} from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = Router();
@@ -32,7 +32,7 @@ const createVideoRules = [
 // Route to upload a new video
 router.route("/upload").post(
     upload.fields([
-        { name: "videoFile", maxCount: 1 },
+        { name: "videoFile", maxCount: 1 }, // Ensure maxCount is appropriate
         { name: "thumbnail", maxCount: 1 },
     ]),
     createVideoRules,

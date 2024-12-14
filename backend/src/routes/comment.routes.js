@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { verifyAccessToken } from "../middlewares/auth.middleware";
-import { validateResult } from "../middlewares/validate.middleware";
+import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import { validateResult } from "../middlewares/validate.middleware.js";
 import {
     addComment,
     deleteComment,
     getEntityComments,
     updateComment,
-} from "../controllers/comment.controller";
+} from "../controllers/comment.controller.js";
 
 const router = Router();
 
