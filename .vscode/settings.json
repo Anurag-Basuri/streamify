@@ -2,5 +2,8 @@
   "editor.fontSize": 20,
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
-  "editor.formatOnType": true
+  "editor.formatOnType": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.formatOnSaveMode": "modifications",
+  "prettier.bracketSameLine": false
 }
