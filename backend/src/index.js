@@ -1,9 +1,9 @@
-import { app } from "./app.js";
+import { api } from "./api.js";
 import ConnectDB from "./database/index.js";
 
 ConnectDB()
     .then(() => {
-        app.listen(process.env.PORT || 8000, () => {
+        api.listen(process.env.PORT || 8000, () => {
             console.log(`⚙️ Server is running at port : ${process.env.PORT}`);
         });
     })

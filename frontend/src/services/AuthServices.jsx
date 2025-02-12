@@ -1,29 +1,68 @@
 import { createContext, useState, useEffect } from "react";
-export const AuthContext = createContext();
+import {
+    signIn,
+    signUp,
+    logout,
+    getUserProfile,
+    isAuthenticated,
+} from "../services/authService.js";
 
-function AuthServices({ children }) {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+const AuthContext = createContext();
+
+function AuthProvider({ children }) {
+    const [isAuthenticatedState, setIsAuthenticatedState] = useState(false);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        setIsAuthenticated(!!token);
+        // Check if a token exists and set the authenticated state
+        if (isAuthenticated()) {
+            setIsAuthenticatedState(true);
+            loadUserProfile();
+        }
     }, []);
 
-    const login = () => {
-        localStorage.setItem("token", token);
-        setIsAuthenticated(true);
+    const loadUserProfile = async () => {
+        const profile = await getUserProfile();
+        setUser(profile);
     };
 
-    const logout = () => {
-        localStorage.removeItem("token");
-        setIsAuthenticated(false);
+    const login = async (credentials) => {
+        // eslint-disable-next-line no-useless-catch
+        try {
+            const data = await signIn(credentials);
+            setIsAuthenticatedState(true);
+            loadUserProfile();
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const register = async (userData) => {
+        // eslint-disable-next-line no-useless-catch
+        try {
+            const data = await signUp(userData);
+            setIsAuthenticatedState(true);
+            loadUserProfile();
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const logoutUser = () => {
+        logout();
+        setIsAuthenticatedState(false);
+        setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+        <AuthContext.Provider
+            value={{ isAuthenticatedState, user, login, register, logoutUser }}
+        >
             {children}
         </AuthContext.Provider>
     );
 }
 
-export default AuthServices;
+export { AuthProvider, AuthContext };

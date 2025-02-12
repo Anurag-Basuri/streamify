@@ -1,14 +1,14 @@
-import "./App.css";
+import { BrowserRouter as Router } from "react-router-dom";
 import Header from "./components/Header.jsx";
-import Profile from "./pages/profile.jsx";
-import Signinandup from "./pages/SignInAndUp.jsx";
+import AppRoutes from "./routes/AppRoutes.jsx";
 
 function App() {
-  return (
-    <div className="size-full">
-      <Profile/>
-    </div>
-  );
+    return (
+        <Router>
+            <Header />
+            <AppRoutes />
+        </Router>
+    );
 }
 
 export default App;
