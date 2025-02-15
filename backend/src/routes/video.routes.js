@@ -10,6 +10,7 @@ import {
     delete_video,
     togglePublishStatus,
     incrementVideoViews,
+    getRandomVideos,
 } from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -92,5 +93,7 @@ router.patch(
     validateResult,
     incrementVideoViews
 );
+
+router.get("/home", getRandomVideos);
 
 export default router;

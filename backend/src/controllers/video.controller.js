@@ -257,6 +257,28 @@ const incrementVideoViews = asynchandler(async (req, res) => {
         );
 });
 
+//get random videos for the user
+const getRandomVideos = asyncHandler(async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1; // Get the current page, default to 1
+        const limit = 10; // Number of videos per request
+        const skip = (page - 1) * limit; // Calculate the skip value
+
+        const videos = await Video.aggregate([{ $sample: { size: limit } }])
+            .skip(skip)
+            .limit(limit);
+
+        if (!videos || videos.length === 0) {
+            return next(new APIerror(404, "No videos found"));
+        }
+
+        res.status(200).json(new APIresponse(200, videos, "Random videos fetched successfully"));
+    } catch (error) {
+        console.error("Error fetching random videos:", error);
+        next(new APIerror(500, "Internal Server Error"));
+    }
+});
+
 // Apply the rate limiter middleware to the increment views route
 incrementVideoViews.rateLimiter = videoRateLimiter;
 
@@ -268,4 +290,5 @@ export {
     delete_video,
     togglePublishStatus,
     incrementVideoViews,
+    getRandomVideos,
 };
