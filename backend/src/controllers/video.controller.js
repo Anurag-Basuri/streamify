@@ -258,7 +258,7 @@ const incrementVideoViews = asynchandler(async (req, res) => {
 });
 
 //get random videos for the user
-const getRandomVideos = asyncHandler(async (req, res, next) => {
+const getRandomVideos = asynchandler(async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1; // Get the current page, default to 1
         const limit = 10; // Number of videos per request

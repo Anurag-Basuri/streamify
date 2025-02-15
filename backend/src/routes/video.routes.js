@@ -16,6 +16,9 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = Router();
 
+// No need of verification
+router.get("/home", getRandomVideos);
+
 // Apply verifyAccessToken middleware to all routes
 router.use(verifyAccessToken);
 
@@ -93,7 +96,5 @@ router.patch(
     validateResult,
     incrementVideoViews
 );
-
-router.get("/home", getRandomVideos);
 
 export default router;
