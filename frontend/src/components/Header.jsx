@@ -4,7 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 function Header() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false); // Added for mobile menu toggle
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
         <header className="sticky top-0 z-50 bg-gradient-to-r from-gray-900 to-gray-800 shadow-lg">
@@ -24,9 +24,8 @@ function Header() {
                     </button>
 
                     {/* Mobile Menu (Future implementation) */}
-                    {isMenuOpen && (
+                    {/* {isMenuOpen && (
                         <div className="mobile-menu absolute top-0 left-0 bg-gray-800 w-full h-screen flex flex-col items-center justify-center">
-                            {/* Add menu items here */}
                             <NavLink
                                 to="/profile"
                                 className="text-white py-2"
@@ -49,7 +48,7 @@ function Header() {
                                 Sign Up
                             </Link>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Logo */}
                     <NavLink
@@ -71,7 +70,7 @@ function Header() {
                             />
                         </svg>
                         <span className="text-xl font-bold text-white">
-                            Streamify
+                            StreamIfy
                         </span>
                     </NavLink>
                 </div>
@@ -92,7 +91,6 @@ function Header() {
 
                 {/* Right Section */}
                 <div className="flex items-center gap-x-4">
-                    {/* Mobile Search Toggle */}
                     <button
                         onClick={() => setShowMobileSearch(!showMobileSearch)}
                         className="text-orange-400 hover:text-orange-300 md:hidden"

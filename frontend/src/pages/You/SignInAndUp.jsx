@@ -45,7 +45,7 @@ function SignInAndUp() {
 
                 <div className="banner bg-orange-600/20 p-6 text-center border-b border-orange-500/30">
                     <h1 className="text-3xl font-bold text-orange-100">
-                        StreamHub
+                        StreamIfy
                     </h1>
                     <p className="text-orange-200 mt-2 text-sm">
                         {isLogin
