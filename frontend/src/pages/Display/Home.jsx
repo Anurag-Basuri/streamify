@@ -7,31 +7,26 @@ function Home() {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
-    const fetchVideos = async () => {
+    const fetchVideos = async (pageNumber = 1) => {
         if (loading || !hasMore) return;
-
         setLoading(true);
         try {
-            const response = await fetch("http://localhost:8000/api/v1/videos");
+            const res = await axios.get(
+                `http://your-backend-url/api/videos?page=${pageNumber}`
+            );
+            console.log("API Response:", res);
 
-            if (response.data && Array.isArray(response.data.videos)) {
-                setVideos((prevVideos) => [
-                    ...prevVideos,
-                    ...response.data.videos,
-                ]);
-
-                // If the fetched array is smaller than expected, assume no more videos
-                if (response.data.videos.length === 0) {
-                    setHasMore(false);
-                } else {
-                    setPage((prevPage) => prevPage + 1);
-                }
-            } else {
-                console.error("Invalid API response", response.data);
-                setHasMore(false);
+            if (res.status !== 200 || !res.data) {
+                throw new Error("Invalid API response");
             }
+
+            const newVideos = res.data.data || []; // Assuming API returns { data: [...] }
+
+            setVideos((prevVideos) => [...prevVideos, ...newVideos]);
+            setHasMore(newVideos.length > 0);
+            setPage(pageNumber + 1);
         } catch (error) {
-            console.error("Error fetching videos:", error);
+            console.error("Error fetching videos:", error.message);
         } finally {
             setLoading(false);
         }
@@ -45,7 +40,7 @@ function Home() {
             window.innerHeight + window.scrollY >=
             document.body.offsetHeight - 100
         ) {
-            fetchVideos();
+            fetchVideos(page);
         }
     };
 

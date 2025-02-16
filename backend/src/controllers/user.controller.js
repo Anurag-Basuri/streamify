@@ -15,7 +15,8 @@ const registerUser = asynchandler(async (req, res, next) => {
     // Step 2: Handle validation results from express-validator
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return next(new APIerror(400, "Validation Error", errors.array()));
+        console.log("Validation Errors:", errors.array()); // Debugging log
+        return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     // Step 3: Check if the user already exists by username or email
@@ -32,14 +33,12 @@ const registerUser = asynchandler(async (req, res, next) => {
     let avatarUrl = null;
     let avatarPublicId = null;
 
-    // Step 5: Upload avatar to Cloudinary (if provided)n
+    // Step 5: Upload avatar to Cloudinary (if provided)
     if (avatarFile) {
         const avatarLocalPath = avatarFile.path;
         const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
-        avatarUrl = avatarUploadResult.secure_url;
-        avatarPublicId = avatarUploadResult.public_id;
-    } else {
-        return next(new APIerror(400, "Avatar is required"));
+        avatarUrl = avatarUploadResult?.secure_url || null;
+        avatarPublicId = avatarUploadResult?.public_id || null;
     }
 
     // Step 6: Handle coverImage (optional)
@@ -92,63 +91,45 @@ const registerUser = asynchandler(async (req, res, next) => {
 const loginUser = asynchandler(async (req, res, next) => {
     // Step 1: Get user details from the frontend
     const { userName, email, password } = req.body;
+    console.log("🔍 Received login request:", { userName, email, password });
 
-    // Step 2: Handle validation results from express-validator
+    if (!userName && !email) {
+        return next(new APIerror(400, "Username or Email is required"));
+    }
+
+    // Step 2: Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.error("❌ Validation Error:", errors.array());
         return next(new APIerror(400, "Validation Error", errors.array()));
     }
 
-    // Step 3: Check if the user exists by username or email
+    // Step 3: Check if user exists
     const user = await User.findOne({
         $or: [{ userName }, { email }],
     });
+
+    console.log("🔍 User found in DB:", user);
 
     if (!user) {
         return next(new APIerror(404, "User does not exist"));
     }
 
-    // Step 4: If the user exists, validate the password
+    // Step 4: Validate password
     const pswd = await user.isPasswordCorrect(password);
-
     if (!pswd) {
         return next(new APIerror(401, "Incorrect password"));
     }
 
-    // Step 5: Generate Refresh and Access Tokens
-    const { refreshToken, accessToken } = await generate_Access_Refresh_token(
-        user._id
-    );
+    // Step 5: Generate Tokens
+    const { refreshToken, accessToken } = await generate_Access_Refresh_token(user._id);
 
-    // Step 6: Remove sensitive fields (password, refreshToken) from the user object
-    const loggedInUser = {
-        _id: user._id,
-        userName: user.userName,
-        fullName: user.fullName,
-        email: user.email,
-        avatar: user.avatar,
-        coverImage: user.coverImage,
-    };
-
-    // Step 7: Set options for the cookie
-    const options = {
-        httpOnly: true,
-        secure: true, // Set to true in production when using HTTPS
-        sameSite: "Strict",
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
-    };
-
-    // Step 8: Send a JSON response with the access token and user info
-    return res
-        .status(200)
-        .cookie("refreshToken", refreshToken, options) // Set the refresh token as a cookie
-        .json(
-            new APIresponse(
-                200,
-                { accessToken, user: loggedInUser },
-                "User successfully logged in"
-            )
-        );
+    return res.status(200).json({
+        success: true,
+        message: "User successfully logged in",
+        accessToken,
+        user,
+    });
 });
 
 // Function to handle user log out
@@ -258,53 +239,56 @@ const update_account_details = asynchandler(async (req, res, next) => {
     const { userName, email, fullName } = req.body;
     const userID = req.user?._id;
 
-    // Step 1: Validate input (e.g., userName and email should be unique)
+    // Check for existing user with new userName/email
     const existingUser = await User.findOne({
         $or: [{ userName }, { email }],
-        _id: { $ne: userID }, // Ensure it doesn't match the current user
+        _id: { $ne: userID },
     });
-
-    if (existingUser) {
+    if (existingUser)
         return next(new APIerror(409, "Username or Email already exists"));
+
+    // Process avatar upload
+    let avatarUrl, avatarPublicId;
+    if (req.files?.avatar) {
+        const avatarFile = req.files.avatar[0];
+        const uploadResult = await uploadOnCloudinary(avatarFile.path);
+        avatarUrl = uploadResult.secure_url;
+        avatarPublicId = uploadResult.public_id;
+        // Delete old avatar from Cloudinary if exists
+        if (req.user.avatarPublicId)
+            await cloudinary.uploader.destroy(req.user.avatarPublicId);
     }
 
-    // Step 2: Prepare update object for selected fields
-    const update = {};
-    if (userName) update.userName = userName;
-    if (email) update.email = email;
-    if (fullName) update.fullName = fullName;
-
-    // Step 3: Update the user details in the database
-    const updatedUser = await User.findByIdAndUpdate(userID, update, {
-        new: true, // Return the updated user document
-        runValidators: true, // Apply schema validators on update
-    });
-
-    // Throw a 404 error if no user is found
-    if (!updatedUser) {
-        return next(new APIerror(404, "User not found"));
+    // Process cover image upload
+    let coverImageUrl, coverImagePublicId;
+    if (req.files?.coverImage) {
+        const coverFile = req.files.coverImage[0];
+        const uploadResult = await uploadOnCloudinary(coverFile.path);
+        coverImageUrl = uploadResult.secure_url;
+        coverImagePublicId = uploadResult.public_id;
+        // Delete old cover image from Cloudinary if exists
+        if (req.user.coverImagePublicId)
+            await cloudinary.uploader.destroy(req.user.coverImagePublicId);
     }
 
-    // Step 4: Prepare user response without sensitive data
-    const userResponse = {
-        _id: updatedUser._id,
-        userName: updatedUser.userName,
-        email: updatedUser.email,
-        fullName: updatedUser.fullName,
-        avatar: updatedUser.avatar,
-        coverImage: updatedUser.coverImage,
+    // Prepare update object
+    const update = {
+        userName,
+        email,
+        fullName,
+        ...(avatarUrl && { avatar: avatarUrl, avatarPublicId }),
+        ...(coverImageUrl && { coverImage: coverImageUrl, coverImagePublicId }),
     };
 
-    // Step 5: Return the user response
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                userResponse,
-                "Account details updated successfully"
-            )
-        );
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(userID, update, {
+        new: true,
+        runValidators: true,
+    }).select("-password -refreshToken");
+
+    if (!updatedUser) return next(new APIerror(404, "User not found"));
+
+    res.status(200).json(new APIresponse(200, updatedUser, "Account updated"));
 });
 
 // Change Avatar image

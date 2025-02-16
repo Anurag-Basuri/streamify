@@ -35,7 +35,7 @@ const userSchema = new Schema(
         },
         avatar: {
             type: String, // Cloudinary URL
-            required: true,
+            // required: true,
             match: [
                 /^(https?:\/\/.*\.(?:png|jpg|jpeg))$/i,
                 "Invalid URL format for avatar",
@@ -43,7 +43,7 @@ const userSchema = new Schema(
         },
         avatarPublicId: {
             type: String, // Cloudinary public ID for avatar image
-            required: true,
+            // required: true,
         },
         coverImage: {
             type: String, // Cloudinary URL
@@ -54,7 +54,7 @@ const userSchema = new Schema(
         },
         coverImagePublicId: {
             type: String, // Cloudinary public ID for cover image
-            required: true,
+            // required: true,
         },
         watchHistory: [
             {
