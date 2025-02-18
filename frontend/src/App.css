@@ -1,0 +1,15 @@
+/* Add smooth transitions
+.sidebar-transition {
+    transition: all 0.3s ease-in-out;
+}
+
+.group::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
+
+@media (max-width: 767px) {
+    .sidebar-overlay {
+        background: rgba(0, 0, 0, 0.5);
+    }
+} */
