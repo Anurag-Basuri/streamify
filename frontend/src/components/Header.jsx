@@ -16,13 +16,12 @@ function Header({ toggleSidebar }) {
         <header className="fixed top-0 left-0 w-full z-50 bg-gray-900/95 backdrop-blur-lg shadow-2xl border-b border-gray-700 transition-all duration-300">
             <nav className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
-                    {/* Left Section - Branding and Menu Toggle */}
+                    {/* Left Section */}
                     <div className="flex items-center gap-x-4">
-                        {/* Mobile Menu Toggle */}
                         <button
                             onClick={toggleSidebar}
-                            className="md:hidden text-orange-400 hover:text-orange-300"
-                            aria-label="Toggle navigation menu"
+                            className="md:hidden text-orange-400 hover:text-orange-300 p-1.5 rounded-lg hover:bg-gray-800/40 transition-colors"
+                            aria-label="Toggle navigation"
                         >
                             <svg
                                 className="h-7 w-7"
@@ -39,14 +38,13 @@ function Header({ toggleSidebar }) {
                             </svg>
                         </button>
 
-                        {/* Logo */}
                         <NavLink
                             to="/"
-                            className="flex items-center gap-x-2 transition-all hover:opacity-80 active:scale-95 group"
+                            className="flex items-center gap-x-2 transition-transform active:scale-95"
                         >
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg group-hover:from-orange-400 group-hover:to-amber-500 transition-all">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg">
                                 <svg
-                                    className="h-5 w-5 text-white transform group-hover:scale-110 transition-transform"
+                                    className="h-5 w-5 text-white"
                                     viewBox="0 0 24 24"
                                 >
                                     <path
@@ -61,35 +59,33 @@ function Header({ toggleSidebar }) {
                         </NavLink>
                     </div>
 
-                    {/* Right Section - User Controls */}
+                    {/* Right Section */}
                     <div className="flex items-center gap-x-4">
                         {isAuthenticated ? (
-                            // Authenticated User Section
                             <div className="flex items-center gap-x-3">
-                                {/* Profile Link */}
                                 <NavLink
                                     to="/profile"
                                     className={({ isActive }) =>
-                                        `flex items-center gap-x-2 rounded-lg px-3 py-2 transition-all duration-300 hover:bg-gray-800/60 ${
+                                        `flex items-center gap-x-2 rounded-lg px-3 py-2 transition-colors duration-200 ${
                                             isActive
-                                                ? "bg-gray-800/60 ring-2 ring-orange-500/50"
-                                                : ""
+                                                ? "bg-gray-800/60 ring-2 ring-orange-500/30"
+                                                : "hover:bg-gray-800/40"
                                         }`
                                     }
                                 >
-                                    <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-gray-700 to-gray-600 border border-gray-600">
+                                    <div className="relative h-8 w-8">
                                         {user?.avatar ? (
                                             <img
                                                 src={user.avatar}
                                                 alt="Profile"
-                                                className="h-full w-full object-cover"
+                                                className="rounded-full h-full w-full object-cover border border-gray-600"
                                                 onError={(e) => {
                                                     e.target.style.display =
                                                         "none";
                                                 }}
                                             />
                                         ) : null}
-                                        <div className="flex h-full w-full items-center justify-center bg-gray-700 absolute inset-0">
+                                        <div className="absolute inset-0 rounded-full bg-gray-700 flex items-center justify-center border border-gray-600">
                                             <span className="text-sm font-medium text-orange-400">
                                                 {user?.userName?.[0]?.toUpperCase() ||
                                                     "U"}
@@ -101,31 +97,26 @@ function Header({ toggleSidebar }) {
                                     </span>
                                 </NavLink>
 
-                                {/* Logout Button */}
                                 <button
                                     onClick={logout}
-                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-all duration-300 hover:bg-gray-800/60 hover:text-orange-400 hover:ring-1 hover:ring-orange-400/30"
+                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-300 bg-gray-800/40 hover:bg-gray-800/60 hover:text-orange-400 transition-colors duration-200"
                                 >
                                     Sign Out
                                 </button>
                             </div>
                         ) : (
-                            // Unauthenticated User Section
                             <div className="flex items-center gap-x-2">
-                                {/* Login Link */}
                                 <Link
                                     to="/auth"
                                     state={{ from: location }}
-                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-all duration-300 hover:bg-gray-800/60 hover:text-orange-400"
+                                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800/40 hover:text-orange-400 transition-colors duration-200"
                                 >
                                     Log In
                                 </Link>
-
-                                {/* Sign Up Link */}
                                 <Link
                                     to="/auth"
                                     state={{ from: location }}
-                                    className="rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:shadow-orange-500/20 hover:scale-[1.03] hover:brightness-110 active:scale-95"
+                                    className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 transition-all duration-200"
                                 >
                                     Sign Up
                                 </Link>

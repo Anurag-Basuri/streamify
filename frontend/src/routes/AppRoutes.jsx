@@ -9,6 +9,7 @@ import Download from "../pages/Account/Download.jsx";
 import Playlist from "../pages/Account/Playlist.jsx";
 import Watchlater from "../pages/Account/Watchlater.jsx";
 import YourVideos from "../pages/Account/YourVideos.jsx";
+import Create from "../pages/You/Create.jsx";
 
 const AppRoutes = () => {
     return (
@@ -23,6 +24,7 @@ const AppRoutes = () => {
             <Route path="/playlist" element={<Playlist />} />
             <Route path="/watchlater" element={<Watchlater />} />
             <Route path="/uservideos" element={<YourVideos />} />
+            <Route path="/create" element={<Create />} />
         </Routes>
     );
 };
