@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../services/AuthContext.jsx";
+import { AuthContext } from "../../services/AuthContext.jsx";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 const AuthPage = () => {

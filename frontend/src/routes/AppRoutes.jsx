@@ -10,21 +10,31 @@ import Playlist from "../pages/Account/Playlist.jsx";
 import Watchlater from "../pages/Account/Watchlater.jsx";
 import YourVideos from "../pages/Account/YourVideos.jsx";
 import Create from "../pages/You/Create.jsx";
+import ProtectedRoute from "./ProtectedRoute.jsx";
 
+// Import other pages
 const AppRoutes = () => {
     return (
         <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/tweet" element={<Tweet />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/download" element={<Download />} />
-            <Route path="/playlist" element={<Playlist />} />
-            <Route path="/watchlater" element={<Watchlater />} />
-            <Route path="/uservideos" element={<YourVideos />} />
-            <Route path="/create" element={<Create />} />
+
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+                <Route path="/subscription" element={<Subscription />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/downloads" element={<Download />} />
+                <Route path="/playlist" element={<Playlist />} />
+                <Route path="/watchlater" element={<Watchlater />} />
+                <Route path="/uservideos" element={<YourVideos />} />
+                <Route path="/create" element={<Create />} />
+            </Route>
+
+            {/* 404 Handling */}
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 };

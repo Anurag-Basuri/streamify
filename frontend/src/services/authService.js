@@ -22,6 +22,29 @@ const handleError = (error) => {
   return error.message || "Network Error";
 };
 
+// Update User Profile
+export const updateUser = async (formData) => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No authentication token found");
+
+        const response = await axiosInstance.put(
+            "/update-profile",
+            formData,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        throw new Error(handleError(error));
+    }
+};
+
 // User Signup
 export const signUp = async (userData) => {
   try {
