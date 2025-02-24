@@ -1,11 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from "react";
-import {
-    signIn,
-    signUp,
-    logout,
-    getUserProfile,
-    isAuthenticated,
-} from "./authService.js"; // Import from authService.js
+import { signIn, signUp, logout, getUserProfile } from "./authService.js";
 
 const AuthContext = createContext();
 
@@ -17,13 +11,8 @@ function AuthProvider({ children }) {
     const loadUserProfile = useCallback(async () => {
         try {
             const profile = await getUserProfile();
-            if (profile) {
-                setUser(profile);
-            } else {
-                setUser(null);
-            }
+            setUser(profile);
         } catch (error) {
-            console.error("Failed to load user profile:", error);
             setUser(null);
         } finally {
             setIsLoading(false);
@@ -32,14 +21,7 @@ function AuthProvider({ children }) {
 
     // Check authentication status on mount
     useEffect(() => {
-        const checkAuth = async () => {
-            if (isAuthenticated()) {
-                await loadUserProfile();
-            } else {
-                setIsLoading(false);
-            }
-        };
-        checkAuth();
+        loadUserProfile();
     }, [loadUserProfile]);
 
     // Login function
@@ -47,46 +29,37 @@ function AuthProvider({ children }) {
         setIsLoading(true);
         try {
             const data = await signIn(credentials);
-    
             if (data.success) {
-                console.log("User authenticated successfully. Loading profile...");
-                await loadUserProfile(); // Ensure this function is working
-            } else {
-                console.error("Login failed:", data.message);
+                await loadUserProfile();
             }
-    
             return data;
         } catch (error) {
-            console.error("Login error:", error);
-            return { success: false, message: "Login failed. Please try again." };
+            setUser(null);
+            return { success: false, message: error.message };
         } finally {
             setIsLoading(false);
         }
     };
-    
 
     // Register function
     const register = async (userData) => {
         setIsLoading(true);
         try {
-            if (!userData.userName || !userData.fullName || !userData.email || !userData.password) {
-                throw new Error("All fields are required");
-            }
             const data = await signUp(userData);
             await loadUserProfile();
             return data;
         } catch (error) {
-            console.error("Registration Error:", error.message);
+            return { success: false, message: error.message };
         } finally {
             setIsLoading(false);
         }
     };
-    
 
     // Logout function
     const logoutUser = () => {
         logout();
         setUser(null);
+        window.location.href = "/";
     };
 
     return (

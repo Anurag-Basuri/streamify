@@ -1,85 +1,87 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Autoplay } from "swiper/modules";
+import VideoCard from "../../components/VideoCard.jsx";
+import SkeletonLoader from "../../components/SkeletonLoader.jsx";
 
-function Home() {
+const Home = () => {
     const [videos, setVideos] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    const fetchVideos = async (pageNumber = 1) => {
-        if (loading || !hasMore) return;
-        setLoading(true);
-        try {
-            const res = await axios.get(
-                `http://your-backend-url/api/videos?page=${pageNumber}`
-            );
-            console.log("API Response:", res);
-
-            if (res.status !== 200 || !res.data) {
-                throw new Error("Invalid API response");
-            }
-
-            const newVideos = res.data.data || []; // Assuming API returns { data: [...] }
-
-            setVideos((prevVideos) => [...prevVideos, ...newVideos]);
-            setHasMore(newVideos.length > 0);
-            setPage(pageNumber + 1);
-        } catch (error) {
-            console.error("Error fetching videos:", error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Infinite scrolling logic
-    const handleScroll = () => {
-        if (loading || !hasMore) return;
-
-        if (
-            window.innerHeight + window.scrollY >=
-            document.body.offsetHeight - 100
-        ) {
-            fetchVideos(page);
-        }
-    };
-
+    // Add actual API call
     useEffect(() => {
-        fetchVideos(); // Initial fetch on component mount
+        const fetchVideos = async () => {
+            try {
+                const res = await fetch("/api/v1/videos?limit=12");
+                const data = await res.json();
+                if (data.success) setVideos(data.data.videos);
+            } catch (err) {
+                setError("Failed to fetch videos");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchVideos();
     }, []);
 
-    useEffect(() => {
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [loading, hasMore]);
-
     return (
-        <div className="container mx-auto">
-            <h1 className="text-4xl text-center my-4">Random Videos</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {videos.map((video, index) => (
-                    <div key={index} className="bg-white p-4 shadow rounded">
-                        <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-48 object-cover rounded mb-4"
-                        />
-                        <h3 className="text-lg font-semibold">{video.title}</h3>
-                        <p className="text-sm text-gray-600">
-                            {video.description}
-                        </p>
-                    </div>
-                ))}
-            </div>
+        <div className="min-h-screen bg-gray-900 text-gray-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Hero Section */}
+                <Swiper
+                    modules={[Navigation, Autoplay]}
+                    spaceBetween={30}
+                    slidesPerView={1}
+                    autoplay={{ delay: 5000 }}
+                    className="mb-16 rounded-2xl overflow-hidden shadow-xl"
+                >
+                    <SwiperSlide>
+                        <div className="relative h-96 bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center">
+                            <div className="text-center z-10 p-8">
+                                <h1 className="text-5xl font-bold mb-4">
+                                    Welcome to StreamIfy
+                                </h1>
+                                <p className="text-xl text-gray-200 mb-8">
+                                    Discover amazing content from creators
+                                    worldwide
+                                </p>
+                                <Link
+                                    to="/create"
+                                    className="inline-flex items-center bg-white/20 backdrop-blur-sm px-8 py-3 rounded-lg hover:bg-white/30 transition-all"
+                                >
+                                    Start Creating
+                                </Link>
+                            </div>
+                        </div>
+                    </SwiperSlide>
+                </Swiper>
 
-            {loading && (
-                <div className="text-center my-4">Loading more videos...</div>
-            )}
-            {!hasMore && videos.length > 0 && (
-                <div className="text-center my-4">No more videos to load.</div>
-            )}
+                {/* Video Grid */}
+                <h2 className="text-3xl font-bold mb-8">Trending Videos</h2>
+                {error && (
+                    <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-8">
+                        {error}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {loading
+                        ? [...Array(8)].map((_, i) => (
+                              <SkeletonLoader key={i} />
+                          ))
+                        : videos.map((video) => (
+                              <VideoCard
+                                  key={video._id}
+                                  video={video}
+                                  className="hover:scale-[1.02] transition-transform duration-300"
+                              />
+                          ))}
+                </div>
+            </div>
         </div>
     );
-}
+};
 
 export default Home;
