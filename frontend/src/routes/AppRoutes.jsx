@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Display/Home.jsx";
 import Profile from "../pages/You/Profile.jsx";
-import AuthPage from "../pages/You/AuthPage.jsx";
+import SignInAndUp from "../pages/You/SignInAndUp.jsx";
 import Tweet from "../pages/Display/Tweet.jsx";
 import Subscription from "../pages/Display/Subscription.jsx";
 import History from "../pages/Account/History.jsx";
@@ -19,7 +19,7 @@ const AppRoutes = () => {
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth" element={<SignInAndUp />} />
             <Route path="/tweet" element={<Tweet />} />
 
             {/* Protected Routes */}

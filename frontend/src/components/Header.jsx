@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Search, Menu, X, Bell, User } from "lucide-react"; // Fixed missing imports
-import { motion, AnimatePresence } from "framer-motion"; // Fixed missing AnimatePresence import
+import { Search, Menu, X, Bell, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../services/AuthContext.jsx";
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
@@ -10,7 +10,6 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showTrending, setShowTrending] = useState(false);
 
-    // Dummy trending data - replace with API call
     const [trendingTopics] = useState([
         "#StreamifyUpdate",
         "Tech Trends 2024",
@@ -32,9 +31,9 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     return (
         <header className="bg-gray-900 border-b border-gray-700 fixed w-full top-0 z-50 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="h-16 flex items-center justify-between gap-4">
-                    {/* Left Section */}
-                    <div className="flex items-center gap-4">
+                <div className="h-16 flex items-center justify-between">
+                    {/* Left Section - Menu, Logo, Brand Name */}
+                    <div className="flex items-center gap-4 flex-shrink-0">
                         <button
                             onClick={toggleSidebar}
                             className="text-gray-300 hover:text-purple-400 p-2 rounded-lg transition-colors"
@@ -45,15 +44,63 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 <Menu size={24} />
                             )}
                         </button>
+                        <div className="flex items-center gap-2">
+                            <svg
+                                width="32"
+                                height="32"
+                                viewBox="0 0 100 100"
+                                fill="none"
+                                className="shrink-0"
+                            >
+                                <defs>
+                                    <linearGradient
+                                        id="gradient"
+                                        x1="0%"
+                                        y1="0%"
+                                        x2="100%"
+                                        y2="100%"
+                                    >
+                                        <stop offset="0%" stopColor="#ff6b6b" />
+                                        <stop
+                                            offset="100%"
+                                            stopColor="#6b6bff"
+                                        />
+                                    </linearGradient>
+                                </defs>
+                                <polygon
+                                    points="35,25 70,50 35,75"
+                                    fill="url(#gradient)"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                />
+                                <path
+                                    d="M15 50 Q25 30, 35 50 T55 50"
+                                    stroke="url(#gradient)"
+                                    strokeWidth="4"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                />
+                                <path
+                                    d="M10 50 Q20 20, 35 50 T60 50"
+                                    stroke="url(#gradient)"
+                                    strokeWidth="3"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    opacity="0.6"
+                                />
+                            </svg>
+                            <span className="text-white font-bold text-xl">
+                                Streamify
+                            </span>
+                        </div>
+                    </div>
 
-                        {/* Adaptive Search Bar */}
+                    {/* Center Section - Search Bar */}
+                    <div className="flex-1 flex justify-center mx-4 max-w-2xl">
                         <motion.form
                             onSubmit={handleSearch}
-                            className={`relative ${
-                                isTweetPage
-                                    ? "max-w-[400px] w-full"
-                                    : "flex-1 max-w-2xl"
-                            }`}
+                            className="w-full relative"
                         >
                             <div className="relative">
                                 <input
@@ -115,17 +162,17 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                     </div>
 
                     {/* Right Section - Auth State */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                         {!isAuthenticated ? (
                             <>
                                 <Link
-                                    to="/auth/login"
+                                    to="/auth"
                                     className="px-4 py-2 text-gray-300 hover:text-purple-400 transition-colors"
                                 >
                                     Sign In
                                 </Link>
                                 <Link
-                                    to="/auth/register"
+                                    to="/auth"
                                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:shadow-lg transition-all"
                                 >
                                     Sign Up
