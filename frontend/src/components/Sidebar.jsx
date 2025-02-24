@@ -1,7 +1,5 @@
 import { NavLink } from "react-router-dom";
 import {
-    Home,
-    Twitter,
     Bell,
     History,
     Download,
@@ -9,147 +7,97 @@ import {
     Clock,
     User,
     MoreHorizontal,
-    Menu,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const sidebarVariants = {
+    open: { x: 0, opacity: 1 },
+    closed: { x: -300, opacity: 0 },
+};
 
 function Sidebar({ isOpen, toggleSidebar }) {
     return (
-        <div
-            className={`fixed inset-y-0 z-40 transform transition-all duration-300 ease-in-out ${
-                isOpen ? "translate-x-0" : "-translate-x-full"
-            } md:static md:translate-x-0 md:w-20 md:hover:w-64`}
-        >
-            <div className="h-full flex flex-col bg-gray-900/95 backdrop-blur-lg border-r border-gray-700 shadow-xl md:w-20 md:hover:w-64 transition-all duration-300 group overflow-y-auto">
-                {/* Mobile Toggle Button */}
-                <div className="p-4 flex items-center justify-between border-b border-gray-700 md:hidden">
-                    <span className="text-orange-400 font-medium">
-                        StreamIfy
-                    </span>
-                    <button
-                        onClick={toggleSidebar}
-                        className="text-orange-400 hover:text-orange-300 transition-colors"
-                        aria-label="Close menu"
-                    >
-                        <Menu size={24} />
-                    </button>
-                </div>
-
-                {/* Desktop Toggle Button */}
-                <div className="hidden md:flex items-center justify-end p-4 border-b border-gray-700">
-                    <button
-                        onClick={toggleSidebar}
-                        className="text-orange-400 hover:text-orange-300 transition-colors"
-                        aria-label="Toggle sidebar"
-                    >
-                        <Menu size={24} />
-                    </button>
-                </div>
-
-                <nav className="flex-1 flex flex-col gap-4 p-2 overflow-y-auto">
-                    {/* Navigation Section */}
-                    <div className="space-y-1">
-                        <h2 className="text-gray-400 uppercase text-xs font-medium mb-2 px-3 opacity-0 md:group-hover:opacity-100 transition-opacity delay-150">
-                            Navigation
-                        </h2>
-                        <NavItem
-                            to="/"
-                            icon={Home}
-                            label="Home"
-                            toggle={toggleSidebar}
-                        />
-                        <NavItem
-                            to="/tweet"
-                            icon={Twitter}
-                            label="Tweet"
-                            toggle={toggleSidebar}
-                        />
-                        <NavItem
-                            to="/subscription"
-                            icon={Bell}
-                            label="Subscriptions"
-                            toggle={toggleSidebar}
-                        />
-                    </div>
-
+        <>
+            <motion.div
+                variants={sidebarVariants}
+                animate={isOpen ? "open" : "closed"}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed inset-y-0 z-40 w-64 bg-gray-900 shadow-2xl border-r border-gray-700"
+            >
+                <div className="h-full flex flex-col p-4 overflow-y-auto">
                     {/* Library Section */}
-                    <div className="space-y-1">
-                        <h2 className="text-gray-400 uppercase text-xs font-medium mb-2 px-3 opacity-0 md:group-hover:opacity-100 transition-opacity delay-150">
-                            Library
-                        </h2>
-                        <NavItem
-                            to="/history"
-                            icon={History}
-                            label="History"
-                            toggle={toggleSidebar}
-                        />
+                    <SidebarSection title="Library">
+                        <NavItem to="/history" icon={History} label="History" />
                         <NavItem
                             to="/playlist"
                             icon={ListVideo}
                             label="Playlists"
-                            toggle={toggleSidebar}
                         />
                         <NavItem
                             to="/watchlater"
                             icon={Clock}
                             label="Watch Later"
-                            toggle={toggleSidebar}
                         />
                         <NavItem
                             to="/downloads"
                             icon={Download}
                             label="Downloads"
-                            toggle={toggleSidebar}
                         />
-                    </div>
+                    </SidebarSection>
 
                     {/* Account Section */}
-                    <div className="space-y-1 mt-auto">
-                        <h2 className="text-gray-400 uppercase text-xs font-medium mb-2 px-3 opacity-0 md:group-hover:opacity-100 transition-opacity delay-150">
-                            Account
-                        </h2>
-                        <NavItem
-                            to="/profile"
-                            icon={User}
-                            label="Profile"
-                            toggle={toggleSidebar}
-                        />
+                    <SidebarSection title="Account">
+                        <NavItem to="/profile" icon={User} label="Profile" />
                         <NavItem
                             to="/more"
                             icon={MoreHorizontal}
                             label="More"
-                            toggle={toggleSidebar}
                         />
-                    </div>
-                </nav>
-            </div>
-        </div>
+                    </SidebarSection>
+                </div>
+            </motion.div>
+
+            {/* Overlay when Sidebar is open */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+                        onClick={toggleSidebar}
+                    />
+                )}
+            </AnimatePresence>
+        </>
     );
 }
 
-// Reusable NavItem component
-const NavItem = ({ to, icon: Icon, label, toggle }) => (
-    <NavLink
-        to={to}
-        onClick={toggle}
-        className={({ isActive }) =>
-            `flex items-center p-3 rounded-lg transition-all 
-            hover:bg-gray-800/40 hover:text-orange-300 
-            group-[.collapsed]:justify-center md:justify-center md:group-hover:justify-start 
-            ${
-                isActive
-                    ? "bg-gray-800/60 text-orange-400 font-medium"
-                    : "text-gray-300"
-            }`
-        }
-    >
-        <Icon
-            size={20}
-            className="min-w-[20px] transition-transform group-hover:scale-110"
-        />
-        <span className="ml-3 text-sm opacity-0 md:group-hover:opacity-100 transition-opacity delay-150 truncate">
-            {label}
-        </span>
-    </NavLink>
+const SidebarSection = ({ title, children }) => (
+    <div className="mt-6">
+        <h2 className="text-gray-400 uppercase text-xs font-medium mb-2 px-3">
+            {title}
+        </h2>
+        <div className="space-y-1">{children}</div>
+    </div>
+);
+
+const NavItem = ({ to, icon: Icon, label }) => (
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <NavLink
+            to={to}
+            className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-colors ${
+                    isActive
+                        ? "bg-gray-800 text-purple-400 shadow-md"
+                        : "text-gray-300 hover:bg-gray-800"
+                }`
+            }
+        >
+            <Icon size={20} className="min-w-[20px]" />
+            <span className="ml-3 text-sm">{label}</span>
+        </NavLink>
+    </motion.div>
 );
 
 export default Sidebar;

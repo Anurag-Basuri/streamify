@@ -15,7 +15,7 @@ function App() {
     return (
         <AuthProvider>
             <Router>
-                <div className="flex min-h-screen bg-gray-900">
+                <div className="flex min-h-screen bg-[#0D0D1A]">
                     {/* Sidebar */}
                     <Sidebar
                         isOpen={isSidebarOpen}
@@ -24,7 +24,10 @@ function App() {
 
                     {/* Main Content */}
                     <div className="flex-1">
-                        <Header toggleSidebar={toggleSidebar} />
+                        <Header
+                            toggleSidebar={toggleSidebar}
+                            isSidebarOpen={isSidebarOpen}
+                        />
                         <main
                             className={`pt-16 transition-all duration-300 ${
                                 isSidebarOpen ? "md:ml-64" : "md:ml-20"

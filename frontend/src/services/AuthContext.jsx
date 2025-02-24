@@ -9,6 +9,13 @@ function AuthProvider({ children }) {
 
     // Load user profile on mount or auth state change
     const loadUserProfile = useCallback(async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const profile = await getUserProfile();
             setUser(profile);
@@ -46,7 +53,9 @@ function AuthProvider({ children }) {
         setIsLoading(true);
         try {
             const data = await signUp(userData);
-            await loadUserProfile();
+            if (data.success) {
+                await loadUserProfile();
+            }
             return data;
         } catch (error) {
             return { success: false, message: error.message };
@@ -59,6 +68,7 @@ function AuthProvider({ children }) {
     const logoutUser = () => {
         logout();
         setUser(null);
+        setIsLoading(false);
         window.location.href = "/";
     };
 
