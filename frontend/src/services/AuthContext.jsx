@@ -9,7 +9,7 @@ function AuthProvider({ children }) {
 
     // Load user profile on mount or auth state change
     const loadUserProfile = useCallback(async () => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (!token) {
             setUser(null);
             setIsLoading(false);
@@ -35,8 +35,9 @@ function AuthProvider({ children }) {
     const login = async (credentials) => {
         setIsLoading(true);
         try {
-            const data = await signIn(credentials);
-            if (data.success) {
+            const { data } = await signIn(credentials);
+            if (data?.accessToken) {
+                localStorage.setItem("accessToken", data.accessToken);
                 await loadUserProfile();
             }
             return data;
@@ -52,8 +53,9 @@ function AuthProvider({ children }) {
     const register = async (userData) => {
         setIsLoading(true);
         try {
-            const data = await signUp(userData);
-            if (data.success) {
+            const { data } = await signUp(userData);
+            if (data?.accessToken) {
+                localStorage.setItem("accessToken", data.accessToken);
                 await loadUserProfile();
             }
             return data;

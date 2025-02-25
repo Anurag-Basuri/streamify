@@ -43,28 +43,29 @@ router.route("/register").post(
 
 router.route("/login").post(loginUser);
 
-//secured routes
+// Secured routes
 router.route("/logout").post(verifyAccessToken, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 
 router
     .route("/change-password")
     .patch(verifyAccessToken, change_current_password);
+
 router
     .route("/change-avatar")
     .patch(verifyAccessToken, upload.single("avatar"), change_Avatar);
+
 router
     .route("/change-cover-image")
     .patch(verifyAccessToken, upload.single("coverImage"), change_CoverImage);
 
-router.route("/update-details")
-    .patch(
-        verifyAccessToken,
-        upload.fields([
-            { name: "avatar", maxCount: 1 },
-            { name: "coverImage", maxCount: 1 }
-        ]),
-        update_account_details
+router.route("/update-details").patch(
+    verifyAccessToken,
+    upload.fields([
+        { name: "avatar", maxCount: 1 },
+        { name: "coverImage", maxCount: 1 },
+    ]),
+    update_account_details
 );
 
 router.route("/current-user").get(verifyAccessToken, get_current_user);

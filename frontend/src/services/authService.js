@@ -6,6 +6,7 @@ const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
 });
 
@@ -22,27 +23,26 @@ const handleError = (error) => {
     return error.message || "Network Error";
 };
 
-// Get User Profile (with error handling for missing user data)
+// Get User Profile
 export const getUserProfile = async () => {
     try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (!token) {
             console.warn("No authentication token found");
-            return null; // Prevents API call if no token is found
+            return null;
         }
 
         const response = await axiosInstance.get("/current-user");
 
-        // Ensure response structure is valid
         if (!response.data || !response.data.data || !response.data.data.user) {
             console.warn("User data is null or undefined");
-            return null; // Prevents errors in AuthContext
+            return null;
         }
 
         return response.data.data.user;
     } catch (error) {
         console.error("Error fetching user profile:", handleError(error));
-        return null; // Ensures graceful failure
+        return null;
     }
 };
 
@@ -68,7 +68,7 @@ export const signIn = async (credentials) => {
 
 // Signout
 export const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
     axiosInstance
         .post("/logout")
         .catch((err) => console.error("Logout failed:", handleError(err)));
@@ -76,13 +76,13 @@ export const logout = () => {
 
 // Check if User is Authenticated
 export const isAuthenticated = () => {
-    return !!localStorage.getItem("token");
+    return !!localStorage.getItem("accessToken");
 };
 
 // Update User Profile
 export const updateUser = async (formData) => {
     try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (!token) throw new Error("No authentication token found");
 
         const response = await axiosInstance.put("/update-profile", formData, {

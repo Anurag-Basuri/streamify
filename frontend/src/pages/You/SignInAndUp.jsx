@@ -27,6 +27,13 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
         }
     }, [user, navigate]);
 
+    // Handle close button click
+    const handleCloseClick = () => {
+        if (!isLoading) {
+            navigate("/"); // Navigate to the home page
+        }
+    };
+
     // Form validation
     const validateForm = () => {
         const newErrors = {};
@@ -87,7 +94,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                     password: formData.password,
                 });
             }
-            onClose();
+            onClose(); // Close the modal after successful login/signup
             navigate("/profile");
         } catch (error) {
             setErrors({
@@ -112,7 +119,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                 {/* Close button */}
                 <button
                     className="absolute top-4 right-4 text-gray-100 hover:text-white text-2xl transition-colors"
-                    onClick={onClose}
+                    onClick={handleCloseClick} // Use handleCloseClick
                     disabled={isLoading}
                 >
                     &times;

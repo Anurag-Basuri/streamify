@@ -44,7 +44,9 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 <Menu size={24} />
                             )}
                         </button>
-                        <div className="flex items-center gap-2">
+
+                        {/* Wrap the logo in a Link */}
+                        <Link to="/" className="flex items-center gap-2">
                             <svg
                                 width="32"
                                 height="32"
@@ -93,7 +95,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             <span className="text-white font-bold text-xl">
                                 Streamify
                             </span>
-                        </div>
+                        </Link>
                     </div>
 
                     {/* Center Section - Search Bar */}
