@@ -35,14 +35,14 @@ function AuthProvider({ children }) {
     const login = async (credentials) => {
         setIsLoading(true);
         try {
-            const { data } = await signIn(credentials);
-            if (data?.accessToken) {
+            const { success, data, message } = await signIn(credentials);
+            if (success && data?.accessToken) {
                 localStorage.setItem("accessToken", data.accessToken);
                 await loadUserProfile();
+                return { success: true };
             }
-            return data;
+            return { success: false, message };
         } catch (error) {
-            setUser(null);
             return { success: false, message: error.message };
         } finally {
             setIsLoading(false);
@@ -53,12 +53,13 @@ function AuthProvider({ children }) {
     const register = async (userData) => {
         setIsLoading(true);
         try {
-            const { data } = await signUp(userData);
-            if (data?.accessToken) {
+            const { success, data, message } = await signUp(userData);
+            if (success && data?.accessToken) {
                 localStorage.setItem("accessToken", data.accessToken);
                 await loadUserProfile();
+                return { success: true };
             }
-            return data;
+            return { success: false, message };
         } catch (error) {
             return { success: false, message: error.message };
         } finally {

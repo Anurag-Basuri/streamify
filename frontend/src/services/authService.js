@@ -6,7 +6,6 @@ const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     },
 });
 
@@ -32,7 +31,11 @@ export const getUserProfile = async () => {
             return null;
         }
 
-        const response = await axiosInstance.get("/current-user");
+        const response = await axiosInstance.get("/current-user", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
 
         if (!response.data || !response.data.data || !response.data.data.user) {
             console.warn("User data is null or undefined");
@@ -50,9 +53,19 @@ export const getUserProfile = async () => {
 export const signUp = async (userData) => {
     try {
         const response = await axiosInstance.post("/register", userData);
-        return { success: true, data: response.data };
+        console.log("Register API Response:", response);
+        return {
+            success: true,
+            data: response.data,
+            message: response.data?.message,
+        };
     } catch (error) {
-        return { success: false, message: handleError(error) };
+        const message = handleError(error);
+        console.error("Registration Error:", message, error);
+        return {
+            success: false,
+            message,
+        };
     }
 };
 
@@ -60,9 +73,19 @@ export const signUp = async (userData) => {
 export const signIn = async (credentials) => {
     try {
         const response = await axiosInstance.post("/login", credentials);
-        return { success: true, data: response.data };
+        console.log("Login API Response:", response);
+        return {
+            success: true,
+            data: response.data,
+            message: response.data?.message,
+        };
     } catch (error) {
-        return { success: false, message: handleError(error) };
+        const message = handleError(error);
+        console.error("Login Error:", message, error);
+        return {
+            success: false,
+            message,
+        };
     }
 };
 

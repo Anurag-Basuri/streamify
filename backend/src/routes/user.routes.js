@@ -41,7 +41,9 @@ router.route("/register").post(
     registerUser
 );
 
-router.route("/login").post(loginUser);
+router
+    .route("/login")
+    .post([body("email").isEmail(), body("password").notEmpty()], loginUser);
 
 // Secured routes
 router.route("/logout").post(verifyAccessToken, logoutUser);

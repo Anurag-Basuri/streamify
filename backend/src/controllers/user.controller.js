@@ -6,6 +6,7 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
@@ -96,11 +97,7 @@ const registerUser = asynchandler(async (req, res, next) => {
 // Function to handle user login
 const loginUser = asynchandler(async (req, res, next) => {
     try {
-        const { userName, email, password } = req.body;
-
-        if (!userName && !email) {
-            return next(new APIerror(400, "Username or Email is required"));
-        }
+        const { email, password } = req.body;
 
         // Validate request
         const errors = validationResult(req);
@@ -109,9 +106,7 @@ const loginUser = asynchandler(async (req, res, next) => {
         }
 
         // Check if user exists
-        const user = await User.findOne({
-            $or: [{ userName }, { email }],
-        });
+        const user = await User.findOne({ email });
 
         if (!user) {
             return next(new APIerror(404, "User does not exist"));

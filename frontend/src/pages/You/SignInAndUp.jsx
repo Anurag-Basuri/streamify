@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
@@ -30,7 +29,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
     // Handle close button click
     const handleCloseClick = () => {
         if (!isLoading) {
-            navigate("/"); // Navigate to the home page
+            onClose(); // Use the onClose prop to close the modal
         }
     };
 
@@ -62,11 +61,13 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
     const toggleAuthMode = () => {
         setIsLogin(!isLogin);
         setErrors({});
-        setFormData((prev) => ({
-            ...prev,
+        setFormData({
+            fullName: "",
+            userName: "",
+            email: "",
             password: "",
             confirmPassword: "",
-        }));
+        });
     };
 
     // Handle input changes
@@ -81,25 +82,32 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
         if (!validateForm()) return;
 
         try {
-            if (isLogin) {
-                await login({
-                    email: formData.email,
-                    password: formData.password,
-                });
+            const response = isLogin
+                ? await login({
+                      email: formData.email,
+                      password: formData.password,
+                  })
+                : await register({
+                      fullName: formData.fullName,
+                      userName: formData.userName,
+                      email: formData.email,
+                      password: formData.password,
+                  });
+
+            console.log("API Response:", response); // Log the response
+
+            if (response?.success) {
+                onClose(); // Close the modal after successful login/signup
+                navigate("/profile");
             } else {
-                await register({
-                    fullName: formData.fullName,
-                    userName: formData.userName,
-                    email: formData.email,
-                    password: formData.password,
+                setErrors({
+                    general: response?.message || "Authentication failed",
                 });
             }
-            onClose(); // Close the modal after successful login/signup
-            navigate("/profile");
         } catch (error) {
+            console.error("Authentication Error:", error);
             setErrors({
-                general:
-                    error.response?.data?.message || "Authentication failed",
+                general: error.message || "Authentication failed",
             });
         }
     };
@@ -119,7 +127,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                 {/* Close button */}
                 <button
                     className="absolute top-4 right-4 text-gray-100 hover:text-white text-2xl transition-colors"
-                    onClick={handleCloseClick} // Use handleCloseClick
+                    onClick={handleCloseClick}
                     disabled={isLoading}
                 >
                     &times;
