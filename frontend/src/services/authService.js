@@ -1,122 +1,81 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8000/api/v1/users";
+// Create an Axios instance with base URL and credentials
 const axiosInstance = axios.create({
-    withCredentials: true,
-    baseURL: API_BASE_URL,
-    headers: {
-        "Content-Type": "application/json",
-    },
+    baseURL: "/api/v1/users", // Proxy to backend
+    withCredentials: true, // Enable cookies
 });
 
 // Helper function for error handling
 const handleError = (error) => {
-    console.error("API Error:", error);
-    if (error.response) {
-        return (
-            error.response.data?.message ||
-            error.response.data?.error ||
-            "An error occurred"
-        );
-    }
-    return error.message || "Network Error";
-};
-
-// Get User Profile
-export const getUserProfile = async () => {
-    try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-            console.warn("No authentication token found");
-            return null;
-        }
-
-        const response = await axiosInstance.get("/current-user", {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.data || !response.data.data || !response.data.data.user) {
-            console.warn("User data is null or undefined");
-            return null;
-        }
-
-        return response.data.data.user;
-    } catch (error) {
-        console.error("Error fetching user profile:", handleError(error));
-        return null;
-    }
+  console.error("API Error:", error);
+  if (error.response) {
+      return error.response.data?.message || "An error occurred";
+  }
+  return error.message || "Network Error";
 };
 
 // User Signup
 export const signUp = async (userData) => {
-    try {
-        const response = await axiosInstance.post("/register", userData);
-        console.log("Register API Response:", response);
-        return {
-            success: true,
-            data: response.data,
-            message: response.data?.message,
-        };
-    } catch (error) {
-        const message = handleError(error);
-        console.error("Registration Error:", message, error);
-        return {
-            success: false,
-            message,
-        };
-    }
+  try {
+      const response = await axiosInstance.post("/register", userData);
+      return { success: true, data: response.data };
+  } catch (error) {
+      return { success: false, message: handleError(error) };
+  }
 };
 
-// User Signin
+// User Login
 export const signIn = async (credentials) => {
     try {
         const response = await axiosInstance.post("/login", credentials);
-        console.log("Login API Response:", response);
-        return {
-            success: true,
-            data: response.data,
-            message: response.data?.message,
-        };
+        return { success: true, data: response.data };
     } catch (error) {
-        const message = handleError(error);
-        console.error("Login Error:", message, error);
-        return {
-            success: false,
-            message,
-        };
+        return { success: false, message: handleError(error) };
     }
 };
 
-// Signout
-export const logout = () => {
-    localStorage.removeItem("accessToken");
-    axiosInstance
-        .post("/logout")
-        .catch((err) => console.error("Logout failed:", handleError(err)));
+// User Logout
+export const logout = async () => {
+    try {
+        await axiosInstance.post("/logout");
+        return { success: true };
+    } catch (error) {
+        return { success: false, message: handleError(error) };
+    }
+};
+
+// Get User Profile
+export const getUserProfile = async () => {
+  try {
+    const response = await axiosInstance.get("/current-user");
+    return response.data?.data?.user || null;
+  } catch (error) {
+    console.error("Error fetching profile:", handleError(error));
+    return null;
+  }
 };
 
 // Check if User is Authenticated
-export const isAuthenticated = () => {
-    return !!localStorage.getItem("accessToken");
+export const isAuthenticated = async () => {
+    try {
+        const response = await axiosInstance.get("/current-user");
+        return !!response.data?.data?.user;
+    } catch (error) {
+        return false;
+    }
 };
 
 // Update User Profile
 export const updateUser = async (formData) => {
-    try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) throw new Error("No authentication token found");
-
-        const response = await axiosInstance.put("/update-profile", formData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
-            },
-        });
-
-        return response.data;
-    } catch (error) {
-        throw new Error(handleError(error));
-    }
+  try {
+      const response = await axiosInstance.put("/update-profile", formData, {
+          headers: {
+              "Content-Type": "multipart/form-data", // For file uploads
+          },
+      });
+      return { success: true, data: response.data };
+  } catch (error) {
+      return { success: false, message: handleError(error) };
+  }
 };

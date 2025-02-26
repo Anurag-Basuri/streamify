@@ -19,7 +19,15 @@ const AppRoutes = () => {
         <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<SignInAndUp />} />
+            <Route
+                path="/auth"
+                element={
+                    <SignInAndUp
+                        onClose={() => setIsModalOpen(false)}
+                        isLoginInitial={true}
+                    />
+                }
+            />
             <Route path="/tweet" element={<Tweet />} />
 
             {/* Protected Routes */}

@@ -94,10 +94,13 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                       password: formData.password,
                   });
 
-            console.log("API Response:", response); // Log the response
+            console.log("API Response:", response);
 
             if (response?.success) {
-                onClose(); // Close the modal after successful login/signup
+                // Only call onClose if it exists
+                if (typeof onClose === "function") {
+                    onClose();
+                }
                 navigate("/profile");
             } else {
                 setErrors({
