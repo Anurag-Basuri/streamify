@@ -1,4 +1,3 @@
-import { BrowserRouter as Router } from "react-router-dom";
 import { useState } from "react";
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
@@ -14,32 +13,29 @@ function App() {
 
     return (
         <AuthProvider>
-            <Router>
-                <div className="flex min-h-screen bg-[#0D0D1A]">
-                    {/* Sidebar */}
-                    <Sidebar
-                        isOpen={isSidebarOpen}
-                        toggleSidebar={toggleSidebar}
-                    />
+            {" "}
+            {/* ✅ Router is removed */}
+            <div className="flex min-h-screen bg-[#0D0D1A]">
+                {/* Sidebar */}
+                <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-                    {/* Main Content */}
-                    <div className="flex-1">
-                        <Header
-                            toggleSidebar={toggleSidebar}
-                            isSidebarOpen={isSidebarOpen}
-                        />
-                        <main
-                            className={`pt-16 transition-all duration-300 ${
-                                isSidebarOpen ? "md:ml-64" : "md:ml-20"
-                            }`}
-                        >
-                            <div className="p-4 sm:p-6 lg:p-8">
-                                <AppRoutes />
-                            </div>
-                        </main>
-                    </div>
+                {/* Main Content */}
+                <div className="flex-1">
+                    <Header
+                        toggleSidebar={toggleSidebar}
+                        isSidebarOpen={isSidebarOpen}
+                    />
+                    <main
+                        className={`pt-16 transition-all duration-300 ${
+                            isSidebarOpen ? "md:ml-64" : "md:ml-20"
+                        }`}
+                    >
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <AppRoutes />
+                        </div>
+                    </main>
                 </div>
-            </Router>
+            </div>
         </AuthProvider>
     );
 }
