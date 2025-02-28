@@ -4,6 +4,7 @@ import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../services/AuthContext.jsx";
+import { FcGoogle } from "react-icons/fc"; // Import Google icon
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
@@ -29,6 +30,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         );
     };
 
+    // Function to handle Google login
+    const handleGoogleLogin = () => {
+        console.log("Google Login Clicked");
+        // Implement your Google authentication logic here
+    };
+
     return (
         <header className="bg-gray-900 border-b border-gray-700 fixed w-full top-0 z-50 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,7 +53,6 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             )}
                         </button>
 
-                        {/* Wrap the logo in a Link */}
                         <Link to="/" className="flex items-center gap-2">
                             <svg
                                 width="32"
@@ -180,6 +186,14 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 >
                                     Sign Up
                                 </Link>
+                                {/* Google login button */}
+                                <button
+                                    onClick={handleGoogleLogin}
+                                    className="px-4 py-2 bg-gray-800 text-white rounded-full flex items-center gap-2 hover:bg-gray-700"
+                                >
+                                    <FcGoogle className="w-5 h-5" />
+                                    <span>Google Login</span>
+                                </button>
                             </>
                         ) : (
                             <>
@@ -212,38 +226,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                             )}
                                         </div>
                                     </motion.button>
-
-                                    <AnimatePresence>
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-700"
-                                        >
-                                            <div className="p-4 border-b border-gray-700">
-                                                <p className="text-sm font-medium text-gray-200 truncate">
-                                                    {user?.username || "User"}
-                                                </p>
-                                                <p className="text-xs text-gray-400 truncate">
-                                                    {user?.email}
-                                                </p>
-                                            </div>
-                                            <div className="p-2 space-y-1">
-                                                <Link
-                                                    to="/profile"
-                                                    className="block px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
-                                                >
-                                                    Profile
-                                                </Link>
-                                                <button
-                                                    onClick={logout}
-                                                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md transition-colors"
-                                                >
-                                                    Sign Out
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    </AnimatePresence>
+                                    <button
+                                        onClick={logout}
+                                        className="text-red-400 hover:bg-gray-700 rounded-md px-3 py-2 text-sm transition-colors"
+                                    >
+                                        Sign Out
+                                    </button>
                                 </div>
                             </>
                         )}

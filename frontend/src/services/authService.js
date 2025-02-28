@@ -50,7 +50,6 @@ export const refreshToken = async () => {
 export const getUserProfile = async () => {
     try {
         const token = localStorage.getItem("accessToken");
-        console.log("Current Token:", token); // Debug token
         if (!token) {
             console.debug("No authentication token found");
             return null;
@@ -59,16 +58,19 @@ export const getUserProfile = async () => {
         const response = await axiosInstance.get("/current-user", {
             headers: { Authorization: `Bearer ${token}` },
         });
-        console.log(response);
 
-        if (!response.data?.data) {
+        if (!response.data?.data?.user) {
             console.warn("Invalid user data format");
             return null;
         }
-        console.log("xyz", response.data.data.user);
-        return "response.data.data.user";
+
+        const userData = response.data.data.user;
+        return {
+            ...userData,
+            isGoogleUser: !!userData.googleId, // Add Google user flag
+        };
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
+        console.error("Profile fetch error:", handleError(error));
         return null;
     }
 };
@@ -77,7 +79,6 @@ export const getUserProfile = async () => {
 export const signUp = async (userData) => {
     try {
         const response = await axiosInstance.post("/register", userData);
-        console.log("Register API Response:", response);
         return {
             success: true,
             data: response.data,
@@ -100,14 +101,8 @@ export const signIn = async (credentials) => {
             withCredentials: true, // Enable cookie handling
         });
 
-        console.log("=== Login Response ===");
-        console.log("Status:", response.status);
-        console.log("Body Data:", response.data);
-        console.log("Headers:", response.headers);
-
         // Store access token from response body
         if (response.data?.data?.accessToken) {
-            console.log("Storing access token in localStorage");
             localStorage.setItem("accessToken", response.data.data.accessToken);
         }
 
@@ -117,8 +112,7 @@ export const signIn = async (credentials) => {
             message: response.data.message,
         };
     } catch (error) {
-        console.error("=== Login Error ===");
-        console.log("Error Response:", error.response?.data);
+        console.error("Login Error:", handleError(error));
         return {
             success: false,
             message: error.response?.data?.message || "Login failed",
@@ -127,11 +121,14 @@ export const signIn = async (credentials) => {
 };
 
 // Signout
-export const logout = () => {
-    localStorage.removeItem("accessToken");
-    axiosInstance
-        .post("/logout")
-        .catch((err) => console.error("Logout failed:", handleError(err)));
+export const logout = async () => {
+    try {
+        await axiosInstance.post("/logout");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+    } catch (error) {
+        console.error("Logout failed:", handleError(error));
+    }
 };
 
 // Check if User is Authenticated
@@ -139,21 +136,23 @@ export const isAuthenticated = () => {
     return !!localStorage.getItem("accessToken");
 };
 
-// Update User Profile
-export const updateUser = async (formData) => {
+// Google OAuth Functions
+export const handleGoogleAuth = async () => {
     try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) throw new Error("No authentication token found");
-
-        const response = await axiosInstance.put("/update-profile", formData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
-            },
-        });
-
-        return response.data;
+        window.location.href = `${API_BASE_URL}/auth/google`;
     } catch (error) {
-        throw new Error(handleError(error));
+        console.error("Google Auth Error:", handleError(error));
+        throw new Error("Failed to initiate Google login");
+    }
+};
+
+export const handleOAuthCallback = async (accessToken, refreshToken) => {
+    try {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+        return await getUserProfile();
+    } catch (error) {
+        console.error("OAuth Callback Error:", handleError(error));
+        throw new Error("Failed to complete OAuth login");
     }
 };

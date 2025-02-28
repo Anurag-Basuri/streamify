@@ -1,12 +1,13 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-unreachable */
 import { createContext, useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     signIn,
     signUp,
     logout,
     getUserProfile,
     refreshToken,
+    handleGoogleAuth,
+    handleOAuthCallback,
 } from "./authService.js";
 
 const AuthContext = createContext();
@@ -15,13 +16,14 @@ const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     // Load user profile and update state
     const loadUserProfile = useCallback(async () => {
         setIsLoading(true);
         try {
             const profile = await getUserProfile();
-            console.log("load: ", profile);
             setUser(profile); // Update user state
             return profile; // Return profile for verification
         } catch (error) {
@@ -65,15 +67,33 @@ const AuthProvider = ({ children }) => {
         return () => clearInterval(interval); // Cleanup interval on unmount
     }, [handleTokenRefresh, loadUserProfile]);
 
+    // Handle OAuth callback on initial load
+    useEffect(() => {
+        const checkOAuthCallback = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const accessToken = params.get("access");
+            const refreshToken = params.get("refresh");
+
+            if (accessToken && refreshToken) {
+                try {
+                    await handleOAuthCallback(accessToken, refreshToken);
+                    navigate(location.state?.from || "/profile");
+                } catch (error) {
+                    console.error("OAuth callback failed:", error);
+                    navigate("/auth");
+                }
+            }
+        };
+        checkOAuthCallback();
+    }, [navigate, location]);
+
     // Login function
     const login = async (credentials) => {
         setIsLoading(true);
         try {
             const { success, data } = await signIn(credentials);
             if (success) {
-                console.log("Login successful, loading profile...");
                 const profile = await loadUserProfile();
-                console.log("Profile loaded:", profile);
                 return { success: !!profile };
             }
             return { success: false };
@@ -90,12 +110,12 @@ const AuthProvider = ({ children }) => {
         try {
             const { success, data } = await signUp(userData);
             if (success && data?.token) {
-                localStorage.setItem("accessToken", data.token); // Store token
-                await loadUserProfile(); // Load user profile
+                localStorage.setItem("accessToken", data.token);
+                await loadUserProfile();
             }
             return { success };
         } catch (error) {
-            return { success: false, message: error.message }; // Return error message
+            return { success: false, message: error.message };
         } finally {
             setIsLoading(false);
         }
@@ -105,24 +125,21 @@ const AuthProvider = ({ children }) => {
     const logoutUser = async () => {
         setIsLoading(true);
         try {
-            await logout(); // Call logout API
-            setUser(null); // Clear user state
-            localStorage.removeItem("accessToken"); // Remove token
+            await logout();
+            setUser(null);
         } catch (error) {
-            console.error("Logout failed:", error.message); // Log error
+            console.error("Logout failed:", error.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Check username availability (placeholder)
-    const checkUsername = async (username) => {
+    // Google login function
+    const googleLogin = async () => {
         try {
-            // Implement username availability check logic here
-            return true; // Placeholder
+            await handleGoogleAuth();
         } catch (error) {
-            console.error("Username check failed:", error);
-            return false;
+            console.error("Google login failed:", error);
         }
     };
 
@@ -131,11 +148,11 @@ const AuthProvider = ({ children }) => {
             value={{
                 user,
                 isLoading,
-                isAuthenticated: !!user, // Convert user to boolean
+                isAuthenticated: !!user,
                 login,
                 register,
                 logout: logoutUser,
-                checkUsername,
+                googleLogin,
             }}
         >
             {children}

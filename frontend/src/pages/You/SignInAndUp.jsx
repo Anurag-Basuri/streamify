@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { FcGoogle } from "react-icons/fc";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { motion } from "framer-motion";
 import PasswordStrength from "./PasswordStrength.jsx";
@@ -19,7 +20,7 @@ function SignInAndUp() {
         confirmPassword: "",
     });
     const [errors, setErrors] = useState({});
-    const { login, register, isLoading, user, checkUsername } =
+    const { login, register, isLoading, user, googleLogin } =
         useContext(AuthContext);
     const navigate = useNavigate();
     const redirect = searchParams.get("redirect") || "/profile";
@@ -27,7 +28,6 @@ function SignInAndUp() {
     // Redirect if user is already logged in
     useEffect(() => {
         if (user) {
-            console.log("User is logged in, redirecting to:", redirect);
             navigate(redirect);
         }
     }, [user, navigate, redirect]);
@@ -52,7 +52,7 @@ function SignInAndUp() {
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [formData.userName, isLogin, checkUsername]);
+    }, [formData.userName, isLogin]);
 
     // Form validation
     const validateForm = () => {
@@ -135,6 +135,15 @@ function SignInAndUp() {
             password: "",
             confirmPassword: "",
         });
+    };
+
+    // Handle Google login
+    const handleGoogleLogin = async () => {
+        try {
+            await googleLogin();
+        } catch (error) {
+            setErrors({ general: error.message });
+        }
     };
 
     return (
@@ -353,6 +362,29 @@ function SignInAndUp() {
                             )}
                         </button>
                     </form>
+
+                    {/* Google Login Button */}
+                    <div className="mt-6 space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-700"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-gray-900/40 text-gray-300">
+                                    Or continue with
+                                </span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all flex items-center justify-center gap-3"
+                        >
+                            <FcGoogle className="w-5 h-5" />
+                            Continue with Google
+                        </button>
+                    </div>
 
                     {/* Toggle link */}
                     <div className="mt-6 text-center">
