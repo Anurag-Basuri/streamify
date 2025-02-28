@@ -50,4 +50,13 @@ app.use("/api/v1/watchlater", watchLaterRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: true,
+        cookie: { secure: process.env.NODE_ENV === "production" },
+    })
+);
+
 export { app };

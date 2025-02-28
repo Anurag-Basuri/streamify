@@ -15,8 +15,30 @@ import {
 } from "../controllers/user.controller.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import passport from 'passport';
 
 const router = Router();
+
+router.get('/auth/google',
+    passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        session: false
+    })
+);
+
+router.get('/auth/google/callback',
+    passport.authenticate('google', { session: false }),
+    (req, res) => {
+        const user = req.user;
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+        
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        res.redirect(`${process.env.FRONTEND_URL}/oauth?access=${accessToken}&refresh=${refreshToken}`);
+    }
+);
 
 const registerValidationRules = [
     body("userName").notEmpty().withMessage("Username is required").trim(),
