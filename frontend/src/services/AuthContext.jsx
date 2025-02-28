@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable no-unreachable */
 import { createContext, useState, useEffect, useCallback } from "react";
 import {
@@ -20,6 +21,7 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         try {
             const profile = await getUserProfile();
+            console.log("load: ", profile);
             setUser(profile); // Update user state
             return profile; // Return profile for verification
         } catch (error) {
@@ -68,14 +70,15 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         try {
             const { success, data } = await signIn(credentials);
-            if (success && data?.token) {
-                localStorage.setItem("accessToken", data.token); // Store token
-                const profile = await loadUserProfile(); // Load user profile
-                return { success: !!profile }; // Return success if profile is loaded
+            if (success) {
+                console.log("Login successful, loading profile...");
+                const profile = await loadUserProfile();
+                console.log("Profile loaded:", profile);
+                return { success: !!profile };
             }
-            return { success: false }; // Return failure if token or profile is missing
+            return { success: false };
         } catch (error) {
-            return { success: false, message: error.message }; // Return error message
+            return { success: false, message: error.message };
         } finally {
             setIsLoading(false);
         }

@@ -10,173 +10,107 @@ import { v2 as cloudinary } from "cloudinary";
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
-    try {
-        // Step 1: Get user details from the frontend
-        const { fullName, email, userName, password } = req.body;
-
-        // Step 2: Handle validation results from express-validator
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res
-                .status(400)
-                .json({ success: false, errors: errors.array() });
-        }
-
-        // Step 3: Check if the user already exists by username or email
-        const existingUser = await User.findOne({
-            $or: [{ userName }, { email }],
-        });
-
-        if (existingUser) {
-            return next(new APIerror(409, "Username or Email already exists"));
-        }
-
-        // Step 4: Check if avatar is provided
-        const avatarFile = req.files?.avatar?.[0];
-        let avatarUrl = null;
-        let avatarPublicId = null;
-
-        // Step 5: Upload avatar to Cloudinary (if provided)
-        if (avatarFile) {
-            const avatarLocalPath = avatarFile.path;
-            const avatarUploadResult =
-                await uploadOnCloudinary(avatarLocalPath);
-            avatarUrl = avatarUploadResult?.secure_url || null;
-            avatarPublicId = avatarUploadResult?.public_id || null;
-        }
-
-        // Step 6: Handle coverImage (optional)
-        const coverImageFile = req.files?.coverImage?.[0];
-        let coverImageUrl = null;
-        let coverImagePublicId = null;
-
-        if (coverImageFile) {
-            const coverImageLocalPath = coverImageFile.path;
-            const coverImageUploadResult =
-                await uploadOnCloudinary(coverImageLocalPath);
-            coverImageUrl = coverImageUploadResult.secure_url;
-            coverImagePublicId = coverImageUploadResult.public_id;
-        }
-
-        // Step 7: Create user object
-        const newUser = await User.create({
-            userName,
-            fullName,
-            email,
-            password, // Password will be hashed automatically in the model
-            avatar: avatarUrl,
-            avatarPublicId: avatarPublicId,
-            coverImage: coverImageUrl,
-            coverImagePublicId: coverImagePublicId,
-        });
-
-        // Step 8: Check if user was created
-        if (!newUser._id) {
-            return next(new APIerror(500, "User creation failed"));
-        }
-
-        // Step 9: Prepare user response without sensitive fields
-        const userResponse = {
-            _id: newUser._id,
-            userName: newUser.userName,
-            fullName: newUser.fullName,
-            email: newUser.email,
-            avatar: newUser.avatar,
-            coverImage: newUser.coverImage,
-        };
-
-        // Step 10: Return success response
-        res.status(201).json(
-            new APIresponse(201, userResponse, "User registered successfully")
-        );
-    } catch (error) {
-        next(new APIerror(500, "Registration failed: " + error.message));
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return next(new APIerror(400, "Validation Error", errors.array()));
     }
+
+    const { fullName, email, userName, password } = req.body;
+
+    const existingUser = await User.findOne({ $or: [{ userName }, { email }] });
+    if (existingUser) {
+        return next(new APIerror(409, "Username or Email already exists"));
+    }
+
+    const avatarFile = req.files?.avatar?.[0];
+    let avatarUrl = null,
+        avatarPublicId = null;
+
+    if (avatarFile) {
+        const avatarLocalPath = avatarFile.path;
+        const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
+        avatarUrl = avatarUploadResult?.secure_url || null;
+        avatarPublicId = avatarUploadResult?.public_id || null;
+    }
+
+    const newUser = await User.create({
+        userName,
+        fullName,
+        email,
+        password,
+        avatar: avatarUrl,
+        avatarPublicId,
+    });
+
+    if (!newUser._id) {
+        return next(new APIerror(500, "User creation failed"));
+    }
+
+    const userResponse = {
+        _id: newUser._id,
+        userName: newUser.userName,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        avatar: newUser.avatar,
+    };
+
+    res.status(201).json(
+        new APIresponse(201, userResponse, "User registered successfully")
+    );
 });
 
 // Function to handle user login
 const loginUser = asynchandler(async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
+    const { email, password } = req.body;
 
-        // Validate request
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return next(new APIerror(400, "Validation Error", errors.array()));
-        }
-
-        // Check if user exists
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return next(new APIerror(404, "User does not exist"));
-        }
-
-        // Validate password
-        const isPasswordValid = await user.isPasswordCorrect(password);
-        if (!isPasswordValid) {
-            return next(new APIerror(401, "Incorrect password"));
-        }
-
-        // Generate Tokens
-        const { refreshToken, accessToken } =
-            await generate_Access_Refresh_token(user._id);
-
-        // Remove sensitive fields
-        const loggedInUser = await User.findById(user._id).select(
-            "-password -refreshToken"
-        );
-
-        // Set cookies
-        const options = {
-            httpOnly: true,
-            secure: true,
-        };
-
-        console.log(loggedInUser);
-
-        return res
-            .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
-            .json(
-                new APIresponse(
-                    200,
-                    {
-                        user: loggedInUser,
-                        accessToken,
-                        refreshToken,
-                    },
-                    "User logged in successfully"
-                )
-            );
-    } catch (error) {
-        next(new APIerror(500, "Login failed: " + error.message));
+    const user = await User.findOne({ email });
+    if (!user) {
+        return next(new APIerror(404, "User does not exist"));
     }
+
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+        return next(new APIerror(401, "Incorrect password"));
+    }
+
+    const { refreshToken, accessToken } = await generate_Access_Refresh_token(
+        user._id
+    );
+
+    const loggedInUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new APIresponse(
+                200,
+                { user: loggedInUser, accessToken, refreshToken },
+                "User logged in successfully"
+            )
+        );
 });
 
 // Function to handle user logout
 const logoutUser = asynchandler(async (req, res, next) => {
-    try {
-        await User.findByIdAndUpdate(req.user._id, {
-            $unset: { refreshToken: 1 }, // Properly remove the field
-        });
+    await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
 
-        // Clear cookies
-        const options = {
-            httpOnly: true,
-            secure: true,
-        };
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
 
-        res.clearCookie("accessToken", options);
-        res.clearCookie("refreshToken", options);
+    res.clearCookie("accessToken", options);
+    res.clearCookie("refreshToken", options);
 
-        return res
-            .status(200)
-            .json(new APIresponse(200, null, "Logged out successfully"));
-    } catch (error) {
-        next(new APIerror(500, "Logout failed: " + error.message));
-    }
+    res.status(200).json(new APIresponse(200, null, "Logged out successfully"));
 });
 
 // Function for refreshing Token to keep the user login
