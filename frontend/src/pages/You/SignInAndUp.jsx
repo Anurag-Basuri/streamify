@@ -1,11 +1,14 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { motion } from "framer-motion";
+import PasswordStrength from "./PasswordStrength.jsx";
 
-function SignInAndUp({ onClose, isLoginInitial = true }) {
-    const [isLogin, setIsLogin] = useState(isLoginInitial);
+function SignInAndUp() {
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get("mode");
+    const [isLogin, setIsLogin] = useState(mode !== "signup");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
@@ -16,64 +19,76 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
         confirmPassword: "",
     });
     const [errors, setErrors] = useState({});
-    const { login, register, isLoading, user } = useContext(AuthContext);
+    const { login, register, isLoading, user, checkUsername } =
+        useContext(AuthContext);
     const navigate = useNavigate();
+    const redirect = searchParams.get("redirect") || "/profile";
 
-    // Redirect to profile if already logged in
+    // Redirect if user is already logged in
     useEffect(() => {
         if (user) {
-            navigate("/profile");
+            console.log("User is logged in, redirecting to:", redirect);
+            navigate(redirect);
         }
-    }, [user, navigate]);
+    }, [user, navigate, redirect]);
 
-    // Handle close button click
-    const handleCloseClick = () => {
-        if (!isLoading) {
-            onClose(); // Use the onClose prop to close the modal
+    // Debounced username availability check
+    useEffect(() => {
+        if (!isLogin && formData.userName.length > 2) {
+            const timer = setTimeout(async () => {
+                try {
+                    const available = await checkUsername(formData.userName);
+                    if (!available) {
+                        setErrors((prev) => ({
+                            ...prev,
+                            userName: "Username is taken",
+                        }));
+                    } else {
+                        setErrors((prev) => ({ ...prev, userName: "" }));
+                    }
+                } catch (error) {
+                    console.error("Username check failed:", error);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
         }
-    };
+    }, [formData.userName, isLogin, checkUsername]);
 
     // Form validation
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.email.trim() || !formData.email.includes("@")) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(formData.email)) {
             newErrors.email = "Please enter a valid email address";
         }
-        if (!formData.password.trim() || formData.password.length < 6) {
+
+        if (formData.password.length < 6) {
             newErrors.password = "Password must be at least 6 characters";
         }
+
         if (!isLogin) {
             if (formData.password !== formData.confirmPassword) {
                 newErrors.confirmPassword = "Passwords do not match";
             }
-            if (!formData.fullName.trim() || formData.fullName.length < 3) {
-                newErrors.fullName = "Full name must be at least 3 characters";
+            if (formData.fullName.length < 2) {
+                newErrors.fullName = "Full name must be at least 2 characters";
             }
-            if (!formData.userName.trim() || formData.userName.length < 3) {
-                newErrors.userName = "Username must be at least 3 characters";
+            if (!/^[a-zA-Z0-9_]{3,20}$/.test(formData.userName)) {
+                newErrors.userName =
+                    "Username must be 3-20 characters (letters, numbers, or _)";
             }
         }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    // Toggle between login and signup forms
-    const toggleAuthMode = () => {
-        setIsLogin(!isLogin);
-        setErrors({});
-        setFormData({
-            fullName: "",
-            userName: "",
-            email: "",
-            password: "",
-            confirmPassword: "",
-        });
-    };
-
     // Handle input changes
     const handleChange = (e) => {
-        setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-        setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
     // Handle form submission
@@ -87,32 +102,39 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                       email: formData.email,
                       password: formData.password,
                   })
-                : await register({
-                      fullName: formData.fullName,
-                      userName: formData.userName,
-                      email: formData.email,
-                      password: formData.password,
-                  });
-
-            console.log("API Response:", response);
+                : await register({ ...formData });
 
             if (response?.success) {
-                // Only call onClose if it exists
-                if (typeof onClose === "function") {
-                    onClose();
-                }
-                navigate("/profile");
+                console.log("Authentication successful, redirecting...");
+                navigate(redirect);
             } else {
+                console.log(response);
                 setErrors({
-                    general: response?.message || "Authentication failed",
+                    general:
+                        response?.message ||
+                        "Authentication failed. Please try again.",
                 });
             }
         } catch (error) {
-            console.error("Authentication Error:", error);
             setErrors({
-                general: error.message || "Authentication failed",
+                general:
+                    error.message ||
+                    "An unexpected error occurred. Please try again.",
             });
         }
+    };
+
+    // Toggle between login and signup forms
+    const toggleAuthMode = () => {
+        setIsLogin(!isLogin);
+        setErrors({});
+        setFormData({
+            fullName: "",
+            userName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+        });
     };
 
     return (
@@ -130,7 +152,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                 {/* Close button */}
                 <button
                     className="absolute top-4 right-4 text-gray-100 hover:text-white text-2xl transition-colors"
-                    onClick={handleCloseClick}
+                    onClick={() => navigate(-1)}
                     disabled={isLoading}
                 >
                     &times;
@@ -144,8 +166,8 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                         </h1>
                         <p className="text-gray-300/90 text-sm">
                             {isLogin
-                                ? "Continue your streaming journey"
-                                : "Start your entertainment experience"}
+                                ? "Welcome back! Sign in to continue."
+                                : "Create an account to get started."}
                         </p>
                     </div>
 
@@ -252,6 +274,11 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                                         {errors.password}
                                     </p>
                                 )}
+                                {!isLogin && (
+                                    <PasswordStrength
+                                        password={formData.password}
+                                    />
+                                )}
                             </div>
 
                             {!isLogin && (
@@ -298,7 +325,7 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                             className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isLoading}
                         >
-                            {isLoading && (
+                            {isLoading ? (
                                 <svg
                                     className="animate-spin h-5 w-5 text-white"
                                     xmlns="http://www.w3.org/2000/svg"
@@ -319,12 +346,11 @@ function SignInAndUp({ onClose, isLoginInitial = true }) {
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     ></path>
                                 </svg>
+                            ) : isLogin ? (
+                                "Sign In"
+                            ) : (
+                                "Create Account"
                             )}
-                            {isLoading
-                                ? "Processing..."
-                                : isLogin
-                                ? "Sign In"
-                                : "Create Account"}
                         </button>
                     </form>
 

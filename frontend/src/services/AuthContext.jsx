@@ -1,47 +1,81 @@
+/* eslint-disable no-unreachable */
 import { createContext, useState, useEffect, useCallback } from "react";
 import {
     signIn,
     signUp,
     logout,
     getUserProfile,
-    isAuthenticated,
-} from "./authService";
+    refreshToken,
+} from "./authService.js";
 
-// Create Auth Context
 const AuthContext = createContext();
 
-// Auth Provider Component
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
 
-    // Load user profile on mount or auth state change
+    // Load user profile and update state
     const loadUserProfile = useCallback(async () => {
         setIsLoading(true);
         try {
             const profile = await getUserProfile();
-            setUser(profile);
+            setUser(profile); // Update user state
+            return profile; // Return profile for verification
         } catch (error) {
-            setUser(null);
+            setUser(null); // Clear user state on error
+            return null;
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // Check authentication status on mount
+    // Handle token refresh
+    const handleTokenRefresh = useCallback(async () => {
+        if (!isTokenRefreshing) {
+            setIsTokenRefreshing(true);
+            try {
+                await refreshToken(); // Refresh the token
+                await loadUserProfile(); // Reload user profile
+            } catch (error) {
+                setUser(null); // Clear user state if refresh fails
+            } finally {
+                setIsTokenRefreshing(false);
+            }
+        }
+    }, [isTokenRefreshing, loadUserProfile]);
+
+    // Check authentication state on mount and set up token refresh
     useEffect(() => {
-        loadUserProfile();
-    }, [loadUserProfile]);
+        const checkAuth = async () => {
+            try {
+                await loadUserProfile(); // Load user profile on mount
+            } catch (error) {
+                await handleTokenRefresh(); // Attempt token refresh if profile load fails
+            }
+        };
+
+        checkAuth(); // Initial check
+        const interval = setInterval(() => {
+            handleTokenRefresh(); // Refresh token every 5 minutes
+        }, 300000);
+
+        return () => clearInterval(interval); // Cleanup interval on unmount
+    }, [handleTokenRefresh, loadUserProfile]);
 
     // Login function
     const login = async (credentials) => {
         setIsLoading(true);
         try {
-            const { success } = await signIn(credentials);
-            if (success) await loadUserProfile();
-            return { success };
+            const { success, data } = await signIn(credentials);
+            if (success && data?.token) {
+                localStorage.setItem("accessToken", data.token); // Store token
+                const profile = await loadUserProfile(); // Load user profile
+                return { success: !!profile }; // Return success if profile is loaded
+            }
+            return { success: false }; // Return failure if token or profile is missing
         } catch (error) {
-            return { success: false, message: error.message };
+            return { success: false, message: error.message }; // Return error message
         } finally {
             setIsLoading(false);
         }
@@ -51,11 +85,14 @@ const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         setIsLoading(true);
         try {
-            const { success } = await signUp(userData);
-            if (success) await loadUserProfile();
+            const { success, data } = await signUp(userData);
+            if (success && data?.token) {
+                localStorage.setItem("accessToken", data.token); // Store token
+                await loadUserProfile(); // Load user profile
+            }
             return { success };
         } catch (error) {
-            return { success: false, message: error.message };
+            return { success: false, message: error.message }; // Return error message
         } finally {
             setIsLoading(false);
         }
@@ -65,18 +102,25 @@ const AuthProvider = ({ children }) => {
     const logoutUser = async () => {
         setIsLoading(true);
         try {
-            await logout();
-            setUser(null);
+            await logout(); // Call logout API
+            setUser(null); // Clear user state
+            localStorage.removeItem("accessToken"); // Remove token
         } catch (error) {
-            console.error("Logout failed:", error.message);
+            console.error("Logout failed:", error.message); // Log error
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Check if user is authenticated
-    const checkAuth = async () => {
-        return await isAuthenticated();
+    // Check username availability (placeholder)
+    const checkUsername = async (username) => {
+        try {
+            // Implement username availability check logic here
+            return true; // Placeholder
+        } catch (error) {
+            console.error("Username check failed:", error);
+            return false;
+        }
     };
 
     return (
@@ -84,11 +128,11 @@ const AuthProvider = ({ children }) => {
             value={{
                 user,
                 isLoading,
-                isAuthenticated: !!user,
+                isAuthenticated: !!user, // Convert user to boolean
                 login,
                 register,
                 logout: logoutUser,
-                checkAuth,
+                checkUsername,
             }}
         >
             {children}

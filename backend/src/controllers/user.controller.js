@@ -133,6 +133,8 @@ const loginUser = asynchandler(async (req, res, next) => {
             secure: true,
         };
 
+        console.log(loggedInUser);
+
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
