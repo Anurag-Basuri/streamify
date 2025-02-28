@@ -1,6 +1,6 @@
 import { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateUser } from "../../services/authService.js";
+import { updateUser } from "../../services/authService.js"; // Ensure this import is correct
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { motion } from "framer-motion";
 
@@ -20,11 +20,12 @@ const Profile = () => {
         formData.append(type, file);
 
         try {
-            await updateUser(formData);
+            const response = await updateUser(formData);
+            console.log("Upload successful:", response);
             if (type === "avatar") setAvatarFile(null);
             if (type === "coverImage") setCoverImageFile(null);
         } catch (error) {
-            console.error("Upload failed:", error);
+            console.error("Upload failed:", error.message);
         } finally {
             setIsUploading(false);
         }

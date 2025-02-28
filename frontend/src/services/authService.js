@@ -156,3 +156,23 @@ export const handleOAuthCallback = async (accessToken, refreshToken) => {
         throw new Error("Failed to complete OAuth login");
     }
 };
+
+// Update User Profile
+export const updateUser = async (formData) => {
+    try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) throw new Error("No authentication token found");
+
+        const response = await axiosInstance.put("/update-profile", formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data", // Required for file uploads
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Update Profile Error:", handleError(error));
+        throw new Error("Failed to update profile");
+    }
+};

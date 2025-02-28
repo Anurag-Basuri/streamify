@@ -26,17 +26,25 @@ router.get('/auth/google',
     })
 );
 
-router.get('/auth/google/callback',
-    passport.authenticate('google', { session: false }),
-    (req, res) => {
-        const user = req.user;
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-        
-        user.refreshToken = refreshToken;
-        await user.save();
+router.get(
+    "/auth/google/callback",
+    passport.authenticate("google", { session: false }),
+    async (req, res) => {
+        try {
+            const user = req.user;
+            const accessToken = user.generateAccessToken();
+            const refreshToken = user.generateRefreshToken();
 
-        res.redirect(`${process.env.FRONTEND_URL}/oauth?access=${accessToken}&refresh=${refreshToken}`);
+            user.refreshToken = refreshToken;
+            await user.save();
+
+            res.redirect(
+                `${process.env.FRONTEND_URL}/oauth?access=${accessToken}&refresh=${refreshToken}`
+            );
+        } catch (error) {
+            console.error("Google OAuth callback error:", error);
+            res.status(500).json({ message: "OAuth authentication failed" });
+        }
     }
 );
 

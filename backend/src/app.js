@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
+import session from "express-session";
 
 // Import all route files
 import userRouter from "./routes/user.routes.js";
