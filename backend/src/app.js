@@ -4,6 +4,8 @@ import express from "express";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 import session from "express-session";
+import passport from "passport";
+import "./config/passport.js"; // Ensure the file containing Google strategy is imported
 
 // Import all route files
 import userRouter from "./routes/user.routes.js";
@@ -18,6 +20,8 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 
 dotenv.config();
 const app = express();
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Configure Cloudinary
 cloudinary.config({
