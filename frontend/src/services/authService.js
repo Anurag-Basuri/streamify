@@ -55,19 +55,19 @@ export const getUserProfile = async () => {
             return null;
         }
 
-        const response = await axiosInstance.get("/current-user", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axiosInstance.get("/current-user");
 
-        if (!response.data?.data?.user) {
-            console.warn("Invalid user data format");
+        // Corrected response structure handling
+        if (!response.data?.data) {
+            // Now checking for response.data.data
+            console.warn("Invalid user data format:", response.data);
             return null;
         }
 
-        const userData = response.data.data.user;
+        const userData = response.data.data; // Access data property directly
         return {
             ...userData,
-            isGoogleUser: !!userData.googleId, // Add Google user flag
+            isGoogleUser: !!userData.googleId,
         };
     } catch (error) {
         console.error("Profile fetch error:", handleError(error));
@@ -79,14 +79,19 @@ export const getUserProfile = async () => {
 export const signUp = async (userData) => {
     try {
         const response = await axiosInstance.post("/register", userData);
+
+        // Handle successful registration
+        if (response.data?.accessToken) {
+            localStorage.setItem("accessToken", response.data.accessToken);
+        }
+
         return {
             success: true,
-            data: response.data,
-            message: response.data?.message,
+            data: response.data.user,
+            message: "Registration successful",
         };
     } catch (error) {
         const message = handleError(error);
-        console.error("Registration Error:", message, error);
         return {
             success: false,
             message,
@@ -97,18 +102,18 @@ export const signUp = async (userData) => {
 // User Signin
 export const signIn = async (credentials) => {
     try {
-        const response = await axiosInstance.post("/login", credentials, {
-            withCredentials: true, // Enable cookie handling
-        });
+        const response = await axiosInstance.post("/login", credentials);
 
-        // Store access token from response body
-        if (response.data?.data?.accessToken) {
-            localStorage.setItem("accessToken", response.data.data.accessToken);
+        console.log(response);
+
+        // Updated response structure handling
+        if (response.data.data?.accessToken) {
+            localStorage.setItem("accessToken", response.data.accessToken);
         }
 
         return {
             success: response.data.success,
-            data: response.data.data,
+            data: response.data.user,
             message: response.data.message,
         };
     } catch (error) {
@@ -150,10 +155,22 @@ export const handleOAuthCallback = async (accessToken, refreshToken) => {
     try {
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
-        return await getUserProfile();
+
+        // Get updated user profile
+        const user = await getUserProfile();
+        if (!user) throw new Error("Failed to fetch user profile");
+
+        return user;
     } catch (error) {
-        console.error("OAuth Callback Error:", handleError(error));
-        throw new Error("Failed to complete OAuth login");
+        console.error("OAuth Callback Error:", error);
+        throw error;
+    }
+};
+
+//validation function
+const validateApiResponse = (response) => {
+    if (!response || !response.data) {
+        throw new Error("Invalid API response format");
     }
 };
 
@@ -166,11 +183,12 @@ export const updateUser = async (formData) => {
         const response = await axiosInstance.put("/update-profile", formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data", // Required for file uploads
+                "Content-Type": "multipart/form-data",
             },
         });
 
-        return response.data;
+        validateApiResponse(response);
+        return response.data.user;
     } catch (error) {
         console.error("Update Profile Error:", handleError(error));
         throw new Error("Failed to update profile");

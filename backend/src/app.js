@@ -6,13 +6,11 @@ import session from "express-session";
 import passport from "passport";
 import { v2 as cloudinary } from "cloudinary";
 
-// Load environment variables
+// ✅ Load environment variables
 dotenv.config();
 
-// Import Passport Config
-import "./config/passport.js"; // Ensure this file contains Google OAuth strategy
-
-// Import route files
+// ✅ Import route files
+import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
 import tweetRouter from "./routes/tweet.routes.js";
@@ -23,16 +21,18 @@ import watchLaterRouter from "./routes/watchlater.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 
+import "./config/passport.js";
+
 const app = express();
 
 // ✅ Configure Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.API_KEY,
-    api_secret: process.env.API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Session Middleware (Must be BEFORE passport.session())
+// ✅ Session Middleware (Before passport.session())
 app.use(
     session({
         secret: process.env.ACCESS_TOKEN_SECRET, // Use a strong secret
@@ -53,7 +53,7 @@ app.use(passport.session());
 // ✅ Middleware
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: process.env.FRONTEND_URL, // Use from .env
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -65,6 +65,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 // ✅ Routes
+app.use("/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/tweets", tweetRouter);

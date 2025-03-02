@@ -73,10 +73,14 @@ const AuthProvider = ({ children }) => {
             const params = new URLSearchParams(window.location.search);
             const accessToken = params.get("access");
             const refreshToken = params.get("refresh");
-
+    
             if (accessToken && refreshToken) {
                 try {
-                    await handleOAuthCallback(accessToken, refreshToken);
+                    const user = await handleOAuthCallback(
+                        accessToken,
+                        refreshToken
+                    );
+                    setUser(user);
                     navigate(location.state?.from || "/profile");
                 } catch (error) {
                     console.error("OAuth callback failed:", error);
