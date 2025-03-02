@@ -1,13 +1,18 @@
+import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express from "express";
 import dotenv from "dotenv";
-import { v2 as cloudinary } from "cloudinary";
 import session from "express-session";
 import passport from "passport";
-import "./config/passport.js"; // Ensure the file containing Google strategy is imported
+import { v2 as cloudinary } from "cloudinary";
 
-// Import all route files
+// Load environment variables
+dotenv.config();
+
+// Import Passport Config
+import "./config/passport.js"; // Ensure this file contains Google OAuth strategy
+
+// Import route files
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
 import tweetRouter from "./routes/tweet.routes.js";
@@ -18,19 +23,34 @@ import watchLaterRouter from "./routes/watchlater.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 
-dotenv.config();
 const app = express();
+
+// ✅ Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+});
+
+// ✅ Session Middleware (Must be BEFORE passport.session())
+app.use(
+    session({
+        secret: process.env.ACCESS_TOKEN_SECRET, // Use a strong secret
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === "production", // Secure only in production
+            httpOnly: true, // Prevent client-side access
+            maxAge: 1000 * 60 * 60 * 24, // 1 day
+        },
+    })
+);
+
+// ✅ Initialize Passport (After session middleware)
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Middleware
+// ✅ Middleware
 app.use(
     cors({
         origin: "http://localhost:5173",
@@ -44,7 +64,7 @@ app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Routes
+// ✅ Routes
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/tweets", tweetRouter);
@@ -54,14 +74,5 @@ app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/watchlater", watchLaterRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
-
-app.use(
-    session({
-        secret: process.env.SESSION_SECRET,
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: process.env.NODE_ENV === "production" },
-    })
-);
 
 export { app };

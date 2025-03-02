@@ -31,10 +31,10 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     };
 
     // Function to handle Google login
-    const handleGoogleLogin = () => {
-        console.log("Google Login Clicked");
-        // Implement your Google authentication logic here
-    };
+    // const handleGoogleLogin = () => {
+    //     console.log("Google Login Clicked");
+    //     // Implement your Google authentication logic here
+    // };
 
     return (
         <header className="bg-gray-900 border-b border-gray-700 fixed w-full top-0 z-50 shadow-lg">
@@ -187,13 +187,13 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     Sign Up
                                 </Link>
                                 {/* Google login button */}
-                                <button
+                                {/* <button
                                     onClick={handleGoogleLogin}
                                     className="px-4 py-2 bg-gray-800 text-white rounded-full flex items-center gap-2 hover:bg-gray-700"
                                 >
                                     <FcGoogle className="w-5 h-5" />
                                     <span>Google Login</span>
-                                </button>
+                                </button> */}
                             </>
                         ) : (
                             <>

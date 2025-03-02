@@ -86,6 +86,8 @@ const loginUser = asynchandler(async (req, res, next) => {
         secure: true,
     };
 
+    console.log({ user: loggedInUser, accessToken, refreshToken });
+
     res.status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
