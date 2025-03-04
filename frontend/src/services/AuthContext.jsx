@@ -73,14 +73,19 @@ const AuthProvider = ({ children }) => {
             const params = new URLSearchParams(window.location.search);
             const accessToken = params.get("access");
             const refreshToken = params.get("refresh");
-    
+
             if (accessToken && refreshToken) {
                 try {
-                    const user = await handleOAuthCallback(
-                        accessToken,
-                        refreshToken
-                    );
-                    setUser(user);
+                    // Clear existing tokens
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+
+                    // Store new tokens
+                    localStorage.setItem("accessToken", accessToken);
+                    localStorage.setItem("refreshToken", refreshToken);
+
+                    // Force reload user data
+                    const user = await loadUserProfile();
                     navigate(location.state?.from || "/profile");
                 } catch (error) {
                     console.error("OAuth callback failed:", error);

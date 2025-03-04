@@ -62,6 +62,8 @@ const registerUser = asynchandler(async (req, res, next) => {
 // Function to handle user login
 const loginUser = asynchandler(async (req, res, next) => {
     const { email, password } = req.body;
+    console.log("user:", email);
+    console.log("password:", password);
 
     const user = await User.findOne({ email });
     if (!user) {

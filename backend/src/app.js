@@ -21,27 +21,34 @@ import watchLaterRouter from "./routes/watchlater.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 
+// ✅ Initialize Passport Config
 import "./config/passport.js";
 
 const app = express();
 
 // ✅ Configure Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
 });
+
+// ✅ Trust Proxy (for OAuth in production)
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+}
 
 // ✅ Session Middleware (Before passport.session())
 app.use(
     session({
-        secret: process.env.ACCESS_TOKEN_SECRET, // Use a strong secret
+        secret: process.env.SESSION_SECRET || "default_secret", // Separate from JWT secret
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: process.env.NODE_ENV === "production", // Secure only in production
+            secure: process.env.NODE_ENV === "production", // Secure cookies in production
             httpOnly: true, // Prevent client-side access
-            maxAge: 1000 * 60 * 60 * 24, // 1 day
+            maxAge: 1000 * 60 * 60 * 24, // 1 day expiration
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Needed for third-party OAuth
         },
     })
 );
@@ -53,7 +60,7 @@ app.use(passport.session());
 // ✅ Middleware
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL, // Use from .env
+        origin: process.env.FRONTEND_URL, // Ensure frontend URL is correct for OAuth
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],

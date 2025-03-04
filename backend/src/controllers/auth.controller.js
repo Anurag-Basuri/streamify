@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import {User} from "../models/user.model.js";
+import { User } from "../models/user.model.js";
 
 // ✅ Generate JWT Tokens
-const generateTokens = (user) => {
+export const generateTokens = (user) => {
     const accessToken = jwt.sign(
         { id: user._id },
         process.env.ACCESS_TOKEN_SECRET,
@@ -16,7 +16,6 @@ const generateTokens = (user) => {
         { expiresIn: "7d" }
     );
 
-    user.refreshToken = refreshToken;
     return { accessToken, refreshToken };
 };
 
@@ -27,7 +26,8 @@ export const registerUser = async (req, res) => {
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
-        if (existingUser) return res.status(400).json({ message: "Email already in use" });
+        if (existingUser)
+            return res.status(400).json({ message: "Email already in use" });
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -43,11 +43,12 @@ export const registerUser = async (req, res) => {
         });
 
         await newUser.save();
-
-        res.status(201).json({ message: "User registered successfully" });
+        return res
+            .status(201)
+            .json({ message: "User registered successfully" });
     } catch (error) {
         console.error("Registration Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -57,20 +58,28 @@ export const loginUser = async (req, res) => {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
-        if (!user) return res.status(400).json({ message: "Invalid credentials" });
+        if (!user)
+            return res.status(400).json({ message: "Invalid credentials" });
 
         // Compare password
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+        if (!isMatch)
+            return res.status(400).json({ message: "Invalid credentials" });
 
         // Generate tokens
         const { accessToken, refreshToken } = generateTokens(user);
-        await user.save();
 
-        res.json({ accessToken, refreshToken, user });
+        // Store refreshToken in HttpOnly Cookie (More Secure)
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production", // Set true in production
+            sameSite: "strict",
+        });
+
+        return res.json({ accessToken, user });
     } catch (error) {
         console.error("Login Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -90,54 +99,74 @@ export const googleAuth = async (req, res) => {
         }
 
         const { accessToken, refreshToken } = generateTokens(user);
-        await user.save();
 
-        res.redirect(
-            `${process.env.FRONTEND_URL}/oauth?access=${accessToken}&refresh=${refreshToken}`
+        // Store refreshToken in HttpOnly Cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
+
+        return res.redirect(
+            `${process.env.FRONTEND_URL}/oauth?access=${accessToken}`
         );
     } catch (error) {
         console.error("Google OAuth Error:", error);
-        res.status(500).json({ message: "Google Authentication Failed" });
+        return res
+            .status(500)
+            .json({ message: "Google Authentication Failed" });
     }
 };
 
 // ✅ Logout User
 export const logoutUser = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(401).json({ message: "Unauthorized" });
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
 
-        user.refreshToken = null;
-        await user.save();
-
-        res.json({ message: "Logged out successfully" });
+        return res.json({ message: "Logged out successfully" });
     } catch (error) {
         console.error("Logout Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
 // ✅ Refresh Access Token
 export const refreshAccessToken = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) return res.status(401).json({ message: "Unauthorized" });
+        const refreshToken = req.cookies.refreshToken; // Get from cookie
+        if (!refreshToken)
+            return res.status(401).json({ message: "Unauthorized" });
 
         // Verify Refresh Token
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const decoded = jwt.verify(
+            refreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
         const user = await User.findById(decoded.id);
 
-        if (!user || user.refreshToken !== refreshToken)
+        if (!user)
             return res.status(403).json({ message: "Invalid refresh token" });
 
         // Generate new tokens
-        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
-        user.refreshToken = newRefreshToken;
-        await user.save();
+        const { accessToken, refreshToken: newRefreshToken } =
+            generateTokens(user);
 
-        res.json({ accessToken, refreshToken: newRefreshToken });
+        // Store new refresh token in HttpOnly Cookie
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
+
+        return res.json({ accessToken });
     } catch (error) {
         console.error("Refresh Token Error:", error);
-        res.status(403).json({ message: "Invalid or expired refresh token" });
+        return res
+            .status(403)
+            .json({ message: "Invalid or expired refresh token" });
     }
 };
