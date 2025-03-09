@@ -19,7 +19,15 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-// ✅ Google OAuth Callback
+// Google OAuth Routes
+router.get(
+    "/auth/google",
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+        session: false,
+    })
+);
+
 router.get(
     "/auth/google/callback",
     passport.authenticate("google", { session: false }),
@@ -42,7 +50,7 @@ router.get(
     }
 );
 
-// ✅ Validation Rules
+// Validation Rules
 const registerValidationRules = [
     body("userName").notEmpty().withMessage("Username is required").trim(),
     body("fullName").notEmpty().withMessage("Full Name is required").trim(),
@@ -57,7 +65,7 @@ const registerValidationRules = [
         .withMessage("Password must be at least 6 characters long"),
 ];
 
-// ✅ Auth Routes
+// Auth Routes
 router.post(
     "/register",
     upload.fields([
@@ -87,7 +95,7 @@ router.post(
 router.post("/logout", verifyAccessToken, logoutUser);
 router.post("/refresh-token", refreshAccessToken);
 
-// ✅ Secure Routes
+// Secure Routes
 router.patch("/change-password", verifyAccessToken, change_current_password);
 router.patch(
     "/change-avatar",

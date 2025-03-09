@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api/v1/users";
+
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true, // Required for cookies
@@ -67,35 +68,15 @@ export const getUserProfile = async () => {
     }
 };
 
-// User Signin
+// Export API functions
 export const signIn = async (credentials) => {
     try {
-        console.log(credentials);
+        console.log("Sending request to:", API_BASE_URL + "/login");
+        console.log("Request payload:", credentials);
+
         const response = await axiosInstance.post("/login", credentials);
 
-        // Correct token access
-        if (response.data.data?.accessToken) {
-            localStorage.setItem("accessToken", response.data.data.accessToken);
-        }
-
-        return {
-            success: response.data.success,
-            data: response.data.data.user, // Nested user data
-            message: response.data.message,
-        };
-    } catch (error) {
-        console.error("Login Error:", handleError(error));
-        return {
-            success: false,
-            message: error.response?.data?.message || "Login failed",
-        };
-    }
-};
-
-// User Signup
-export const signUp = async (userData) => {
-    try {
-        const response = await axiosInstance.post("/register", userData);
+        console.log("Response received:", response.data);
 
         if (response.data.data?.accessToken) {
             localStorage.setItem("accessToken", response.data.data.accessToken);
@@ -104,13 +85,32 @@ export const signUp = async (userData) => {
         return {
             success: true,
             data: response.data.data.user,
+            message: response.data.message,
+        };
+    } catch (error) {
+        console.error("Login Error:", error);
+        return {
+            success: false,
+            message: handleError(error),
+        };
+    }
+};
+
+export const signUp = async (userData) => {
+    try {
+        const response = await axiosInstance.post("/register", userData);
+        if (response.data.data?.accessToken) {
+            localStorage.setItem("accessToken", response.data.data.accessToken);
+        }
+        return {
+            success: true,
+            data: response.data.data.user,
             message: "Registration successful",
         };
     } catch (error) {
-        const message = handleError(error);
         return {
             success: false,
-            message,
+            message: handleError(error),
         };
     }
 };
