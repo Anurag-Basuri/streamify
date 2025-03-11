@@ -29,6 +29,7 @@ function App() {
     return (
         <AuthProvider>
             <div className="min-h-screen bg-[#0D0D1A] relative">
+                {/* Header */}
                 <Header
                     toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                     isSidebarOpen={isSidebarOpen}
@@ -37,26 +38,32 @@ function App() {
                 />
 
                 {/* Desktop Sidebar */}
-                <div className="hidden md:block fixed z-30" 
-                    style={{
-                        top: headerHeight,
-                        bottom: 0,
-                        width: sidebarWidth
-                    }}>
-                    <Sidebar
-                        isOpen={isSidebarOpen}
-                        toggleSidebar={setIsSidebarOpen}
-                        isMobile={isMobile}
-                    />
-                </div>
+                {!isMobile && (
+                    <div
+                        className="fixed top-0 z-30"
+                        style={{
+                            top: headerHeight,
+                            bottom: 0,
+                            width: sidebarWidth,
+                        }}
+                    >
+                        <Sidebar
+                            isOpen={isSidebarOpen}
+                            toggleSidebar={setIsSidebarOpen}
+                            isMobile={isMobile}
+                        />
+                    </div>
+                )}
 
                 {/* Main Content */}
-                <div className="relative transition-all duration-200 ease-in-out"
+                <div
+                    className="relative transition-all duration-200 ease-in-out"
                     style={{
                         marginLeft: isMobile ? 0 : sidebarWidth,
                         paddingTop: headerHeight,
-                        minHeight: `calc(100vh - ${headerHeight}px)`
-                    }}>
+                        minHeight: `calc(100vh - ${headerHeight}px)`,
+                    }}
+                >
                     <div className="p-4 sm:p-6 lg:p-8 mx-auto max-w-7xl">
                         <AppRoutes />
                     </div>
@@ -67,10 +74,11 @@ function App() {
                     {isMobile && (
                         <motion.div
                             className="fixed top-0 left-0 right-0 bottom-0 z-40"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: isSidebarOpen ? 0 : '-100%' }}
-                            exit={{ x: '-100%' }}
-                            transition={{ type: 'tween', duration: 0.2 }}>
+                            initial={{ x: "-100%" }}
+                            animate={{ x: isSidebarOpen ? 0 : "-100%" }}
+                            exit={{ x: "-100%" }}
+                            transition={{ type: "tween", duration: 0.2 }}
+                        >
                             <Sidebar
                                 isOpen={isSidebarOpen}
                                 toggleSidebar={setIsSidebarOpen}

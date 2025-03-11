@@ -14,18 +14,17 @@ import {
     X,
 } from "lucide-react";
 
-const sidebarVariants = {
-    open: { width: 240 },
-    closed: { width: 72 },
-};
-
 function Sidebar({ isOpen, toggleSidebar, isMobile }) {
     return (
         <motion.nav
-            variants={!isMobile && sidebarVariants}
+            variants={{
+                open: { width: isMobile ? 256 : 240 },
+                closed: { width: 72 },
+            }}
             animate={isOpen ? "open" : "closed"}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="h-full bg-gray-900 shadow-2xl border-r border-gray-700 overflow-hidden"
+            style={{ height: `calc(100vh - ${isMobile ? 0 : "64px"})` }}
         >
             <div className="h-full flex flex-col p-2 overflow-y-auto">
                 {isMobile && (

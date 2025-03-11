@@ -5,11 +5,31 @@ import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../services/AuthContext.jsx";
 
-const Header = ({ toggleSidebar, isSidebarOpen, sidebarWidth, isMobile }) => {
+const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
     const { isAuthenticated, user, logout } = useContext(AuthContext);
     const [searchQuery, setSearchQuery] = useState("");
     const [showTrending, setShowTrending] = useState(false);
+
+    // Define trending topics
+    const [trendingTopics] = useState([
+        "#StreamifyUpdate",
+        "Tech Trends 2024",
+        "Music Videos",
+        "Live Gaming",
+    ]);
+
+    // Properly define isTweetPage
+    const isTweetPage = pathname.startsWith("/tweet");
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        console.log(
+            isTweetPage
+                ? `Searching tweets for: ${searchQuery}`
+                : `Searching videos for: ${searchQuery}`
+        );
+    };
 
     return (
         <header className="fixed w-full top-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
@@ -83,10 +103,7 @@ const Header = ({ toggleSidebar, isSidebarOpen, sidebarWidth, isMobile }) => {
 
                     {/* Center Section - Search Bar */}
                     <div className="flex-1 max-w-2xl mx-2">
-                        <form
-                            onSubmit={(e) => e.preventDefault()}
-                            className="relative"
-                        >
+                        <form onSubmit={handleSearch} className="relative">
                             <div className="relative">
                                 <input
                                     type="text"
