@@ -9,11 +9,11 @@ function App() {
     const [isMobile, setIsMobile] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
 
-    // Detect mobile devices and handle resize
     useEffect(() => {
         const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-            if (window.innerWidth >= 768) setIsSidebarOpen(false);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (!mobile) setIsSidebarOpen(false);
         };
 
         checkMobile();
@@ -21,40 +21,36 @@ function App() {
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
-    // YouTube-like sidebar behavior
     const sidebarState = isMobile ? isSidebarOpen : isHovered || isSidebarOpen;
 
     return (
         <AuthProvider>
             <div className="flex min-h-screen bg-[#0D0D1A] relative">
-                {/* Dynamic Sidebar */}
-                <div
-                    className={`hidden md:block fixed inset-y-0 z-30 ${
-                        isMobile ? "" : "hoverable-sidebar"
-                    }`}
-                    onMouseEnter={() => !isMobile && setIsHovered(true)}
-                    onMouseLeave={() => !isMobile && setIsHovered(false)}
-                >
-                    <Sidebar
-                        isOpen={sidebarState}
-                        toggleSidebar={setIsSidebarOpen}
-                        isMobile={isMobile}
-                    />
-                </div>
-
-                {/* Mobile Sidebar Overlay */}
-                {isMobile && (
-                    <Sidebar
-                        isOpen={isSidebarOpen}
-                        toggleSidebar={setIsSidebarOpen}
-                        isMobile={isMobile}
-                    />
+                {/* Desktop Sidebar */}
+                {!isMobile && (
+                    <div
+                        className={`fixed inset-y-0 z-30 transition-all duration-200 ${
+                            isMobile ? "" : "hoverable-sidebar"
+                        }`}
+                        onMouseEnter={() => !isMobile && setIsHovered(true)}
+                        onMouseLeave={() => !isMobile && setIsHovered(false)}
+                    >
+                        <Sidebar
+                            isOpen={sidebarState}
+                            toggleSidebar={setIsSidebarOpen}
+                            isMobile={isMobile}
+                        />
+                    </div>
                 )}
 
-                {/* Main Content Area */}
+                {/* Main Content */}
                 <div
-                    className={`flex-1 transition-all duration-300 ${
-                        !isMobile ? (sidebarState ? "ml-64" : "ml-20") : ""
+                    className={`flex-1 transition-[margin] duration-200 ease-in-out ${
+                        !isMobile
+                            ? sidebarState
+                                ? "ml-[240px]"
+                                : "ml-[72px]"
+                            : ""
                     }`}
                 >
                     <Header
@@ -62,7 +58,6 @@ function App() {
                         isSidebarOpen={isSidebarOpen}
                     />
 
-                    {/* Content Container */}
                     <main className="pt-16">
                         <div className="p-4 sm:p-6 lg:p-8 mx-auto max-w-7xl">
                             <AppRoutes />
@@ -70,12 +65,27 @@ function App() {
                     </main>
                 </div>
 
-                {/* Mobile Overlay Backdrop */}
-                {isMobile && isSidebarOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
-                    />
+                {/* Mobile Sidebar and Overlay */}
+                {isMobile && (
+                    <>
+                        <Sidebar
+                            isOpen={isSidebarOpen}
+                            toggleSidebar={setIsSidebarOpen}
+                            isMobile={isMobile}
+                        />
+                        <AnimatePresence>
+                            {isSidebarOpen && (
+                                <motion.div
+                                    key="overlay"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                    onClick={() => setIsSidebarOpen(false)}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </>
                 )}
             </div>
         </AuthProvider>

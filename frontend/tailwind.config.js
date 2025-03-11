@@ -10,5 +10,17 @@ export default {
             xl: "1280px",
         },
     },
+    extend: {
+        transitionProperty: {
+            margin: "margin",
+            width: "width",
+        },
+        transitionDuration: {
+            200: "200ms",
+        },
+        transitionTimingFunction: {
+            "in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
+        },
+    },
     plugins: [],
 };

@@ -44,17 +44,14 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                         ? isOpen
                             ? "open"
                             : "closed"
-                        : collapsed
-                        ? "closed"
-                        : "open"
+                        : isOpen
+                        ? "open"
+                        : "closed"
                 }
-                transition={{ type: "tween", duration: 0.15 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                 className={`fixed md:relative inset-y-0 z-40 bg-gray-900 shadow-2xl border-r border-gray-700 ${
-                    isMobile ? "w-64" : "w-72"
+                    isMobile ? "w-64" : "w-[240px]"
                 }`}
-                aria-label="Main navigation"
-                onHoverStart={() => !isMobile && setCollapsed(false)}
-                onHoverEnd={() => !isMobile && setCollapsed(true)}
             >
                 <div className="h-full flex flex-col p-2 overflow-y-auto">
                     {isMobile && (
