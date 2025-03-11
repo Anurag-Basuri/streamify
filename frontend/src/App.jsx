@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
-import { AuthProvider } from "./services/AuthContext.jsx";
+import { AuthProvider } from "./services/AuthContext.jsx"; // Correct import
+import { AnimatePresence, motion } from "framer-motion";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
@@ -16,7 +17,6 @@ function App() {
             if (!mobile) setIsSidebarOpen(false);
         };
 
-        checkMobile();
         window.addEventListener("resize", checkMobile);
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
@@ -32,8 +32,8 @@ function App() {
                         className={`fixed inset-y-0 z-30 transition-all duration-200 ${
                             isMobile ? "" : "hoverable-sidebar"
                         }`}
-                        onMouseEnter={() => !isMobile && setIsHovered(true)}
-                        onMouseLeave={() => !isMobile && setIsHovered(false)}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
                     >
                         <Sidebar
                             isOpen={sidebarState}
@@ -46,11 +46,7 @@ function App() {
                 {/* Main Content */}
                 <div
                     className={`flex-1 transition-[margin] duration-200 ease-in-out ${
-                        !isMobile
-                            ? sidebarState
-                                ? "ml-[240px]"
-                                : "ml-[72px]"
-                            : ""
+                        sidebarState && !isMobile ? "ml-[240px]" : "ml-[72px]"
                     }`}
                 >
                     <Header
