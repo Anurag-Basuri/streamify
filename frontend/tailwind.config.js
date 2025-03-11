@@ -12,14 +12,15 @@ export default {
     },
     extend: {
         transitionProperty: {
-            margin: "margin",
             width: "width",
+            margin: "margin",
+            transform: "transform",
         },
         transitionDuration: {
             200: "200ms",
         },
         transitionTimingFunction: {
-            "in-out": "cubic-bezier(0.4, 0, 0.2, 1)",
+            sidebar: "cubic-bezier(0.4, 0, 0.2, 1)",
         },
     },
     plugins: [],

@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import {
     Home,
@@ -13,139 +13,99 @@ import {
     MoreHorizontal,
     X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
 
 const sidebarVariants = {
-    open: { width: "240px" },
-    closed: { width: "72px" },
+    open: { width: 240 },
+    closed: { width: 72 },
 };
 
 function Sidebar({ isOpen, toggleSidebar, isMobile }) {
-    const [isHovered, setIsHovered] = useState(false);
-
-    // Handle window resize for mobile detection
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768 && !isMobile) {
-                toggleSidebar(false); // Close sidebar on desktop
-            }
-        };
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [isMobile, toggleSidebar]);
-
     return (
-        <>
-            {/* Sidebar */}
-            <motion.nav
-                variants={!isMobile && sidebarVariants}
-                animate={isOpen ? "open" : "closed"}
-                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                className={`fixed md:relative inset-y-0 z-40 bg-gray-900 shadow-2xl border-r border-gray-700 ${
-                    isMobile ? "w-64" : "w-[240px]"
-                }`}
-                aria-label="Sidebar"
-            >
-                <div className="h-full flex flex-col p-2 overflow-y-auto">
-                    {/* Close Button for Mobile */}
-                    {isMobile && (
-                        <div className="md:hidden absolute top-4 right-4">
-                            <button
-                                onClick={toggleSidebar}
-                                className="text-gray-300 hover:text-purple-400 p-2 rounded-lg transition-colors"
-                                aria-label="Close Sidebar"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Sidebar Content */}
-                    <div className="flex-1">
-                        <SidebarSection title="You" isOpen={isOpen}>
-                            <NavItem
-                                to="/"
-                                icon={Home}
-                                label="Home"
-                                isOpen={isOpen}
-                            />
-                            <NavItem
-                                to="/tweet"
-                                icon={Twitter}
-                                label="Tweet"
-                                isOpen={isOpen}
-                            />
-                            <NavItem
-                                to="/subscription"
-                                icon={Bell}
-                                label="Subscription"
-                                isOpen={isOpen}
-                            />
-                        </SidebarSection>
-
-                        <SidebarSection title="Library" isOpen={isOpen}>
-                            <NavItem
-                                to="/history"
-                                icon={History}
-                                label="History"
-                                isOpen={isOpen}
-                            />
-                            <NavItem
-                                to="/playlist"
-                                icon={ListVideo}
-                                label="Playlists"
-                                isOpen={isOpen}
-                            />
-                            <NavItem
-                                to="/watchlater"
-                                icon={Clock}
-                                label="Watch Later"
-                                isOpen={isOpen}
-                            />
-                            <NavItem
-                                to="/downloads"
-                                icon={Download}
-                                label="Downloads"
-                                isOpen={isOpen}
-                            />
-                        </SidebarSection>
+        <motion.nav
+            variants={!isMobile && sidebarVariants}
+            animate={isOpen ? "open" : "closed"}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className="h-full bg-gray-900 shadow-2xl border-r border-gray-700 overflow-hidden"
+        >
+            <div className="h-full flex flex-col p-2 overflow-y-auto">
+                {isMobile && (
+                    <div className="absolute top-4 right-4">
+                        <button
+                            onClick={toggleSidebar}
+                            className="text-gray-300 hover:text-purple-400 p-2 rounded-lg"
+                            aria-label="Close Sidebar"
+                        >
+                            <X size={24} />
+                        </button>
                     </div>
+                )}
 
-                    <SidebarSection title="Account" isOpen={isOpen}>
+                <div className="flex-1">
+                    <SidebarSection title="You" isOpen={isOpen}>
                         <NavItem
-                            to="/profile"
-                            icon={User}
-                            label="Profile"
+                            to="/"
+                            icon={Home}
+                            label="Home"
                             isOpen={isOpen}
                         />
                         <NavItem
-                            to="/more"
-                            icon={MoreHorizontal}
-                            label="More"
+                            to="/tweet"
+                            icon={Twitter}
+                            label="Tweet"
+                            isOpen={isOpen}
+                        />
+                        <NavItem
+                            to="/subscription"
+                            icon={Bell}
+                            label="Subscription"
+                            isOpen={isOpen}
+                        />
+                    </SidebarSection>
+
+                    <SidebarSection title="Library" isOpen={isOpen}>
+                        <NavItem
+                            to="/history"
+                            icon={History}
+                            label="History"
+                            isOpen={isOpen}
+                        />
+                        <NavItem
+                            to="/playlist"
+                            icon={ListVideo}
+                            label="Playlists"
+                            isOpen={isOpen}
+                        />
+                        <NavItem
+                            to="/watchlater"
+                            icon={Clock}
+                            label="Watch Later"
+                            isOpen={isOpen}
+                        />
+                        <NavItem
+                            to="/downloads"
+                            icon={Download}
+                            label="Downloads"
                             isOpen={isOpen}
                         />
                     </SidebarSection>
                 </div>
-            </motion.nav>
 
-            {/* Mobile Overlay */}
-            {isMobile && (
-                <AnimatePresence>
-                    {isOpen && (
-                        <motion.div
-                            key="overlay"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
-                            onClick={toggleSidebar}
-                            role="button"
-                            aria-label="Close Sidebar"
-                        />
-                    )}
-                </AnimatePresence>
-            )}
-        </>
+                <SidebarSection title="Account" isOpen={isOpen}>
+                    <NavItem
+                        to="/profile"
+                        icon={User}
+                        label="Profile"
+                        isOpen={isOpen}
+                    />
+                    <NavItem
+                        to="/more"
+                        icon={MoreHorizontal}
+                        label="More"
+                        isOpen={isOpen}
+                    />
+                </SidebarSection>
+            </div>
+        </motion.nav>
     );
 }
 
@@ -166,31 +126,33 @@ const NavItem = ({ to, icon: Icon, label, isOpen }) => (
     <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="focus-within:outline-none group"
+        className="group relative"
     >
         <NavLink
             to={to}
-            className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors mx-2 ${
+            className={({ isActive }) => `
+                flex items-center p-3 rounded-lg mx-2 transition-colors
+                ${
                     isActive
-                        ? "bg-gray-800 text-purple-400 shadow-md"
+                        ? "bg-gray-800 text-purple-400"
                         : "text-gray-300 hover:bg-gray-800"
-                } ${!isOpen ? "justify-center" : ""}`
-            }
+                }
+                ${!isOpen ? "justify-center" : ""}
+            `}
             end
         >
-            <Icon aria-hidden="true" size={20} className="min-w-[20px]" />
+            <Icon size={20} className="min-w-[20px]" />
             {isOpen && (
                 <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
                     className="ml-3 text-sm"
                 >
                     {label}
                 </motion.span>
             )}
             {!isOpen && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                     {label}
                 </div>
             )}

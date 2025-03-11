@@ -1,42 +1,25 @@
+/* eslint-disable react/prop-types */
 import { useContext, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../services/AuthContext.jsx";
 
-const Header = ({ toggleSidebar, isSidebarOpen }) => {
+const Header = ({ toggleSidebar, isSidebarOpen, sidebarWidth, isMobile }) => {
     const { pathname } = useLocation();
     const { isAuthenticated, user, logout } = useContext(AuthContext);
     const [searchQuery, setSearchQuery] = useState("");
     const [showTrending, setShowTrending] = useState(false);
 
-    const [trendingTopics] = useState([
-        "#StreamifyUpdate",
-        "Tech Trends 2024",
-        "Music Videos",
-        "Live Gaming",
-    ]);
-
-    const isTweetPage = pathname.includes("/tweet");
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        console.log(
-            isTweetPage
-                ? `Searching tweets for: ${searchQuery}`
-                : `Searching videos for: ${searchQuery}`
-        );
-    };
-
     return (
-        <header className="bg-gray-900 border-b border-gray-700 fixed w-full top-0 z-50 shadow-lg">
+        <header className="fixed w-full top-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="h-16 flex items-center justify-between gap-4">
-                    {/* Left Section - Menu, Logo, Brand Name */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Left Section */}
+                    <div className="flex items-center gap-2">
                         <button
                             onClick={toggleSidebar}
-                            className="md:hidden text-gray-300 hover:text-purple-400 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            className="md:hidden text-gray-300 hover:text-purple-400 p-2 rounded-lg"
                             aria-label="Toggle Sidebar"
                         >
                             {isSidebarOpen ? (
@@ -46,11 +29,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             )}
                         </button>
 
-                        <Link
-                            to="/"
-                            className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg"
-                        >
-                            {/* Simplified logo for mobile */}
+                        <Link to="/" className="flex items-center gap-2">
                             <svg
                                 width="32"
                                 height="32"
@@ -104,9 +83,9 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
 
                     {/* Center Section - Search Bar */}
                     <div className="flex-1 max-w-2xl mx-2">
-                        <motion.form
-                            onSubmit={handleSearch}
-                            className="w-full relative"
+                        <form
+                            onSubmit={(e) => e.preventDefault()}
+                            className="relative"
                         >
                             <div className="relative">
                                 <input
@@ -169,7 +148,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                        </motion.form>
+                        </form>
                     </div>
 
                     {/* Right Section - Auth State */}
