@@ -21,18 +21,79 @@ const AppRoutes = () => {
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<SignInAndUp />} />
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-                <Route path="/tweet" element={<Tweet />} />
-                <Route path="/subscription" element={<Subscription />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/downloads" element={<Download />} />
-                <Route path="/playlist" element={<Playlist />} />
-                <Route path="/watchlater" element={<Watchlater />} />
-                <Route path="/uservideos" element={<YourVideos />} />
-                <Route path="/create" element={<Create />} />
-            </Route>
+            {/* Protected Routes - Wrap individual routes */}
+            <Route
+                path="/tweet"
+                element={
+                    <ProtectedRoute>
+                        <Tweet />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/subscription"
+                element={
+                    <ProtectedRoute>
+                        <Subscription />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/history"
+                element={
+                    <ProtectedRoute>
+                        <History />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/profile"
+                element={
+                    <ProtectedRoute>
+                        <Profile />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/downloads"
+                element={
+                    <ProtectedRoute>
+                        <Download />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/playlist"
+                element={
+                    <ProtectedRoute>
+                        <Playlist />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/watchlater"
+                element={
+                    <ProtectedRoute>
+                        <Watchlater />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/uservideos"
+                element={
+                    <ProtectedRoute>
+                        <YourVideos />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/create"
+                element={
+                    <ProtectedRoute>
+                        <Create />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* 404 Handling */}
             <Route path="*" element={<Navigate to="/" replace />} />

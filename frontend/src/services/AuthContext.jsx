@@ -118,6 +118,7 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         try {
             const { success, data } = await signIn(credentials);
+            console.log(data);
             if (success && data?.accessToken) {
                 localStorage.setItem("accessToken", data.accessToken);
                 const profile = await loadUserProfile();

@@ -84,7 +84,7 @@ export const signIn = async (credentials) => {
 
         return {
             success: true,
-            data: response.data.data.user,
+            data: response.data.data,
             message: response.data.message,
         };
     } catch (error) {
