@@ -46,6 +46,8 @@ function App() {
                             bottom: 0,
                             width: sidebarWidth,
                         }}
+                        onMouseEnter={() => setIsSidebarOpen(true)}
+                        onMouseLeave={() => setIsSidebarOpen(false)}
                     >
                         <Sidebar
                             isOpen={isSidebarOpen}
@@ -73,11 +75,12 @@ function App() {
                 <AnimatePresence>
                     {isMobile && (
                         <motion.div
-                            className="fixed top-0 left-0 right-0 bottom-0 z-40"
+                            className="fixed top-0 left-0 right-0 bottom-0 z-50" // Increased z-index
                             initial={{ x: "-100%" }}
                             animate={{ x: isSidebarOpen ? 0 : "-100%" }}
                             exit={{ x: "-100%" }}
                             transition={{ type: "tween", duration: 0.2 }}
+                            style={{ top: headerHeight }} // Start below header
                         >
                             <Sidebar
                                 isOpen={isSidebarOpen}
@@ -96,8 +99,9 @@ function App() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 z-30"
+                            className="fixed inset-0 bg-black/50 z-40" // Adjusted z-index
                             onClick={() => setIsSidebarOpen(false)}
+                            style={{ top: headerHeight }} // Start below header
                         />
                     )}
                 </AnimatePresence>

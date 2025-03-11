@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/prop-types */
 import { createContext, useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -7,7 +9,6 @@ import {
     getUserProfile,
     refreshToken,
     handleGoogleAuth,
-    handleOAuthCallback,
 } from "./authService.js";
 
 const AuthContext = createContext();
@@ -96,14 +97,31 @@ const AuthProvider = ({ children }) => {
         checkOAuthCallback();
     }, [navigate, location]);
 
+    // check auth state
+    useEffect(() => {
+        const checkAuthState = async () => {
+            try {
+                const token = localStorage.getItem("accessToken");
+                if (token) {
+                    await loadUserProfile();
+                }
+            } catch (error) {
+                localStorage.removeItem("accessToken");
+                setUser(null);
+            }
+        };
+        checkAuthState();
+    }, []);
+
     // Login function
     const login = async (credentials) => {
         setIsLoading(true);
         try {
             const { success, data } = await signIn(credentials);
-            if (success) {
+            if (success && data?.accessToken) {
+                localStorage.setItem("accessToken", data.accessToken);
                 const profile = await loadUserProfile();
-                return { success: !!profile };
+                return { success: !!profile, user: profile };
             }
             return { success: false };
         } catch (error) {
@@ -118,11 +136,12 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         try {
             const { success, data } = await signUp(userData);
-            if (success && data?.token) {
-                localStorage.setItem("accessToken", data.token);
-                await loadUserProfile();
+            if (success && data?.accessToken) {
+                localStorage.setItem("accessToken", data.accessToken);
+                const profile = await loadUserProfile();
+                return { success: true, user: profile };
             }
-            return { success };
+            return { success: false };
         } catch (error) {
             return { success: false, message: error.message };
         } finally {
