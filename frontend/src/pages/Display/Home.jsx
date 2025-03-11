@@ -27,29 +27,22 @@ const Home = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="min-h-screen bg-gray-900 text-gray-100 pt-20 md:pt-24">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {/* Hero Section */}
-                <Swiper
-                    modules={[Navigation, Autoplay]}
-                    spaceBetween={30}
-                    slidesPerView={1}
-                    autoplay={{ delay: 5000 }}
-                    className="mb-16 rounded-2xl overflow-hidden shadow-xl"
-                >
+                <Swiper className="mb-8 md:mb-12 rounded-xl md:rounded-2xl overflow-hidden">
                     <SwiperSlide>
-                        <div className="relative h-96 bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center">
-                            <div className="text-center z-10 p-8">
-                                <h1 className="text-5xl font-bold mb-4">
+                        <div className="relative h-[40vh] md:h-[50vh]">
+                            <div className="text-center p-4 md:p-8">
+                                <h1 className="text-3xl md:text-5xl font-bold mb-2 md:mb-4">
                                     Welcome to StreamIfy
                                 </h1>
-                                <p className="text-xl text-gray-200 mb-8">
-                                    Discover amazing content from creators
-                                    worldwide
+                                <p className="text-sm md:text-xl mb-4 md:mb-8">
+                                    Discover amazing content
                                 </p>
                                 <Link
                                     to="/create"
-                                    className="inline-flex items-center bg-white/20 backdrop-blur-sm px-8 py-3 rounded-lg hover:bg-white/30 transition-all"
+                                    className="text-sm md:text-base px-4 py-2 md:px-6 md:py-3"
                                 >
                                     Start Creating
                                 </Link>
@@ -59,14 +52,11 @@ const Home = () => {
                 </Swiper>
 
                 {/* Video Grid */}
-                <h2 className="text-3xl font-bold mb-8">Trending Videos</h2>
-                {error && (
-                    <div className="bg-red-500/20 text-red-300 p-4 rounded-lg mb-8">
-                        {error}
-                    </div>
-                )}
+                <h2 className="text-xl md:text-3xl font-bold mb-4 md:mb-6">
+                    Trending
+                </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                     {loading
                         ? [...Array(8)].map((_, i) => (
                               <SkeletonLoader key={i} />
@@ -75,7 +65,7 @@ const Home = () => {
                               <VideoCard
                                   key={video._id}
                                   video={video}
-                                  className="hover:scale-[1.02] transition-transform duration-300"
+                                  className="hover:scale-[1.02] transition-transform"
                               />
                           ))}
                 </div>

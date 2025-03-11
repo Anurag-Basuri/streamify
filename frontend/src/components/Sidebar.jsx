@@ -1,30 +1,56 @@
 import { NavLink } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import PropTypes from "prop-types";
 import {
+    Home,
     Bell,
+    Twitter,
     History,
     Download,
     ListVideo,
     Clock,
     User,
     MoreHorizontal,
+    X,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 const sidebarVariants = {
     open: { x: 0, opacity: 1 },
-    closed: { x: -300, opacity: 0 },
+    closed: { x: "-100%", opacity: 0 },
 };
 
 function Sidebar({ isOpen, toggleSidebar }) {
     return (
         <>
-            <motion.div
+            <motion.nav
                 variants={sidebarVariants}
+                initial="closed"
                 animate={isOpen ? "open" : "closed"}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="fixed inset-y-0 z-40 w-64 bg-gray-900 shadow-2xl border-r border-gray-700"
+                transition={{ type: "tween", duration: 0.3 }}
+                className="fixed inset-y-0 z-40 w-64 bg-gray-900 shadow-2xl border-r border-gray-700 md:static md:translate-x-0"
+                aria-label="Main navigation"
             >
                 <div className="h-full flex flex-col p-4 overflow-y-auto">
+                    <div className="md:hidden absolute top-4 right-4">
+                        <button
+                            onClick={toggleSidebar}
+                            className="text-gray-300 hover:text-purple-400 p-2 rounded-lg transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    {/* You section */}
+                    <SidebarSection title="You">
+                        <NavItem to="/" icon={Home} label="Home" />
+                        <NavItem to="/tweet" icon={Twitter} label="Tweet" />
+                        <NavItem
+                            to="/subscription"
+                            icon={Bell} // Updated to Bell
+                            label="Subscription"
+                        />
+                    </SidebarSection>
+
                     {/* Library Section */}
                     <SidebarSection title="Library">
                         <NavItem to="/history" icon={History} label="History" />
@@ -55,12 +81,13 @@ function Sidebar({ isOpen, toggleSidebar }) {
                         />
                     </SidebarSection>
                 </div>
-            </motion.div>
+            </motion.nav>
 
-            {/* Overlay when Sidebar is open */}
+            {/* Overlay for mobile only */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
+                        key="overlay"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -78,26 +105,50 @@ const SidebarSection = ({ title, children }) => (
         <h2 className="text-gray-400 uppercase text-xs font-medium mb-2 px-3">
             {title}
         </h2>
-        <div className="space-y-1">{children}</div>
+        <nav className="space-y-1" aria-label={title}>
+            {children}
+        </nav>
     </div>
 );
 
 const NavItem = ({ to, icon: Icon, label }) => (
-    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+    <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="focus-within:outline-none"
+    >
         <NavLink
             to={to}
             className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors ${
+                `flex items-center p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 ${
                     isActive
                         ? "bg-gray-800 text-purple-400 shadow-md"
                         : "text-gray-300 hover:bg-gray-800"
                 }`
             }
+            end
         >
-            <Icon size={20} className="min-w-[20px]" />
+            <Icon aria-hidden="true" size={20} className="min-w-[20px]" />
             <span className="ml-3 text-sm">{label}</span>
         </NavLink>
     </motion.div>
 );
+
+// Prop type validation
+Sidebar.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    toggleSidebar: PropTypes.func.isRequired,
+};
+
+SidebarSection.propTypes = {
+    title: PropTypes.string.isRequired,
+    children: PropTypes.node.isRequired,
+};
+
+NavItem.propTypes = {
+    to: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    label: PropTypes.string.isRequired,
+};
 
 export default Sidebar;

@@ -4,7 +4,6 @@ import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../services/AuthContext.jsx";
-import { FcGoogle } from "react-icons/fc"; // Import Google icon
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
@@ -30,21 +29,16 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         );
     };
 
-    // Function to handle Google login
-    // const handleGoogleLogin = () => {
-    //     console.log("Google Login Clicked");
-    //     // Implement your Google authentication logic here
-    // };
-
     return (
         <header className="bg-gray-900 border-b border-gray-700 fixed w-full top-0 z-50 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="h-16 flex items-center justify-between">
+                <div className="h-16 flex items-center justify-between gap-4">
                     {/* Left Section - Menu, Logo, Brand Name */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                             onClick={toggleSidebar}
-                            className="text-gray-300 hover:text-purple-400 p-2 rounded-lg transition-colors"
+                            className="md:hidden text-gray-300 hover:text-purple-400 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            aria-label="Toggle Sidebar"
                         >
                             {isSidebarOpen ? (
                                 <X size={24} />
@@ -53,7 +47,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             )}
                         </button>
 
-                        <Link to="/" className="flex items-center gap-2">
+                        <Link
+                            to="/"
+                            className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg"
+                        >
+                            {/* Simplified logo for mobile */}
                             <svg
                                 width="32"
                                 height="32"
@@ -99,14 +97,14 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     opacity="0.6"
                                 />
                             </svg>
-                            <span className="text-white font-bold text-xl">
+                            <span className="hidden sm:inline text-white font-bold text-xl">
                                 Streamify
                             </span>
                         </Link>
                     </div>
 
                     {/* Center Section - Search Bar */}
-                    <div className="flex-1 flex justify-center mx-4 max-w-2xl">
+                    <div className="flex-1 max-w-2xl mx-2">
                         <motion.form
                             onSubmit={handleSearch}
                             className="w-full relative"
@@ -119,11 +117,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                             ? "Search Streamify"
                                             : "Search videos, channels..."
                                     }
-                                    className={`w-full bg-gray-800 text-gray-200 rounded-full px-6 py-2 pr-12 focus:outline-none focus:ring-2 ${
+                                    className={`w-full bg-gray-800 text-gray-200 rounded-full px-4 py-2 pr-10 focus:outline-none focus:ring-2 ${
                                         isTweetPage
-                                            ? "focus:ring-blue-400 h-10"
-                                            : "focus:ring-purple-400 h-12"
-                                    }`}
+                                            ? "focus:ring-blue-400"
+                                            : "focus:ring-purple-400"
+                                    } text-sm sm:text-base`}
                                     value={searchQuery}
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
@@ -138,68 +136,68 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-400"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full p-1"
+                                    aria-label="Search"
                                 >
-                                    <Search size={20} />
+                                    <Search size={18} />
                                 </button>
                             </div>
 
                             {/* Trending Suggestions */}
-                            {showTrending && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="absolute top-full mt-2 w-full bg-gray-800 rounded-lg shadow-xl p-4"
-                                >
-                                    <div className="space-y-3">
-                                        <h3 className="text-gray-400 font-medium">
-                                            Trending Now
-                                        </h3>
-                                        {trendingTopics.map((topic, index) => (
-                                            <div
-                                                key={index}
-                                                className="text-gray-200 hover:bg-gray-700 p-2 rounded cursor-pointer"
-                                            >
-                                                {topic}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
+                            <AnimatePresence>
+                                {showTrending && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute top-full mt-2 w-full bg-gray-800 rounded-lg shadow-xl p-4 max-h-[60vh] overflow-y-auto"
+                                    >
+                                        <div className="space-y-3">
+                                            <h3 className="text-gray-400 font-medium">
+                                                Trending Now
+                                            </h3>
+                                            {trendingTopics.map(
+                                                (topic, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="text-gray-200 hover:bg-gray-700 p-2 rounded cursor-pointer"
+                                                    >
+                                                        {topic}
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </motion.form>
                     </div>
 
                     {/* Right Section - Auth State */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {!isAuthenticated ? (
                             <>
                                 <Link
                                     to="/auth?mode=login"
-                                    className="px-4 py-2 text-gray-300 hover:text-purple-400 transition-colors"
+                                    className="hidden sm:inline px-3 py-1.5 text-sm text-gray-300 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg"
                                 >
                                     Sign In
                                 </Link>
                                 <Link
                                     to="/auth?mode=signup"
-                                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:shadow-lg transition-all"
+                                    className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
                                 >
                                     Sign Up
                                 </Link>
-                                {/* Google login button */}
-                                {/* <button
-                                    onClick={handleGoogleLogin}
-                                    className="px-4 py-2 bg-gray-800 text-white rounded-full flex items-center gap-2 hover:bg-gray-700"
-                                >
-                                    <FcGoogle className="w-5 h-5" />
-                                    <span>Google Login</span>
-                                </button> */}
                             </>
                         ) : (
                             <>
+                                {/* Notification Button */}
                                 <motion.button
                                     whileHover={{ scale: 1.1 }}
-                                    className="p-2 text-gray-300 hover:text-purple-400 relative transition-all"
+                                    whileTap={{ scale: 0.95 }}
+                                    className="p-1.5 sm:p-2 text-gray-300 hover:text-purple-400 relative transition-all focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full"
+                                    aria-label="Notifications"
                                 >
                                     <Bell size={20} />
                                     <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -209,13 +207,15 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 <div className="relative group">
                                     <motion.button
                                         whileHover={{ scale: 1.05 }}
-                                        className="flex items-center space-x-2 focus:outline-none"
+                                        whileTap={{ scale: 0.95 }}
+                                        className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full"
+                                        aria-label="Profile Menu"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border-2 border-purple-400">
+                                        <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border-2 border-purple-400 overflow-hidden">
                                             {user?.avatar ? (
                                                 <img
                                                     src={user.avatar}
-                                                    className="rounded-full"
+                                                    className="w-full h-full object-cover"
                                                     alt="Profile"
                                                 />
                                             ) : (
@@ -226,12 +226,30 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                             )}
                                         </div>
                                     </motion.button>
-                                    <button
-                                        onClick={logout}
-                                        className="text-red-400 hover:bg-gray-700 rounded-md px-3 py-2 text-sm transition-colors"
-                                    >
-                                        Sign Out
-                                    </button>
+
+                                    {/* Dropdown Menu */}
+                                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                        <div className="py-1">
+                                            <Link
+                                                to="/profile"
+                                                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                                            >
+                                                Profile
+                                            </Link>
+                                            <Link
+                                                to="/settings"
+                                                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                                            >
+                                                Settings
+                                            </Link>
+                                            <button
+                                                onClick={logout}
+                                                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 focus:outline-none"
+                                            >
+                                                Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}

@@ -20,10 +20,10 @@ const AppRoutes = () => {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<SignInAndUp />} />
-            <Route path="/tweet" element={<Tweet />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
+                <Route path="/tweet" element={<Tweet />} />
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/profile" element={<Profile />} />
