@@ -128,14 +128,15 @@ export const signUp = async (userData) => {
 // Sign-out
 export const logout = async () => {
     try {
-        cancelAllRequests(); // Cancel all pending requests
-        await axiosInstance.post("/logout", null, {
-            cancelToken: cancelTokenSource.token,
-        });
-        localStorage.removeItem("accessToken");
+        await axiosInstance.post("/logout"); // Call backend logout endpoint
+        localStorage.removeItem("accessToken"); // Clear localStorage
         localStorage.removeItem("refreshToken");
+
+        // Clear cookies (if used)
+        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     } catch (error) {
-        console.error("Logout failed:", handleError(error));
+        console.error("Logout failed:", error);
     }
 };
 

@@ -123,20 +123,26 @@ const AuthProvider = ({ children }) => {
             setIsLoading(false);
         }
     };
+    let refreshInterval;
 
+    const startTokenRefresh = () => {
+        refreshInterval = setInterval(async () => {
+            try {
+                await refreshToken();
+            } catch (error) {
+                console.error("Token refresh failed:", error);
+                clearInterval(refreshInterval); // Stop refreshing if it fails
+            }
+        }, 300000); // Refresh every 5 minutes
+    };
     // Logout function
     const logoutUser = async () => {
-        setIsLoading(true);
         try {
-            await logout();
-            setUser(null);
-            clearInterval(intervalRef.current); // Clear refresh interval
-            cancelAllRequests(); // Cancel all pending requests
-            navigate("/auth");
+            await logout(); // Call the logout function
+            clearInterval(refreshInterval); // Clear the refresh interval
+            navigate("/auth"); // Redirect to login page
         } catch (error) {
-            console.error("Logout failed:", error.message);
-        } finally {
-            setIsLoading(false);
+            console.error("Logout failed:", error);
         }
     };
 

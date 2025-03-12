@@ -104,13 +104,19 @@ const loginUser = asynchandler(async (req, res, next) => {
 
 // Function to handle user logout
 const logoutUser = asynchandler(async (req, res, next) => {
-    await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
+    // Invalidate the access token (add to a blacklist)
+    await User.findByIdAndUpdate(req.user._id, {
+        $unset: { refreshToken: 1 }, // Remove refresh token
+        $addToSet: { invalidatedTokens: req.token }, // Add access token to blacklist
+    });
 
+    // Clear cookies
     const options = {
         httpOnly: true,
         secure: true,
+        domain: "localhost", // Match the domain used when setting the cookie
+        path: "/", // Match the path used when setting the cookie
     };
-
     res.clearCookie("accessToken", options);
     res.clearCookie("refreshToken", options);
 
