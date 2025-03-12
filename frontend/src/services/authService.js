@@ -68,7 +68,7 @@ export const getUserProfile = async () => {
     }
 };
 
-// Export API functions
+// Sign-In
 export const signIn = async (credentials) => {
     try {
         console.log("Sending request to:", API_BASE_URL + "/login");
@@ -96,6 +96,7 @@ export const signIn = async (credentials) => {
     }
 };
 
+// Sign-Up
 export const signUp = async (userData) => {
     try {
         const response = await axiosInstance.post("/register", userData);
@@ -115,7 +116,7 @@ export const signUp = async (userData) => {
     }
 };
 
-// Signout
+// Sign-out
 export const logout = async () => {
     try {
         await axiosInstance.post("/logout");
@@ -182,5 +183,33 @@ export const updateUser = async (formData) => {
     } catch (error) {
         console.error("Update Profile Error:", handleError(error));
         throw new Error("Failed to update profile");
+    }
+};
+
+// Update Avatar
+export const updateAvatar = async (formData) => {
+    try {
+        const response = await axiosInstance.patch('/users/change-avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleError(error));
+    }
+};
+
+// Update Cover_Image
+export const updateCoverImage = async (formData) => {
+    try {
+        const response = await axiosInstance.patch('/users/change-cover-image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleError(error));
     }
 };
