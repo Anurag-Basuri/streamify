@@ -1,31 +1,41 @@
 import { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateUser } from "../../services/authService.js"; // Ensure this import is correct
+import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { motion } from "framer-motion";
 
 const Profile = () => {
-    const { user, logout, isLoading } = useContext(AuthContext);
+    const { user, logout, isLoading, updateUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const [avatarFile, setAvatarFile] = useState(null);
     const [coverImageFile, setCoverImageFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState(null);
 
-    // Handle file upload
     const handleFileUpload = async (file, type) => {
-        if (!file || user?.isGoogleUser) return; // Disable upload for Google users
+        if (!file || user?.isGoogleUser) return;
 
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append(type, file);
+        setUploadError(null);
 
         try {
-            const response = await updateUser(formData);
-            console.log("Upload successful:", response);
+            let response;
+            if (type === "avatar") {
+                response = await updateAvatar(file);
+            } else {
+                response = await updateCoverImage(file);
+            }
+
+            // Update user context with new data
+            updateUser({
+                [type]: response.data[type],
+            });
+
+            // Clear file input
             if (type === "avatar") setAvatarFile(null);
             if (type === "coverImage") setCoverImageFile(null);
         } catch (error) {
-            console.error("Upload failed:", error.message);
+            setUploadError(error.message);
         } finally {
             setIsUploading(false);
         }
@@ -74,7 +84,14 @@ const Profile = () => {
                                     className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
                                     disabled={isUploading}
                                 >
-                                    {isUploading ? "Saving..." : "Save"}
+                                    {isUploading ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Saving...
+                                        </div>
+                                    ) : (
+                                        "Save"
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => setCoverImageFile(null)}
@@ -137,7 +154,11 @@ const Profile = () => {
                                             className="bg-blue-600 text-white p-1 rounded-full text-xs hover:bg-blue-700 disabled:opacity-50"
                                             disabled={isUploading}
                                         >
-                                            ✓
+                                            {isUploading ? (
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                "✓"
+                                            )}
                                         </button>
                                         <button
                                             onClick={() => setAvatarFile(null)}
@@ -194,6 +215,13 @@ const Profile = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Error Display */}
+                {uploadError && (
+                    <div className="text-red-500 text-sm mb-4">
+                        Error: {uploadError}
+                    </div>
+                )}
 
                 {/* Basic Info */}
                 <div className="space-y-4">

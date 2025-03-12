@@ -6,7 +6,7 @@ import {
     signIn,
     signUp,
     logout,
-    getUserProfile,
+    getCurrentUser,
     refreshToken,
     handleGoogleAuth,
 } from "./authService.js";
@@ -24,12 +24,12 @@ const AuthProvider = ({ children }) => {
     const loadUserProfile = useCallback(async () => {
         setIsLoading(true);
         try {
-            const profile = await getUserProfile();
-            setUser(profile); // Update user state
-            return profile; // Return profile for verification
+            const profile = await getCurrentUser();
+            setUser(profile);
+            return profile;
         } catch (error) {
-            setUser(null); // Clear user state on error
-            return null;
+            setUser(null);
+            throw error;
         } finally {
             setIsLoading(false);
         }
@@ -172,6 +172,20 @@ const AuthProvider = ({ children }) => {
         }
     };
 
+    const updateUserInContext = (newUserData) => {
+        setUser((prev) => ({ ...prev, ...newUserData }));
+    };
+
+    // updateUser function
+    const updateUser = async (updates) => {
+        try {
+            const updatedUser = { ...user, ...updates };
+            setUser(updatedUser);
+        } catch (error) {
+            console.error("Failed to update user:", error);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -182,6 +196,8 @@ const AuthProvider = ({ children }) => {
                 register,
                 logout: logoutUser,
                 googleLogin,
+                updateUserInContext,
+                updateUser,
             }}
         >
             {children}

@@ -49,22 +49,19 @@ export const refreshToken = async () => {
 };
 
 // Get User Profile
-export const getUserProfile = async () => {
+export const getCurrentUser = async () => {
     try {
         const response = await axiosInstance.get("/current-user");
-
-        // Access user data correctly
         if (!response.data?.data) {
-            console.warn("Invalid user data format");
-            return null;
+            throw new Error("Invalid user data format");
         }
         return {
-            ...response.data.data, // Directly use data property
+            ...response.data.data,
             isGoogleUser: !!response.data.data.googleId,
         };
     } catch (error) {
-        console.error("Profile fetch error:", handleError(error));
-        return null;
+        console.error("Profile fetch error:", error);
+        throw new Error(handleError(error));
     }
 };
 
@@ -187,12 +184,15 @@ export const updateUser = async (formData) => {
 };
 
 // Update Avatar
-export const updateAvatar = async (formData) => {
+export const updateAvatar = async (file) => {
     try {
-        const response = await axiosInstance.patch('/users/change-avatar', formData, {
+        const formData = new FormData();
+        formData.append("avatar", file);
+
+        const response = await axiosInstance.patch("/change-avatar", formData, {
             headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+                "Content-Type": "multipart/form-data",
+            },
         });
         return response.data;
     } catch (error) {
@@ -200,14 +200,21 @@ export const updateAvatar = async (formData) => {
     }
 };
 
-// Update Cover_Image
-export const updateCoverImage = async (formData) => {
+// Update Cover Image
+export const updateCoverImage = async (file) => {
     try {
-        const response = await axiosInstance.patch('/users/change-cover-image', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
+        const formData = new FormData();
+        formData.append("coverImage", file);
+
+        const response = await axiosInstance.patch(
+            "/change-cover-image",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
             }
-        });
+        );
         return response.data;
     } catch (error) {
         throw new Error(handleError(error));
