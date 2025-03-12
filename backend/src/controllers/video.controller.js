@@ -2,7 +2,6 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { Video } from "../models/video.model.js";
-import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 // Increment video views with rate limiting

@@ -9,6 +9,7 @@ const Create = () => {
         description: "",
         tags: [],
         newTag: "",
+        duration: 0, // Added duration field
     });
     const [videoFile, setVideoFile] = useState(null);
     const [thumbnail, setThumbnail] = useState(null);
@@ -17,10 +18,7 @@ const Create = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleTagInput = (e) => {
@@ -40,28 +38,6 @@ const Create = () => {
         }));
     };
 
-    const handleFileUpload = async (file, type) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", "your_upload_preset");
-
-        try {
-            const response = await fetch(
-                "https://api.cloudinary.com/v1_1/your_cloud_name/upload",
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
-
-            const data = await response.json();
-            return data.secure_url;
-        } catch (err) {
-            setError("File upload failed");
-            throw err;
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
@@ -73,26 +49,35 @@ const Create = () => {
 
         try {
             setLoading(true);
-            const videoUrl = await handleFileUpload(videoFile, "video");
-            const thumbnailUrl = await handleFileUpload(thumbnail, "image");
 
-            // Call your backend API here
-            const response = await fetch("/api/v1/videos", {
+            // Create FormData for multipart upload
+            const formPayload = new FormData();
+
+            // Append files
+            formPayload.append("videoFile", videoFile);
+            formPayload.append("thumbnail", thumbnail);
+
+            // Append other fields
+            formPayload.append("title", formData.title);
+            formPayload.append("description", formData.description);
+            formPayload.append("duration", formData.duration);
+            formPayload.append("tags", JSON.stringify(formData.tags));
+
+            // Send to backend
+            const response = await fetch("/api/v1/videos/upload", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
                     Authorization: `Bearer ${localStorage.getItem(
                         "accessToken"
                     )}`,
                 },
-                body: JSON.stringify({
-                    ...formData,
-                    videoFile: videoUrl,
-                    thumbnail: thumbnailUrl,
-                }),
+                body: formPayload,
             });
 
-            if (!response.ok) throw new Error("Upload failed");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Upload failed");
+            }
 
             navigate("/");
         } catch (err) {
@@ -129,9 +114,7 @@ const Create = () => {
                             <div className="space-y-4">
                                 <FaCloudUploadAlt className="text-4xl mx-auto text-orange-500" />
                                 <p className="text-lg">
-                                    {videoFile
-                                        ? videoFile.name
-                                        : "Select video file"}
+                                    {videoFile?.name || "Select video file"}
                                 </p>
                                 <p className="text-gray-400 text-sm">
                                     MP4, MOV, AVI (Max 2GB)
@@ -155,9 +138,7 @@ const Create = () => {
                             <div className="space-y-4">
                                 <FaCloudUploadAlt className="text-4xl mx-auto text-orange-500" />
                                 <p className="text-lg">
-                                    {thumbnail
-                                        ? thumbnail.name
-                                        : "Select thumbnail"}
+                                    {thumbnail?.name || "Select thumbnail"}
                                 </p>
                                 <p className="text-gray-400 text-sm">
                                     JPG, PNG (Recommended 1280x720)
@@ -180,6 +161,22 @@ const Create = () => {
                             placeholder="Enter video title"
                             minLength={5}
                             maxLength={100}
+                            required
+                        />
+                    </div>
+
+                    {/* Duration Input */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2">
+                            Duration (seconds)
+                        </label>
+                        <input
+                            type="number"
+                            name="duration"
+                            value={formData.duration}
+                            onChange={handleInputChange}
+                            className="w-full bg-gray-800 rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Enter video duration"
                             required
                         />
                     </div>
