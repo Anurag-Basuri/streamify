@@ -15,7 +15,7 @@ const PasswordStrength = ({ password }) => {
 
     return (
         <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
-            <div 
+            <div
                 className={`h-2 rounded-full transition-all duration-300 ${
                     strength < 2 ? "bg-red-500" :
                     strength < 3 ? "bg-yellow-500" : "bg-green-500"

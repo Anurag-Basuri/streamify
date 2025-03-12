@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { motion } from "framer-motion";
+import axios from "axios";
+import PropTypes from "prop-types";
 
 const Profile = () => {
     const { user, logout, isLoading, updateUser } = useContext(AuthContext);
@@ -11,7 +13,34 @@ const Profile = () => {
     const [coverImageFile, setCoverImageFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loadingDashboard, setLoadingDashboard] = useState(true);
 
+    // Fetch dashboard data
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const response = await axios.get("/api/dashboard", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                });
+                setDashboardData(response.data.data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            } finally {
+                setLoadingDashboard(false);
+            }
+        };
+
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
+
+    // Handle file upload (avatar/cover image)
     const handleFileUpload = async (file, type) => {
         if (!file || user?.isGoogleUser) return;
 
@@ -26,12 +55,10 @@ const Profile = () => {
                 response = await updateCoverImage(file);
             }
 
-            // Update user context with new data
             updateUser({
                 [type]: response.data[type],
             });
 
-            // Clear file input
             if (type === "avatar") setAvatarFile(null);
             if (type === "coverImage") setCoverImageFile(null);
         } catch (error) {
@@ -41,14 +68,15 @@ const Profile = () => {
         }
     };
 
-    // Redirect if not logged in
+    // Redirect if user is not logged in
     useEffect(() => {
         if (!isLoading && !user) {
             navigate("/auth");
         }
     }, [user, isLoading, navigate]);
 
-    if (!user) {
+    // Loading state
+    if (!user || loadingDashboard) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -61,10 +89,10 @@ const Profile = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden"
+            className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden"
         >
             {/* Cover Image Section */}
-            <div className="relative h-48 bg-gray-100">
+            <div className="relative h-64 bg-gray-100">
                 {coverImageFile ? (
                     <div className="relative h-full">
                         <img
@@ -223,18 +251,107 @@ const Profile = () => {
                     </div>
                 )}
 
-                {/* Basic Info */}
-                <div className="space-y-4">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        {user?.fullName || "New User"}
-                        {user?.isGoogleUser && (
-                            <span className="ml-2 text-sm text-blue-600">
-                                (Google)
-                            </span>
-                        )}
-                    </h1>
-                    <p className="text-gray-600">@{user?.userName}</p>
-                    <p className="text-gray-600">{user?.email}</p>
+                {/* User Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <StatCard
+                        title="Tweets"
+                        value={dashboardData?.stats.tweetCount || 0}
+                        icon="tweet"
+                    />
+                    <StatCard
+                        title="Videos"
+                        value={dashboardData?.stats.videoCount || 0}
+                        icon="video"
+                    />
+                    <StatCard
+                        title="Watch Later"
+                        value={dashboardData?.stats.watchLaterCount || 0}
+                        icon="watch"
+                    />
+                    <StatCard
+                        title="Likes"
+                        value={dashboardData?.stats.likeCount || 0}
+                        icon="like"
+                    />
+                    <StatCard
+                        title="Comments"
+                        value={dashboardData?.stats.commentCount || 0}
+                        icon="comment"
+                    />
+                </div>
+
+                {/* Content Sections */}
+                <div className="space-y-8">
+                    {/* Tweets Section */}
+                    {dashboardData?.tweets?.length > 0 && (
+                        <ContentSection
+                            title="Recent Tweets"
+                            items={dashboardData.tweets}
+                            renderItem={(tweet) => (
+                                <div
+                                    key={tweet._id}
+                                    className="bg-gray-50 p-4 rounded-lg"
+                                >
+                                    <p className="text-gray-800">
+                                        {tweet.content}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        {new Date(
+                                            tweet.createdAt
+                                        ).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            )}
+                        />
+                    )}
+
+                    {/* Videos Section */}
+                    {dashboardData?.videos?.length > 0 && (
+                        <ContentSection
+                            title="Recent Videos"
+                            items={dashboardData.videos}
+                            renderItem={(video) => (
+                                <div
+                                    key={video._id}
+                                    className="bg-gray-50 p-4 rounded-lg"
+                                >
+                                    <h3 className="font-medium text-gray-800">
+                                        {video.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-600">
+                                        {video.description}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        {video.views} views •{" "}
+                                        {new Date(
+                                            video.createdAt
+                                        ).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            )}
+                        />
+                    )}
+
+                    {/* Watch Later Section */}
+                    {dashboardData?.watchLater?.length > 0 && (
+                        <ContentSection
+                            title="Watch Later"
+                            items={dashboardData.watchLater}
+                            renderItem={(video) => (
+                                <div
+                                    key={video._id}
+                                    className="bg-gray-50 p-4 rounded-lg"
+                                >
+                                    <h3 className="font-medium text-gray-800">
+                                        {video.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-600">
+                                        {video.description}
+                                    </p>
+                                </div>
+                            )}
+                        />
+                    )}
                 </div>
 
                 {/* Action Buttons */}
@@ -250,5 +367,45 @@ const Profile = () => {
         </motion.div>
     );
 };
+
+// Stat Card Component with Prop Validation
+const StatCard = ({ title, value, icon }) => (
+    <div className="bg-gray-50 p-4 rounded-lg text-center">
+        <div className="text-2xl font-bold text-gray-800">{value}</div>
+        <div className="text-sm text-gray-600 mt-1">{title}</div>
+    </div>
+);
+
+StatCard.propTypes = {
+    title: PropTypes.string.isRequired,
+    value: PropTypes.number.isRequired,
+    icon: PropTypes.oneOf(["tweet", "video", "watch", "like", "comment"]),
+};
+
+StatCard.defaultProps = {
+    icon: null,
+};
+
+// Content Section Component with Prop Validation
+const ContentSection = ({ title, items, renderItem }) => (
+    <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map(renderItem)}
+        </div>
+    </div>
+);
+
+ContentSection.propTypes = {
+    title: PropTypes.string.isRequired,
+    items: PropTypes.arrayOf(
+        PropTypes.shape({
+            _id: PropTypes.string.isRequired,
+            // Add other required fields based on your data structure
+        })
+    ).isRequired,
+    renderItem: PropTypes.func.isRequired,
+};
+
 
 export default Profile;
