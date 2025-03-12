@@ -269,22 +269,35 @@ const change_Avatar = asynchandler(async (req, res, next) => {
             return next(new APIerror(404, "User not found"));
         }
 
-        // Step 3: Upload new avatar file to cludinary
+        // Step 3: Upload new avatar file to Cloudinary
         const avatarUploadResult = await uploadOnCloudinary(avatarLocalPath);
+        if (!avatarUploadResult || !avatarUploadResult.secure_url) {
+            return next(
+                new APIerror(500, "Failed to upload avatar to Cloudinary")
+            );
+        }
+
         const avatarUrl = avatarUploadResult.secure_url;
         const avatarPublicId = avatarUploadResult.public_id;
 
         // Step 4: Delete existing avatar from Cloudinary if it exists
-        if (user.avatar) {
-            await cloudinary.uploader.destroy(user.avatarPublicId);
+        if (user.avatarPublicId) {
+            try {
+                await cloudinary.uploader.destroy(user.avatarPublicId);
+            } catch (error) {
+                console.error(
+                    "Failed to delete old avatar from Cloudinary:",
+                    error
+                );
+            }
         }
 
-        // Step 5: Update on the database
+        // Step 5: Update the database
         user.avatar = avatarUrl;
         user.avatarPublicId = avatarPublicId;
-        await user.save();
+        await user.save({ validateBeforeSave: false });
 
-        // Step 6: return the updated user info
+        // Step 6: Return the updated user info
         return res
             .status(200)
             .json(
@@ -295,6 +308,7 @@ const change_Avatar = asynchandler(async (req, res, next) => {
                 )
             );
     } catch (error) {
+        console.error("Error updating avatar:", error);
         return next(new APIerror(500, "Failed to update avatar"));
     }
 });
@@ -316,21 +330,34 @@ const change_CoverImage = asynchandler(async (req, res, next) => {
             return next(new APIerror(404, "User not found"));
         }
 
-        // Step 3: Delete existing cover image from Cloudinary if it exists
-        if (user.coverImage) {
-            await cloudinary.uploader.destroy(user.coverImagePublicId);
-        }
-
-        // Step 4: Upload new cover image file to Cloudinary
+        // Step 3: Upload new cover image file to Cloudinary
         const coverImageUploadResult =
             await uploadOnCloudinary(coverImageLocalPath);
+        if (!coverImageUploadResult || !coverImageUploadResult.secure_url) {
+            return next(
+                new APIerror(500, "Failed to upload cover image to Cloudinary")
+            );
+        }
+
         const coverImageUrl = coverImageUploadResult.secure_url;
         const coverImagePublicId = coverImageUploadResult.public_id;
+
+        // Step 4: Delete existing cover image from Cloudinary if it exists
+        if (user.coverImagePublicId) {
+            try {
+                await cloudinary.uploader.destroy(user.coverImagePublicId);
+            } catch (error) {
+                console.error(
+                    "Failed to delete old cover image from Cloudinary:",
+                    error
+                );
+            }
+        }
 
         // Step 5: Update the cover image details in the database
         user.coverImage = coverImageUrl;
         user.coverImagePublicId = coverImagePublicId;
-        await user.save();
+        await user.save({ validateBeforeSave: false });
 
         // Step 6: Return the updated user info
         return res
@@ -343,6 +370,7 @@ const change_CoverImage = asynchandler(async (req, res, next) => {
                 )
             );
     } catch (error) {
+        console.error("Error updating cover image:", error);
         return next(new APIerror(500, "Failed to update cover image"));
     }
 });
