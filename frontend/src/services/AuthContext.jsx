@@ -1,6 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react/prop-types */
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     signIn,
@@ -9,6 +7,7 @@ import {
     getCurrentUser,
     refreshToken,
     handleGoogleAuth,
+    cancelAllRequests,
 } from "./authService.js";
 
 const AuthContext = createContext();
@@ -19,6 +18,7 @@ const AuthProvider = ({ children }) => {
     const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const intervalRef = useRef();
 
     // Load user profile and update state
     const loadUserProfile = useCallback(async () => {
@@ -37,35 +37,35 @@ const AuthProvider = ({ children }) => {
 
     // Handle token refresh
     const handleTokenRefresh = useCallback(async () => {
-        if (!isTokenRefreshing) {
-            setIsTokenRefreshing(true);
-            try {
-                await refreshToken(); // Refresh the token
-                await loadUserProfile(); // Reload user profile
-            } catch (error) {
-                setUser(null); // Clear user state if refresh fails
-            } finally {
-                setIsTokenRefreshing(false);
-            }
+        if (!user || isTokenRefreshing) return; // Skip if no user or already refreshing
+
+        setIsTokenRefreshing(true);
+        try {
+            await refreshToken();
+            await loadUserProfile();
+        } catch (error) {
+            setUser(null);
+        } finally {
+            setIsTokenRefreshing(false);
         }
-    }, [isTokenRefreshing, loadUserProfile]);
+    }, [user, isTokenRefreshing, loadUserProfile]);
 
     // Check authentication state on mount and set up token refresh
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                await loadUserProfile(); // Load user profile on mount
+                await loadUserProfile();
             } catch (error) {
-                await handleTokenRefresh(); // Attempt token refresh if profile load fails
+                await handleTokenRefresh();
             }
         };
 
-        checkAuth(); // Initial check
-        const interval = setInterval(() => {
-            handleTokenRefresh(); // Refresh token every 5 minutes
-        }, 300000);
+        checkAuth();
+        intervalRef.current = setInterval(() => {
+            handleTokenRefresh();
+        }, 300000); // Refresh token every 5 minutes
 
-        return () => clearInterval(interval); // Cleanup interval on unmount
+        return () => clearInterval(intervalRef.current);
     }, [handleTokenRefresh, loadUserProfile]);
 
     // Handle OAuth callback on initial load
@@ -77,16 +77,9 @@ const AuthProvider = ({ children }) => {
 
             if (accessToken && refreshToken) {
                 try {
-                    // Clear existing tokens
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
-
-                    // Store new tokens
                     localStorage.setItem("accessToken", accessToken);
                     localStorage.setItem("refreshToken", refreshToken);
-
-                    // Force reload user data
-                    const user = await loadUserProfile();
+                    await loadUserProfile();
                     navigate(location.state?.from || "/profile");
                 } catch (error) {
                     console.error("OAuth callback failed:", error);
@@ -97,30 +90,12 @@ const AuthProvider = ({ children }) => {
         checkOAuthCallback();
     }, [navigate, location]);
 
-    // check auth state
-    useEffect(() => {
-        const checkAuthState = async () => {
-            try {
-                const token = localStorage.getItem("accessToken");
-                if (token) {
-                    await loadUserProfile();
-                }
-            } catch (error) {
-                localStorage.removeItem("accessToken");
-                setUser(null);
-            }
-        };
-        checkAuthState();
-    }, []);
-
     // Login function
     const login = async (credentials) => {
         setIsLoading(true);
         try {
             const { success, data } = await signIn(credentials);
-            console.log(data);
             if (success && data?.accessToken) {
-                localStorage.setItem("accessToken", data.accessToken);
                 const profile = await loadUserProfile();
                 return { success: !!profile, user: profile };
             }
@@ -138,7 +113,6 @@ const AuthProvider = ({ children }) => {
         try {
             const { success, data } = await signUp(userData);
             if (success && data?.accessToken) {
-                localStorage.setItem("accessToken", data.accessToken);
                 const profile = await loadUserProfile();
                 return { success: true, user: profile };
             }
@@ -156,6 +130,9 @@ const AuthProvider = ({ children }) => {
         try {
             await logout();
             setUser(null);
+            clearInterval(intervalRef.current); // Clear refresh interval
+            cancelAllRequests(); // Cancel all pending requests
+            navigate("/auth");
         } catch (error) {
             console.error("Logout failed:", error.message);
         } finally {
@@ -172,18 +149,9 @@ const AuthProvider = ({ children }) => {
         }
     };
 
+    // Update user in context
     const updateUserInContext = (newUserData) => {
         setUser((prev) => ({ ...prev, ...newUserData }));
-    };
-
-    // updateUser function
-    const updateUser = async (updates) => {
-        try {
-            const updatedUser = { ...user, ...updates };
-            setUser(updatedUser);
-        } catch (error) {
-            console.error("Failed to update user:", error);
-        }
     };
 
     return (
@@ -197,7 +165,6 @@ const AuthProvider = ({ children }) => {
                 logout: logoutUser,
                 googleLogin,
                 updateUserInContext,
-                updateUser,
             }}
         >
             {children}

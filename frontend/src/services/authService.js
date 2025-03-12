@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api/v1/users";
 
+// Create Axios instance
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true, // Required for cookies
@@ -10,7 +11,7 @@ const axiosInstance = axios.create({
     },
 });
 
-// Add request interceptor to inject tokens
+// Request interceptor to inject tokens
 axiosInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken");
     if (token) {
@@ -18,6 +19,9 @@ axiosInstance.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Cancel token source for aborting requests
+let cancelTokenSource = axios.CancelToken.source();
 
 // Helper function for error handling
 const handleError = (error) => {
@@ -35,9 +39,10 @@ const handleError = (error) => {
 // Refresh token function
 export const refreshToken = async () => {
     try {
-        const response = await axiosInstance.post("/refresh-token");
+        const response = await axiosInstance.post("/refresh-token", null, {
+            cancelToken: cancelTokenSource.token,
+        });
         if (response.data.data?.token) {
-            // Updated path
             localStorage.setItem("accessToken", response.data.data.token);
             return true;
         }
@@ -48,10 +53,18 @@ export const refreshToken = async () => {
     }
 };
 
+// Cancel all pending requests
+export const cancelAllRequests = () => {
+    cancelTokenSource.cancel("User logged out");
+    cancelTokenSource = axios.CancelToken.source(); // Reset
+};
+
 // Get User Profile
 export const getCurrentUser = async () => {
     try {
-        const response = await axiosInstance.get("/current-user");
+        const response = await axiosInstance.get("/current-user", {
+            cancelToken: cancelTokenSource.token,
+        });
         if (!response.data?.data) {
             throw new Error("Invalid user data format");
         }
@@ -68,12 +81,9 @@ export const getCurrentUser = async () => {
 // Sign-In
 export const signIn = async (credentials) => {
     try {
-        console.log("Sending request to:", API_BASE_URL + "/login");
-        console.log("Request payload:", credentials);
-
-        const response = await axiosInstance.post("/login", credentials);
-
-        console.log("Response received:", response.data);
+        const response = await axiosInstance.post("/login", credentials, {
+            cancelToken: cancelTokenSource.token,
+        });
 
         if (response.data.data?.accessToken) {
             localStorage.setItem("accessToken", response.data.data.accessToken);
@@ -96,7 +106,9 @@ export const signIn = async (credentials) => {
 // Sign-Up
 export const signUp = async (userData) => {
     try {
-        const response = await axiosInstance.post("/register", userData);
+        const response = await axiosInstance.post("/register", userData, {
+            cancelToken: cancelTokenSource.token,
+        });
         if (response.data.data?.accessToken) {
             localStorage.setItem("accessToken", response.data.data.accessToken);
         }
@@ -116,7 +128,10 @@ export const signUp = async (userData) => {
 // Sign-out
 export const logout = async () => {
     try {
-        await axiosInstance.post("/logout");
+        cancelAllRequests(); // Cancel all pending requests
+        await axiosInstance.post("/logout", null, {
+            cancelToken: cancelTokenSource.token,
+        });
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
     } catch (error) {
@@ -139,29 +154,6 @@ export const handleGoogleAuth = async () => {
     }
 };
 
-export const handleOAuthCallback = async (accessToken, refreshToken) => {
-    try {
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-
-        // Get updated user profile
-        const user = await getUserProfile();
-        if (!user) throw new Error("Failed to fetch user profile");
-
-        return user;
-    } catch (error) {
-        console.error("OAuth Callback Error:", error);
-        throw error;
-    }
-};
-
-//validation function
-const validateApiResponse = (response) => {
-    if (!response || !response.data) {
-        throw new Error("Invalid API response format");
-    }
-};
-
 // Update User Profile
 export const updateUser = async (formData) => {
     try {
@@ -173,9 +165,12 @@ export const updateUser = async (formData) => {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "multipart/form-data",
             },
+            cancelToken: cancelTokenSource.token,
         });
 
-        validateApiResponse(response);
+        if (!response || !response.data) {
+            throw new Error("Invalid API response format");
+        }
         return response.data.user;
     } catch (error) {
         console.error("Update Profile Error:", handleError(error));
@@ -193,6 +188,7 @@ export const updateAvatar = async (file) => {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
+            cancelToken: cancelTokenSource.token,
         });
         return response.data;
     } catch (error) {
@@ -213,6 +209,7 @@ export const updateCoverImage = async (file) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
+                cancelToken: cancelTokenSource.token,
             }
         );
         return response.data;
