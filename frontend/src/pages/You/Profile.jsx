@@ -20,13 +20,14 @@ const Profile = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const response = await axios.get("/api/dashboard", {
+                const response = await axios.get("/api/v1/dashboard", {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
                             "accessToken"
                         )}`,
                     },
                 });
+                console.log(response);
                 setDashboardData(response.data.data);
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
@@ -382,10 +383,6 @@ StatCard.propTypes = {
     icon: PropTypes.oneOf(["tweet", "video", "watch", "like", "comment"]),
 };
 
-StatCard.defaultProps = {
-    icon: null,
-};
-
 // Content Section Component with Prop Validation
 const ContentSection = ({ title, items, renderItem }) => (
     <div>
@@ -406,6 +403,5 @@ ContentSection.propTypes = {
     ).isRequired,
     renderItem: PropTypes.func.isRequired,
 };
-
 
 export default Profile;

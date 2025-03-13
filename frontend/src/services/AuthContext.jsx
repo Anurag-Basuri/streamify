@@ -1,4 +1,11 @@
-import { createContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+    createContext,
+    useState,
+    useEffect,
+    useCallback,
+    useRef,
+    useMemo,
+} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     signIn,
@@ -7,7 +14,6 @@ import {
     getCurrentUser,
     refreshToken,
     handleGoogleAuth,
-    cancelAllRequests,
 } from "./authService.js";
 
 const AuthContext = createContext();
@@ -18,7 +24,7 @@ const AuthProvider = ({ children }) => {
     const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const intervalRef = useRef();
+    const intervalRef = useRef(null);
 
     // Load user profile and update state
     const loadUserProfile = useCallback(async () => {
@@ -37,7 +43,7 @@ const AuthProvider = ({ children }) => {
 
     // Handle token refresh
     const handleTokenRefresh = useCallback(async () => {
-        if (!user || isTokenRefreshing) return; // Skip if no user or already refreshing
+        if (!user || isTokenRefreshing) return;
 
         setIsTokenRefreshing(true);
         try {
@@ -50,27 +56,33 @@ const AuthProvider = ({ children }) => {
         }
     }, [user, isTokenRefreshing, loadUserProfile]);
 
-    // Check authentication state on mount and set up token refresh
+    // Auth initialization
     useEffect(() => {
-        const checkAuth = async () => {
+        let isMounted = true;
+        const initializeAuth = async () => {
             try {
                 await loadUserProfile();
+                if (isMounted) {
+                    intervalRef.current = setInterval(
+                        handleTokenRefresh,
+                        300000
+                    );
+                }
             } catch (error) {
-                await handleTokenRefresh();
+                if (isMounted) setUser(null);
             }
         };
 
-        checkAuth();
-        intervalRef.current = setInterval(() => {
-            handleTokenRefresh();
-        }, 300000); // Refresh token every 5 minutes
-
-        return () => clearInterval(intervalRef.current);
+        initializeAuth();
+        return () => {
+            isMounted = false;
+            clearInterval(intervalRef.current);
+        };
     }, [handleTokenRefresh, loadUserProfile]);
 
-    // Handle OAuth callback on initial load
+    // OAuth callback handler
     useEffect(() => {
-        const checkOAuthCallback = async () => {
+        const handleOAuthCallback = async () => {
             const params = new URLSearchParams(window.location.search);
             const accessToken = params.get("access");
             const refreshToken = params.get("refresh");
@@ -82,97 +94,98 @@ const AuthProvider = ({ children }) => {
                     await loadUserProfile();
                     navigate(location.state?.from || "/profile");
                 } catch (error) {
-                    console.error("OAuth callback failed:", error);
                     navigate("/auth");
                 }
             }
         };
-        checkOAuthCallback();
-    }, [navigate, location]);
+        handleOAuthCallback();
+    }, [navigate, location, loadUserProfile]);
 
     // Login function
-    const login = async (credentials) => {
-        setIsLoading(true);
-        try {
-            const { success, data } = await signIn(credentials);
-            if (success && data?.accessToken) {
-                const profile = await loadUserProfile();
-                return { success: !!profile, user: profile };
+    const login = useCallback(
+        async (credentials) => {
+            try {
+                const { success, data } = await signIn(credentials);
+                if (success && data?.accessToken) {
+                    await loadUserProfile();
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                return false;
             }
-            return { success: false };
-        } catch (error) {
-            return { success: false, message: error.message };
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        },
+        [loadUserProfile]
+    );
 
     // Register function
-    const register = async (userData) => {
-        setIsLoading(true);
-        try {
-            const { success, data } = await signUp(userData);
-            if (success && data?.accessToken) {
-                const profile = await loadUserProfile();
-                return { success: true, user: profile };
-            }
-            return { success: false };
-        } catch (error) {
-            return { success: false, message: error.message };
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    let refreshInterval;
-
-    const startTokenRefresh = () => {
-        refreshInterval = setInterval(async () => {
+    const register = useCallback(
+        async (userData) => {
             try {
-                await refreshToken();
+                const { success, data } = await signUp(userData);
+                if (success && data?.accessToken) {
+                    await loadUserProfile();
+                    return true;
+                }
+                return false;
             } catch (error) {
-                console.error("Token refresh failed:", error);
-                clearInterval(refreshInterval); // Stop refreshing if it fails
+                return false;
             }
-        }, 300000); // Refresh every 5 minutes
-    };
+        },
+        [loadUserProfile]
+    );
+
     // Logout function
-    const logoutUser = async () => {
+    const logoutUser = useCallback(async () => {
         try {
-            await logout(); // Call the logout function
-            clearInterval(refreshInterval); // Clear the refresh interval
-            navigate("/auth"); // Redirect to login page
+            await logout();
+            setUser(null);
+            clearInterval(intervalRef.current);
+            navigate("/auth");
         } catch (error) {
-            console.error("Logout failed:", error);
+            console.error("Logout error:", error);
         }
-    };
+    }, [navigate]);
 
     // Google login function
-    const googleLogin = async () => {
+    const googleLogin = useCallback(async () => {
         try {
             await handleGoogleAuth();
         } catch (error) {
             console.error("Google login failed:", error);
         }
-    };
+    }, []);
 
     // Update user in context
-    const updateUserInContext = (newUserData) => {
+    const updateUserInContext = useCallback((newUserData) => {
         setUser((prev) => ({ ...prev, ...newUserData }));
-    };
+    }, []);
+
+    // Memoize context value to prevent unnecessary re-renders
+    const authContextValue = useMemo(
+        () => ({
+            user,
+            isLoading,
+            isAuthenticated: !!user,
+            login,
+            register,
+            logout: logoutUser,
+            googleLogin,
+            updateUserInContext,
+        }),
+        [
+            user,
+            isLoading,
+            login,
+            register,
+            logoutUser,
+            googleLogin,
+            updateUserInContext,
+        ]
+    );
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isLoading,
-                isAuthenticated: !!user,
-                login,
-                register,
-                logout: logoutUser,
-                googleLogin,
-                updateUserInContext,
-            }}
-        >
+        <AuthContext.Provider value={authContextValue}>
             {children}
         </AuthContext.Provider>
     );
