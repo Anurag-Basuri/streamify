@@ -1,32 +1,25 @@
-import { memo, useContext, useEffect, useRef } from "react";
+import { memo, useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../services/AuthContext";
 import Spinner from "../components/Spinner";
 
 const ProtectedRoute = memo(({ children }) => {
-    const { isAuthenticated, isLoading } = useContext(AuthContext);
+    const { isAuthenticated, isLoading, user } = useContext(AuthContext);
     const location = useLocation();
-    const previousPath = useRef(location.pathname);
-
-    useEffect(() => {
-        if (location.pathname !== previousPath.current) {
-            console.log("Route changed to:", location.pathname);
-            previousPath.current = location.pathname;
-        }
-    }, [location.pathname]);
 
     if (isLoading) return <Spinner />;
 
-    return isAuthenticated ? (
-        children
-    ) : (
-        <Navigate
-            to={`/auth?redirect=${encodeURIComponent(
-                location.pathname + location.search
-            )}`}
-            replace
-        />
-    );
+    // Wait for user initialization to complete
+    if (!user && !isAuthenticated) {
+        return (
+            <Navigate
+                to={`/auth?redirect=${encodeURIComponent(location.pathname)}`}
+                replace
+            />
+        );
+    }
+
+    return children;
 });
 
 ProtectedRoute.displayName = "ProtectedRoute";

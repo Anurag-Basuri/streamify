@@ -22,6 +22,7 @@ const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false); // Track initialization
     const navigate = useNavigate();
     const location = useLocation();
     const intervalRef = useRef(null);
@@ -51,6 +52,8 @@ const AuthProvider = ({ children }) => {
             await loadUserProfile();
         } catch (error) {
             setUser(null);
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
         } finally {
             setIsTokenRefreshing(false);
         }
@@ -59,6 +62,7 @@ const AuthProvider = ({ children }) => {
     // Auth initialization
     useEffect(() => {
         let isMounted = true;
+
         const initializeAuth = async () => {
             try {
                 await loadUserProfile();
@@ -69,16 +73,24 @@ const AuthProvider = ({ children }) => {
                     ); // Refresh token every 5 minutes
                 }
             } catch (error) {
-                if (isMounted) setUser(null);
+                if (isMounted) {
+                    console.error("Auth initialization failed:", error);
+                    setUser(null);
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                }
+            } finally {
+                if (isMounted) setIsInitialized(true);
             }
         };
 
-        initializeAuth();
+        if (!isInitialized) initializeAuth();
+
         return () => {
             isMounted = false;
             clearInterval(intervalRef.current);
         };
-    }, [handleTokenRefresh, loadUserProfile]);
+    }, [handleTokenRefresh, loadUserProfile, isInitialized]);
 
     // OAuth callback handler
     useEffect(() => {
@@ -93,11 +105,19 @@ const AuthProvider = ({ children }) => {
                     localStorage.setItem("refreshToken", refreshToken);
                     await loadUserProfile();
                     navigate(location.state?.from || "/profile");
+
+                    // Clear OAuth params from URL
+                    window.history.replaceState(
+                        {},
+                        document.title,
+                        window.location.pathname
+                    );
                 } catch (error) {
                     navigate("/auth");
                 }
             }
         };
+
         handleOAuthCallback();
     }, [navigate, location, loadUserProfile]);
 
@@ -105,12 +125,11 @@ const AuthProvider = ({ children }) => {
     const login = useCallback(
         async (credentials) => {
             try {
-                const { success, data } = await signIn(credentials);
-                if (success && data?.accessToken) {
-                    await loadUserProfile();
-                    return true;
-                }
-                return false;
+                const { accessToken, refreshToken } = await signIn(credentials);
+                localStorage.setItem("accessToken", accessToken);
+                localStorage.setItem("refreshToken", refreshToken);
+                await loadUserProfile();
+                return true;
             } catch (error) {
                 return false;
             }
@@ -122,12 +141,11 @@ const AuthProvider = ({ children }) => {
     const register = useCallback(
         async (userData) => {
             try {
-                const { success, data } = await signUp(userData);
-                if (success && data?.accessToken) {
-                    await loadUserProfile();
-                    return true;
-                }
-                return false;
+                const { accessToken, refreshToken } = await signUp(userData);
+                localStorage.setItem("accessToken", accessToken);
+                localStorage.setItem("refreshToken", refreshToken);
+                await loadUserProfile();
+                return true;
             } catch (error) {
                 return false;
             }
@@ -141,6 +159,8 @@ const AuthProvider = ({ children }) => {
             await logout();
             setUser(null);
             clearInterval(intervalRef.current);
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
             navigate("/auth");
         } catch (error) {
             console.error("Logout error:", error);
@@ -165,7 +185,7 @@ const AuthProvider = ({ children }) => {
     const authContextValue = useMemo(
         () => ({
             user,
-            isLoading,
+            isLoading: isLoading || !isInitialized, // Track initialization status
             isAuthenticated: !!user,
             login,
             register,
@@ -176,6 +196,7 @@ const AuthProvider = ({ children }) => {
         [
             user,
             isLoading,
+            isInitialized,
             login,
             register,
             logoutUser,

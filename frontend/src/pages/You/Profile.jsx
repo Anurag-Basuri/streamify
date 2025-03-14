@@ -21,20 +21,39 @@ const Profile = () => {
         data: null,
         loading: true,
     });
+    const [dashboardError, setDashboardError] = useState(null);
 
     const fetchDashboard = useCallback(async () => {
         try {
-            const { data } = await axios.get("/api/v1/dashboard", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
+            const { data } = await axios.get(
+                "http://localhost:8000/api/v1/dashboard",
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
             setDashboard({ data: data.data, loading: false });
+            setDashboardError(null); // Clear any previous errors
         } catch (error) {
             setDashboard((prev) => ({ ...prev, loading: false }));
+            setDashboardError(
+                "Failed to load dashboard data. Please try again later."
+            );
             console.error("Dashboard error:", error);
+
+            // Log additional details
+            if (error.response) {
+                console.error("Response data:", error.response.data);
+                console.error("Response status:", error.response.status);
+                console.error("Response headers:", error.response.headers);
+            } else if (error.request) {
+                console.error("No response received:", error.request);
+            } else {
+                console.error("Error setting up request:", error.message);
+            }
         }
     }, []);
 

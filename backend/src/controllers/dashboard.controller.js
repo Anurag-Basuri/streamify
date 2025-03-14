@@ -72,6 +72,8 @@ const getDashboard = asynchandler(async (req, res) => {
         comments,
     };
 
+    console.log(dashboardData);
+
     return res
         .status(200)
         .json(
