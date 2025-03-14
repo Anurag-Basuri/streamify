@@ -2,219 +2,147 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api/v1/users";
 
-// Create Axios instance
-const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true, // Required for cookies
-    headers: {
-        "Content-Type": "application/json",
-    },
+// Create Axios instance with default configuration
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Request interceptor to inject tokens
-axiosInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+// Request interceptor for token injection
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
-// Cancel token source for aborting requests
-let cancelTokenSource = axios.CancelToken.source();
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-// Helper function for error handling
-const handleError = (error) => {
-    console.error("API Error:", error);
-    if (error.response) {
-        return (
-            error.response.data?.message ||
-            error.response.data?.error ||
-            "An error occurred"
-        );
-    }
-    return error.message || "Network Error";
-};
+    // Handle token refresh on 401 errors
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
-// Refresh token function
-export const refreshToken = async () => {
-    try {
-        const response = await axiosInstance.post("/refresh-token", null, {
-            cancelToken: cancelTokenSource.token,
-        });
-        if (response.data.data?.token) {
-            localStorage.setItem("accessToken", response.data.data.token);
-            return true;
+      try {
+        const refreshResponse = await apiClient.post("/refresh-token");
+        const newToken = refreshResponse.data.data?.token;
+
+        if (newToken) {
+          localStorage.setItem("accessToken", newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return apiClient(originalRequest);
         }
-        return false;
-    } catch (error) {
-        console.error("Token refresh failed:", handleError(error));
-        return false;
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        localStorage.removeItem("accessToken");
+        window.location.href = "/auth"; // Redirect to login on token refresh failure
+        return Promise.reject(refreshError);
+      }
     }
-};
 
-// Cancel all pending requests
-export const cancelAllRequests = () => {
-    cancelTokenSource.cancel("User logged out");
-    cancelTokenSource = axios.CancelToken.source(); // Reset
-};
+    return Promise.reject(error);
+  }
+);
 
-// Get User Profile
+// Named Exports for API Functions
 export const getCurrentUser = async () => {
-    try {
-        const response = await axiosInstance.get("/current-user", {
-            cancelToken: cancelTokenSource.token,
-        });
-        if (!response.data?.data) {
-            throw new Error("Invalid user data format");
-        }
-        return {
-            ...response.data.data,
-            isGoogleUser: !!response.data.data.googleId,
-        };
-    } catch (error) {
-        console.error("Profile fetch error:", error);
-        throw new Error(handleError(error));
-    }
+  try {
+    const response = await apiClient.get("/current-user");
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Failed to fetch user");
+  }
 };
 
-// Sign-In
 export const signIn = async (credentials) => {
-    try {
-        const response = await axiosInstance.post("/login", credentials, {
-            cancelToken: cancelTokenSource.token,
-        });
-
-        if (response.data.data?.accessToken) {
-            localStorage.setItem("accessToken", response.data.data.accessToken);
-        }
-
-        return {
-            success: true,
-            data: response.data.data,
-            message: response.data.message,
-        };
-    } catch (error) {
-        console.error("Login Error:", error);
-        return {
-            success: false,
-            message: handleError(error),
-        };
-    }
+  try {
+    const response = await apiClient.post("/login", credentials);
+    localStorage.setItem("accessToken", response.data.data.accessToken);
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Login failed");
+  }
 };
 
-// Sign-Up
 export const signUp = async (userData) => {
-    try {
-        const response = await axiosInstance.post("/register", userData, {
-            cancelToken: cancelTokenSource.token,
-        });
-        if (response.data.data?.accessToken) {
-            localStorage.setItem("accessToken", response.data.data.accessToken);
-        }
-        return {
-            success: true,
-            data: response.data.data.user,
-            message: "Registration successful",
-        };
-    } catch (error) {
-        return {
-            success: false,
-            message: handleError(error),
-        };
-    }
+  try {
+    const response = await apiClient.post("/register", userData);
+    localStorage.setItem("accessToken", response.data.data.accessToken);
+    return response.data.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Registration failed");
+  }
 };
 
-// Sign-out
 export const logout = async () => {
-    try {
-        await axiosInstance.post("/logout"); // Call backend logout endpoint
-        localStorage.removeItem("accessToken"); // Clear localStorage
-        localStorage.removeItem("refreshToken");
-
-        // Clear cookies (if used)
-        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    } catch (error) {
-        console.error("Logout failed:", error);
-    }
+  try {
+    await apiClient.post("/logout");
+    localStorage.removeItem("accessToken");
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Logout failed");
+  }
 };
 
-// Check if User is Authenticated
-export const isAuthenticated = () => {
-    return !!localStorage.getItem("accessToken");
-};
-
-// Google OAuth Functions
-export const handleGoogleAuth = async () => {
-    try {
-        window.location.href = `${API_BASE_URL}/auth/google`;
-    } catch (error) {
-        console.error("Google Auth Error:", handleError(error));
-        throw new Error("Failed to initiate Google login");
-    }
-};
-
-// Update User Profile
-export const updateUser = async (formData) => {
-    try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) throw new Error("No authentication token found");
-
-        const response = await axiosInstance.put("/update-profile", formData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
-            },
-            cancelToken: cancelTokenSource.token,
-        });
-
-        if (!response || !response.data) {
-            throw new Error("Invalid API response format");
-        }
-        return response.data.user;
-    } catch (error) {
-        console.error("Update Profile Error:", handleError(error));
-        throw new Error("Failed to update profile");
-    }
-};
-
-// Update Avatar
 export const updateAvatar = async (file) => {
-    try {
-        const formData = new FormData();
-        formData.append("avatar", file);
+  const formData = new FormData();
+  formData.append("avatar", file);
 
-        const response = await axiosInstance.patch("/change-avatar", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-            cancelToken: cancelTokenSource.token,
-        });
-        return response.data;
-    } catch (error) {
-        throw new Error(handleError(error));
-    }
+  try {
+    const response = await apiClient.patch("/change-avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Avatar update failed");
+  }
 };
 
-// Update Cover Image
 export const updateCoverImage = async (file) => {
-    try {
-        const formData = new FormData();
-        formData.append("coverImage", file);
+  const formData = new FormData();
+  formData.append("coverImage", file);
 
-        const response = await axiosInstance.patch(
-            "/change-cover-image",
-            formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                cancelToken: cancelTokenSource.token,
-            }
-        );
-        return response.data;
-    } catch (error) {
-        throw new Error(handleError(error));
+  try {
+    const response = await apiClient.patch("/change-cover-image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Cover image update failed");
+  }
+};
+
+export const handleGoogleAuth = () => {
+  window.location.href = `${API_BASE_URL}/auth/google`;
+};
+
+export const refreshToken = async () => {
+  try {
+    const response = await apiClient.post("/refresh-token");
+    const newToken = response.data.data?.token;
+
+    if (newToken) {
+      localStorage.setItem("accessToken", newToken);
+      return newToken;
     }
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    localStorage.removeItem("accessToken");
+    throw new Error(error.response?.data?.message || "Token refresh failed");
+  }
 };

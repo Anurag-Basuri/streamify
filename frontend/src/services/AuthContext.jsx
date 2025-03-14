@@ -8,10 +8,10 @@ import {
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+    getCurrentUser,
     signIn,
     signUp,
     logout,
-    getCurrentUser,
     refreshToken,
     handleGoogleAuth,
 } from "./authService.js";
@@ -66,7 +66,7 @@ const AuthProvider = ({ children }) => {
                     intervalRef.current = setInterval(
                         handleTokenRefresh,
                         300000
-                    );
+                    ); // Refresh token every 5 minutes
                 }
             } catch (error) {
                 if (isMounted) setUser(null);

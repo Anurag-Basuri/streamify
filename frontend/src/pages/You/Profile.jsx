@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import { AuthContext } from "../../services/AuthContext.jsx";
@@ -9,75 +9,69 @@ import PropTypes from "prop-types";
 const Profile = () => {
     const { user, logout, isLoading, updateUser } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [avatarFile, setAvatarFile] = useState(null);
-    const [coverImageFile, setCoverImageFile] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
-    const [dashboardData, setDashboardData] = useState(null);
-    const [loadingDashboard, setLoadingDashboard] = useState(true);
+    const [files, setFiles] = useState({
+        avatar: null,
+        cover: null,
+    });
+    const [uploadState, setUploadState] = useState({
+        loading: false,
+        error: null,
+    });
+    const [dashboard, setDashboard] = useState({
+        data: null,
+        loading: true,
+    });
 
-    // Fetch dashboard data
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const response = await axios.get("/api/v1/dashboard", {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                });
-                console.log(response);
-                setDashboardData(response.data.data);
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            } finally {
-                setLoadingDashboard(false);
-            }
-        };
-
-        if (user) {
-            fetchDashboardData();
-        }
-    }, [user]);
-
-    // Handle file upload (avatar/cover image)
-    const handleFileUpload = async (file, type) => {
-        if (!file || user?.isGoogleUser) return;
-
-        setIsUploading(true);
-        setUploadError(null);
-
+    const fetchDashboard = useCallback(async () => {
         try {
-            let response;
-            if (type === "avatar") {
-                response = await updateAvatar(file);
-            } else {
-                response = await updateCoverImage(file);
-            }
-
-            updateUser({
-                [type]: response.data[type],
+            const { data } = await axios.get("/api/v1/dashboard", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
+                },
             });
-
-            if (type === "avatar") setAvatarFile(null);
-            if (type === "coverImage") setCoverImageFile(null);
+            setDashboard({ data: data.data, loading: false });
         } catch (error) {
-            setUploadError(error.message);
-        } finally {
-            setIsUploading(false);
+            setDashboard((prev) => ({ ...prev, loading: false }));
+            console.error("Dashboard error:", error);
         }
-    };
+    }, []);
 
-    // Redirect if user is not logged in
     useEffect(() => {
-        if (!isLoading && !user) {
-            navigate("/auth");
-        }
+        if (user) fetchDashboard();
+    }, [user, fetchDashboard]);
+
+    const handleFileUpload = useCallback(
+        async (type) => {
+            if (!files[type] || user?.isGoogleUser) return;
+
+            setUploadState({ loading: true, error: null });
+            try {
+                const response =
+                    type === "avatar"
+                        ? await updateAvatar(files[type])
+                        : await updateCoverImage(files[type]);
+
+                updateUser({ [type]: response.data[type] });
+                setFiles((prev) => ({ ...prev, [type]: null }));
+            } catch (error) {
+                setUploadState((prev) => ({
+                    ...prev,
+                    error: error.message,
+                }));
+            } finally {
+                setUploadState((prev) => ({ ...prev, loading: false }));
+            }
+        },
+        [files, updateUser, user]
+    );
+
+    useEffect(() => {
+        if (!isLoading && !user) navigate("/auth");
     }, [user, isLoading, navigate]);
 
-    // Loading state
-    if (!user || loadingDashboard) {
+    if (!user || dashboard.loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -94,26 +88,21 @@ const Profile = () => {
         >
             {/* Cover Image Section */}
             <div className="relative h-64 bg-gray-100">
-                {coverImageFile ? (
+                {files.cover ? (
                     <div className="relative h-full">
                         <img
-                            src={URL.createObjectURL(coverImageFile)}
+                            src={URL.createObjectURL(files.cover)}
                             className="w-full h-full object-cover"
                             alt="Preview cover"
                         />
                         {!user?.isGoogleUser && (
                             <div className="absolute bottom-2 right-2 flex gap-2">
                                 <button
-                                    onClick={() =>
-                                        handleFileUpload(
-                                            coverImageFile,
-                                            "coverImage"
-                                        )
-                                    }
+                                    onClick={() => handleFileUpload("cover")}
                                     className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-                                    disabled={isUploading}
+                                    disabled={uploadState.loading}
                                 >
-                                    {isUploading ? (
+                                    {uploadState.loading ? (
                                         <div className="flex items-center gap-2">
                                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                             Saving...
@@ -123,7 +112,12 @@ const Profile = () => {
                                     )}
                                 </button>
                                 <button
-                                    onClick={() => setCoverImageFile(null)}
+                                    onClick={() =>
+                                        setFiles((prev) => ({
+                                            ...prev,
+                                            cover: null,
+                                        }))
+                                    }
                                     className="bg-gray-600 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-700"
                                 >
                                     Cancel
@@ -149,7 +143,10 @@ const Profile = () => {
                                     type="file"
                                     className="hidden"
                                     onChange={(e) =>
-                                        setCoverImageFile(e.target.files[0])
+                                        setFiles((prev) => ({
+                                            ...prev,
+                                            cover: e.target.files[0],
+                                        }))
                                     }
                                     accept="image/*"
                                 />
@@ -164,10 +161,10 @@ const Profile = () => {
                 {/* Avatar Section */}
                 <div className="flex items-center gap-6 mb-8">
                     <div className="relative -mt-20">
-                        {avatarFile ? (
+                        {files.avatar ? (
                             <div className="relative">
                                 <img
-                                    src={URL.createObjectURL(avatarFile)}
+                                    src={URL.createObjectURL(files.avatar)}
                                     className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg"
                                     alt="Preview"
                                 />
@@ -175,22 +172,24 @@ const Profile = () => {
                                     <div className="absolute bottom-0 right-0 flex gap-2">
                                         <button
                                             onClick={() =>
-                                                handleFileUpload(
-                                                    avatarFile,
-                                                    "avatar"
-                                                )
+                                                handleFileUpload("avatar")
                                             }
                                             className="bg-blue-600 text-white p-1 rounded-full text-xs hover:bg-blue-700 disabled:opacity-50"
-                                            disabled={isUploading}
+                                            disabled={uploadState.loading}
                                         >
-                                            {isUploading ? (
+                                            {uploadState.loading ? (
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                             ) : (
                                                 "✓"
                                             )}
                                         </button>
                                         <button
-                                            onClick={() => setAvatarFile(null)}
+                                            onClick={() =>
+                                                setFiles((prev) => ({
+                                                    ...prev,
+                                                    avatar: null,
+                                                }))
+                                            }
                                             className="bg-gray-600 text-white p-1 rounded-full text-xs hover:bg-gray-700"
                                         >
                                             ✕
@@ -234,7 +233,10 @@ const Profile = () => {
                                             type="file"
                                             className="hidden"
                                             onChange={(e) =>
-                                                setAvatarFile(e.target.files[0])
+                                                setFiles((prev) => ({
+                                                    ...prev,
+                                                    avatar: e.target.files[0],
+                                                }))
                                             }
                                             accept="image/*"
                                         />
@@ -246,9 +248,9 @@ const Profile = () => {
                 </div>
 
                 {/* Error Display */}
-                {uploadError && (
+                {uploadState.error && (
                     <div className="text-red-500 text-sm mb-4">
-                        Error: {uploadError}
+                        Error: {uploadState.error}
                     </div>
                 )}
 
@@ -256,106 +258,59 @@ const Profile = () => {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <StatCard
                         title="Tweets"
-                        value={dashboardData?.stats.tweetCount || 0}
-                        icon="tweet"
+                        value={dashboard.data?.stats.tweetCount || 0}
                     />
                     <StatCard
                         title="Videos"
-                        value={dashboardData?.stats.videoCount || 0}
-                        icon="video"
+                        value={dashboard.data?.stats.videoCount || 0}
                     />
                     <StatCard
                         title="Watch Later"
-                        value={dashboardData?.stats.watchLaterCount || 0}
-                        icon="watch"
+                        value={dashboard.data?.stats.watchLaterCount || 0}
                     />
                     <StatCard
                         title="Likes"
-                        value={dashboardData?.stats.likeCount || 0}
-                        icon="like"
+                        value={dashboard.data?.stats.likeCount || 0}
                     />
                     <StatCard
                         title="Comments"
-                        value={dashboardData?.stats.commentCount || 0}
-                        icon="comment"
+                        value={dashboard.data?.stats.commentCount || 0}
                     />
                 </div>
 
                 {/* Content Sections */}
                 <div className="space-y-8">
-                    {/* Tweets Section */}
-                    {dashboardData?.tweets?.length > 0 && (
+                    {dashboard.data?.tweets?.length > 0 && (
                         <ContentSection
                             title="Recent Tweets"
-                            items={dashboardData.tweets}
+                            items={dashboard.data.tweets}
                             renderItem={(tweet) => (
-                                <div
-                                    key={tweet._id}
-                                    className="bg-gray-50 p-4 rounded-lg"
-                                >
-                                    <p className="text-gray-800">
-                                        {tweet.content}
-                                    </p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        {new Date(
-                                            tweet.createdAt
-                                        ).toLocaleDateString()}
-                                    </p>
-                                </div>
+                                <TweetItem key={tweet._id} tweet={tweet} />
                             )}
                         />
                     )}
 
-                    {/* Videos Section */}
-                    {dashboardData?.videos?.length > 0 && (
+                    {dashboard.data?.videos?.length > 0 && (
                         <ContentSection
                             title="Recent Videos"
-                            items={dashboardData.videos}
+                            items={dashboard.data.videos}
                             renderItem={(video) => (
-                                <div
-                                    key={video._id}
-                                    className="bg-gray-50 p-4 rounded-lg"
-                                >
-                                    <h3 className="font-medium text-gray-800">
-                                        {video.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-600">
-                                        {video.description}
-                                    </p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                        {video.views} views •{" "}
-                                        {new Date(
-                                            video.createdAt
-                                        ).toLocaleDateString()}
-                                    </p>
-                                </div>
+                                <VideoItem key={video._id} video={video} />
                             )}
                         />
                     )}
 
-                    {/* Watch Later Section */}
-                    {dashboardData?.watchLater?.length > 0 && (
+                    {dashboard.data?.watchLater?.length > 0 && (
                         <ContentSection
                             title="Watch Later"
-                            items={dashboardData.watchLater}
+                            items={dashboard.data.watchLater}
                             renderItem={(video) => (
-                                <div
-                                    key={video._id}
-                                    className="bg-gray-50 p-4 rounded-lg"
-                                >
-                                    <h3 className="font-medium text-gray-800">
-                                        {video.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-600">
-                                        {video.description}
-                                    </p>
-                                </div>
+                                <VideoItem key={video._id} video={video} />
                             )}
                         />
                     )}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="mt-8 flex gap-4">
                     <button
                         onClick={logout}
@@ -369,21 +324,15 @@ const Profile = () => {
     );
 };
 
-// Stat Card Component with Prop Validation
-const StatCard = ({ title, value, icon }) => (
+// StatCard Component
+const StatCard = ({ title, value }) => (
     <div className="bg-gray-50 p-4 rounded-lg text-center">
         <div className="text-2xl font-bold text-gray-800">{value}</div>
         <div className="text-sm text-gray-600 mt-1">{title}</div>
     </div>
 );
 
-StatCard.propTypes = {
-    title: PropTypes.string.isRequired,
-    value: PropTypes.number.isRequired,
-    icon: PropTypes.oneOf(["tweet", "video", "watch", "like", "comment"]),
-};
-
-// Content Section Component with Prop Validation
+// ContentSection Component
 const ContentSection = ({ title, items, renderItem }) => (
     <div>
         <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
@@ -393,15 +342,85 @@ const ContentSection = ({ title, items, renderItem }) => (
     </div>
 );
 
+// TweetItem Component
+const TweetItem = ({ tweet }) => (
+    <div className="bg-gray-50 p-4 rounded-lg">
+        <p className="text-gray-800">{tweet.content}</p>
+        <p className="text-sm text-gray-500 mt-2">
+            {new Date(tweet.createdAt).toLocaleDateString()}
+        </p>
+    </div>
+);
+
+// VideoItem Component
+const VideoItem = ({ video }) => (
+    <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-medium text-gray-800">{video.title}</h3>
+        <p className="text-sm text-gray-600">{video.description}</p>
+        <p className="text-sm text-gray-500 mt-2">
+            {video.views} views •{" "}
+            {new Date(video.createdAt).toLocaleDateString()}
+        </p>
+    </div>
+);
+
+// PropTypes Validation
+StatCard.propTypes = {
+    title: PropTypes.string.isRequired,
+    value: PropTypes.number.isRequired,
+};
+
 ContentSection.propTypes = {
     title: PropTypes.string.isRequired,
     items: PropTypes.arrayOf(
         PropTypes.shape({
             _id: PropTypes.string.isRequired,
-            // Add other required fields based on your data structure
         })
     ).isRequired,
     renderItem: PropTypes.func.isRequired,
+};
+
+TweetItem.propTypes = {
+    tweet: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        createdAt: PropTypes.string.isRequired,
+    }).isRequired,
+};
+
+VideoItem.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        views: PropTypes.number,
+        createdAt: PropTypes.string.isRequired,
+    }).isRequired,
+};
+
+// Default Props
+StatCard.defaultProps = {
+    value: 0,
+};
+
+ContentSection.defaultProps = {
+    items: [],
+};
+
+TweetItem.defaultProps = {
+    tweet: {
+        content: "No content available",
+        createdAt: new Date().toISOString(),
+    },
+};
+
+VideoItem.defaultProps = {
+    video: {
+        title: "Untitled Video",
+        description: "No description available",
+        views: 0,
+        createdAt: new Date().toISOString(),
+    },
 };
 
 export default Profile;
