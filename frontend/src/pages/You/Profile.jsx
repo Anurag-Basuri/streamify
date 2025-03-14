@@ -58,8 +58,25 @@ const Profile = () => {
     }, []);
 
     useEffect(() => {
-        if (user) fetchDashboard();
-    }, [user, fetchDashboard]);
+        const fetchData = async () => {
+            if (user && localStorage.getItem("accessToken")) {
+                try {
+                    const { data } = await axios.get("/api/v1/dashboard", {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem(
+                                "accessToken"
+                            )}`,
+                        },
+                    });
+                    setDashboard({ data: data.data, loading: false });
+                } catch (error) {
+                    setDashboard({ data: null, loading: false });
+                }
+            }
+        };
+
+        fetchData();
+    }, [user]);
 
     const handleFileUpload = useCallback(
         async (type) => {

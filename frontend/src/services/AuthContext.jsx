@@ -32,65 +32,77 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         try {
             const profile = await getCurrentUser();
+            console.log("User profile loaded:", profile); // Log profile
             setUser(profile);
             return profile;
         } catch (error) {
+            console.error("Failed to load user profile:", error); // Log error
             setUser(null);
             throw error;
         } finally {
-            setIsLoading(false);
+            setIsLoading(false); // Ensure this is called
         }
     }, []);
 
     // Handle token refresh
     const handleTokenRefresh = useCallback(async () => {
-        if (!user || isTokenRefreshing) return;
+        if (isTokenRefreshing) return;
 
         setIsTokenRefreshing(true);
         try {
-            await refreshToken();
-            await loadUserProfile();
+            const newToken = await refreshToken();
+            const profile = await getCurrentUser();
+            setUser(profile);
         } catch (error) {
             setUser(null);
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
+            navigate("/auth"); // Redirect to login on refresh failure
         } finally {
             setIsTokenRefreshing(false);
         }
-    }, [user, isTokenRefreshing, loadUserProfile]);
+    }, [isTokenRefreshing, navigate]);
 
     // Auth initialization
     useEffect(() => {
         let isMounted = true;
-
         const initializeAuth = async () => {
             try {
-                await loadUserProfile();
-                if (isMounted) {
-                    intervalRef.current = setInterval(
-                        handleTokenRefresh,
-                        300000
-                    ); // Refresh token every 5 minutes
+                if (localStorage.getItem("accessToken")) {
+                    await loadUserProfile(); // This handles isLoading internally
+                } else {
+                    setIsLoading(false); // No token, stop loading immediately
                 }
             } catch (error) {
                 if (isMounted) {
-                    console.error("Auth initialization failed:", error);
                     setUser(null);
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
+                    navigate("/auth");
                 }
             } finally {
                 if (isMounted) setIsInitialized(true);
             }
         };
 
-        if (!isInitialized) initializeAuth();
-
+        initializeAuth();
         return () => {
             isMounted = false;
-            clearInterval(intervalRef.current);
         };
-    }, [handleTokenRefresh, loadUserProfile, isInitialized]);
+    }, [navigate, loadUserProfile]);
+
+    // Token refresh interval
+    useEffect(() => {
+        if (user) {
+            intervalRef.current = setInterval(handleTokenRefresh, 300000); // Refresh every 5 minutes
+        }
+
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [user, handleTokenRefresh]);
 
     // OAuth callback handler
     useEffect(() => {
@@ -113,7 +125,9 @@ const AuthProvider = ({ children }) => {
                         window.location.pathname
                     );
                 } catch (error) {
-                    navigate("/auth");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    navigate("/auth"); // Redirect to login on OAuth failure
                 }
             }
         };
@@ -126,15 +140,24 @@ const AuthProvider = ({ children }) => {
         async (credentials) => {
             try {
                 const { accessToken, refreshToken } = await signIn(credentials);
+                console.log("Sign-in successful. Tokens:", {
+                    accessToken,
+                    refreshToken,
+                }); // Log tokens
                 localStorage.setItem("accessToken", accessToken);
                 localStorage.setItem("refreshToken", refreshToken);
                 await loadUserProfile();
+                console.log("Login successful. User:", user); // Log user
                 return true;
             } catch (error) {
+                console.error("Login failed:", error); // Log error
+                setUser(null);
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
                 return false;
             }
         },
-        [loadUserProfile]
+        [loadUserProfile, user]
     );
 
     // Register function
@@ -158,7 +181,9 @@ const AuthProvider = ({ children }) => {
         try {
             await logout();
             setUser(null);
-            clearInterval(intervalRef.current);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
             navigate("/auth");
@@ -196,7 +221,7 @@ const AuthProvider = ({ children }) => {
         [
             user,
             isLoading,
-            isInitialized,
+            isInitialized, // Add isInitialized to dependencies
             login,
             register,
             logoutUser,

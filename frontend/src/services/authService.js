@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api/v1/users";
@@ -11,58 +12,73 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor for token injection
-apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+// Create Axios instance with default configuration
+const baseClient = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
 
-// Response interceptor for error handling
+// Request interceptor
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  });
+  
+// Response interceptor
 apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
-
-        // Prevent infinite loops on failed refresh
-        if (
-            error.response?.status === 401 &&
-            !originalRequest._retry &&
-            !originalRequest.url.includes("/refresh-token") &&
-            localStorage.getItem("refreshToken") // Only attempt refresh if refreshToken exists
-        ) {
-            originalRequest._retry = true;
-
-            try {
-                const newToken = await refreshToken();
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                return apiClient(originalRequest);
-            } catch (refreshError) {
-                // Clear all auth tokens on refresh failure
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                window.location.href = "/auth";
-                return Promise.reject(refreshError);
-            }
+      const originalRequest = error.config;
+      
+      if (error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url.includes("/refresh-token")) {
+        originalRequest._retry = true;
+  
+        try {
+          const newToken = await refreshToken();
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return baseClient(originalRequest); // Use base client to avoid interceptor loop
+        } catch (refreshError) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          window.location.href = "/auth";
         }
-
-        // Reject other errors
-        return Promise.reject(error);
+      }
+      return Promise.reject(error);
     }
-);
-
-// Named Exports for API Functions
+  );
+  
+// API Functions
 export const getCurrentUser = async () => {
-  try {
+    try {
       const response = await apiClient.get("/current-user");
       return response.data.data;
-  } catch (error) {
-      throw new Error(
-          error.response?.data?.message || "Failed to fetch user"
-      );
-  }
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to fetch user");
+    }
+};
+  
+export const refreshToken = async () => {
+    try {
+      const response = await baseClient.post("/refresh-token", {
+        refreshToken: localStorage.getItem("refreshToken")
+      });
+      
+      const newToken = response.data.data?.token;
+      if (!newToken) throw new Error("No token received");
+      
+      localStorage.setItem("accessToken", newToken);
+      return newToken;
+    } catch (error) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      throw error;
+    }
 };
 
 export const signIn = async (credentials) => {
@@ -146,24 +162,4 @@ export const updateCoverImage = async (file) => {
 
 export const handleGoogleAuth = () => {
     window.location.href = `${API_BASE_URL}/auth/google`;
-};
-
-export const refreshToken = async () => {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/refresh-token`, {
-            refreshToken: localStorage.getItem("refreshToken"),
-        });
-        const newToken = response.data.data?.token;
-
-        if (newToken) {
-            localStorage.setItem("accessToken", newToken);
-            return newToken;
-        }
-        throw new Error("No token received");
-    } catch (error) {
-        console.error("Token refresh failed:", error);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        throw error;
-    }
 };
