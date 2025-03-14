@@ -344,7 +344,7 @@ const Profile = () => {
 };
 
 // StatCard Component
-const StatCard = ({ title, value }) => (
+const StatCard = ({ title = "Default Title", value = 0 }) => (
     <div className="bg-gray-50 p-4 rounded-lg text-center">
         <div className="text-2xl font-bold text-gray-800">{value}</div>
         <div className="text-sm text-gray-600 mt-1">{title}</div>
@@ -352,7 +352,7 @@ const StatCard = ({ title, value }) => (
 );
 
 // ContentSection Component
-const ContentSection = ({ title, items, renderItem }) => (
+const ContentSection = ({ title, items = [], renderItem }) => (
     <div>
         <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -362,7 +362,12 @@ const ContentSection = ({ title, items, renderItem }) => (
 );
 
 // TweetItem Component
-const TweetItem = ({ tweet }) => (
+const TweetItem = ({
+    tweet = {
+        content: "No content available",
+        createdAt: new Date().toISOString(),
+    },
+}) => (
     <div className="bg-gray-50 p-4 rounded-lg">
         <p className="text-gray-800">{tweet.content}</p>
         <p className="text-sm text-gray-500 mt-2">
@@ -372,7 +377,14 @@ const TweetItem = ({ tweet }) => (
 );
 
 // VideoItem Component
-const VideoItem = ({ video }) => (
+const VideoItem = ({
+    video = {
+        title: "Untitled Video",
+        description: "No description available",
+        views: 0,
+        createdAt: new Date().toISOString(),
+    },
+}) => (
     <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-medium text-gray-800">{video.title}</h3>
         <p className="text-sm text-gray-600">{video.description}</p>
@@ -385,8 +397,8 @@ const VideoItem = ({ video }) => (
 
 // PropTypes Validation
 StatCard.propTypes = {
-    title: PropTypes.string.isRequired,
-    value: PropTypes.number.isRequired,
+    title: PropTypes.string,
+    value: PropTypes.number,
 };
 
 ContentSection.propTypes = {
@@ -395,51 +407,26 @@ ContentSection.propTypes = {
         PropTypes.shape({
             _id: PropTypes.string.isRequired,
         })
-    ).isRequired,
+    ),
     renderItem: PropTypes.func.isRequired,
 };
 
 TweetItem.propTypes = {
     tweet: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        content: PropTypes.string.isRequired,
-        createdAt: PropTypes.string.isRequired,
-    }).isRequired,
+        _id: PropTypes.string,
+        content: PropTypes.string,
+        createdAt: PropTypes.string,
+    }),
 };
 
 VideoItem.propTypes = {
     video: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
+        _id: PropTypes.string,
+        title: PropTypes.string,
         description: PropTypes.string,
         views: PropTypes.number,
-        createdAt: PropTypes.string.isRequired,
-    }).isRequired,
-};
-
-// Default Props
-StatCard.defaultProps = {
-    value: 0,
-};
-
-ContentSection.defaultProps = {
-    items: [],
-};
-
-TweetItem.defaultProps = {
-    tweet: {
-        content: "No content available",
-        createdAt: new Date().toISOString(),
-    },
-};
-
-VideoItem.defaultProps = {
-    video: {
-        title: "Untitled Video",
-        description: "No description available",
-        views: 0,
-        createdAt: new Date().toISOString(),
-    },
+        createdAt: PropTypes.string,
+    }),
 };
 
 export default Profile;
