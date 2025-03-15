@@ -86,6 +86,12 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                             label="Downloads"
                             isOpen={isOpen}
                         />
+                        <NavItem
+                            to="/uservideos"
+                            icon={Download}
+                            label="Downloads"
+                            isOpen={isOpen}
+                        />
                     </SidebarSection>
                 </div>
 

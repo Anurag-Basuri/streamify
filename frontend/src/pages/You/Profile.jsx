@@ -23,39 +23,39 @@ const Profile = () => {
     });
     const [dashboardError, setDashboardError] = useState(null);
 
-    const fetchDashboard = useCallback(async () => {
-        try {
-            const { data } = await axios.get(
-                "http://localhost:8000/api/v1/dashboard",
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            setDashboard({ data: data.data, loading: false });
-            setDashboardError(null); // Clear any previous errors
-        } catch (error) {
-            setDashboard((prev) => ({ ...prev, loading: false }));
-            setDashboardError(
-                "Failed to load dashboard data. Please try again later."
-            );
-            console.error("Dashboard error:", error);
+    // const fetchDashboard = useCallback(async () => {
+    //     try {
+    //         const { data } = await axios.get(
+    //             "http://localhost:8000/api/v1/dashboard",
+    //             {
+    //                 headers: {
+    //                     Authorization: `Bearer ${localStorage.getItem(
+    //                         "accessToken"
+    //                     )}`,
+    //                 },
+    //             }
+    //         );
+    //         setDashboard({ data: data.data, loading: false });
+    //         setDashboardError(null); // Clear any previous errors
+    //     } catch (error) {
+    //         setDashboard((prev) => ({ ...prev, loading: false }));
+    //         setDashboardError(
+    //             "Failed to load dashboard data. Please try again later."
+    //         );
+    //         console.error("Dashboard error:", error);
 
-            // Log additional details
-            if (error.response) {
-                console.error("Response data:", error.response.data);
-                console.error("Response status:", error.response.status);
-                console.error("Response headers:", error.response.headers);
-            } else if (error.request) {
-                console.error("No response received:", error.request);
-            } else {
-                console.error("Error setting up request:", error.message);
-            }
-        }
-    }, []);
+    //         // Log additional details
+    //         if (error.response) {
+    //             console.error("Response data:", error.response.data);
+    //             console.error("Response status:", error.response.status);
+    //             console.error("Response headers:", error.response.headers);
+    //         } else if (error.request) {
+    //             console.error("No response received:", error.request);
+    //         } else {
+    //             console.error("Error setting up request:", error.message);
+    //         }
+    //     }
+    // }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,6 +68,7 @@ const Profile = () => {
                             )}`,
                         },
                     });
+                    console.log(data);
                     setDashboard({ data: data.data, loading: false });
                 } catch (error) {
                     setDashboard({ data: null, loading: false });
@@ -195,7 +196,7 @@ const Profile = () => {
             {/* Profile Content */}
             <div className="p-8">
                 {/* Avatar Section */}
-                <div className="flex items-center gap-6 mb-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-8">
                     <div className="relative -mt-20">
                         {files.avatar ? (
                             <div className="relative">
@@ -280,6 +281,95 @@ const Profile = () => {
                                 )}
                             </div>
                         )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                {user.fullName}
+                            </h1>
+                            {user?.isVerified && (
+                                <svg
+                                    className="w-5 h-5 text-blue-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            )}
+                        </div>
+
+                        <p className="text-gray-600">@{user.username}</p>
+
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                            {user.email && (
+                                <div className="flex items-center gap-1">
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                        />
+                                    </svg>
+                                    <span>{user.email}</span>
+                                </div>
+                            )}
+
+                            {user?.createdAt && (
+                                <div className="flex items-center gap-1">
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
+                                    </svg>
+                                    <span>
+                                        Joined{" "}
+                                        {new Date(
+                                            user.createdAt
+                                        ).toLocaleDateString("en-US", {
+                                            month: "long",
+                                            year: "numeric",
+                                        })}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {user?.bio && (
+                            <p className="mt-4 text-gray-700">{user.bio}</p>
+                        )}
+
+                        <div className="flex gap-4 mt-4">
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <span className="font-semibold">
+                                    {user.followingCount || 0}
+                                </span>
+                                <span>Following</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <span className="font-semibold">
+                                    {user.followersCount || 0}
+                                </span>
+                                <span>Followers</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
