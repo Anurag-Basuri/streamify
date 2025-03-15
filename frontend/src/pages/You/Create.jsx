@@ -41,29 +41,18 @@ const Create = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-
-        if (!videoFile || !thumbnail) {
-            setError("Please upload both video and thumbnail");
-            return;
-        }
-
+        
         try {
             setLoading(true);
 
-            // Create FormData for multipart upload
             const formPayload = new FormData();
-
-            // Append files
             formPayload.append("videoFile", videoFile);
             formPayload.append("thumbnail", thumbnail);
-
-            // Append other fields
             formPayload.append("title", formData.title);
             formPayload.append("description", formData.description);
             formPayload.append("duration", formData.duration);
             formPayload.append("tags", JSON.stringify(formData.tags));
 
-            // Send to backend
             const response = await fetch("/api/v1/videos/upload", {
                 method: "POST",
                 headers: {
@@ -74,14 +63,15 @@ const Create = () => {
                 body: formPayload,
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Upload failed");
+                throw new Error(data.message || "Upload failed");
             }
 
-            navigate("/");
+            navigate(`/video/${data.data._id}`);
         } catch (err) {
-            setError(err.message || "Failed to upload video");
+            setError(err.message || "Upload failed. Please try again.");
         } finally {
             setLoading(false);
         }

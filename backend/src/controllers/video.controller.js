@@ -10,66 +10,67 @@ import rateLimit from "express-rate-limit";
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
     const { title, description, duration, tags } = req.body;
-    const videoFile = req.files?.videoFile?.[0]; // Access first element
-    const thumbnail = req.files?.thumbnail?.[0]; // Access first element
+
+    // Get files from Multer
+    const videoFile = req.files?.videoFile?.[0];
+    const thumbnail = req.files?.thumbnail?.[0];
 
     // Validate required fields
-    if (!thumbnail || !videoFile) {
-        throw new APIerror(400, "Video file and thumbnail are required");
+    if (!videoFile || !thumbnail) {
+        throw new APIerror(400, "Both video and thumbnail are required");
     }
 
-    // Validate title
-    if (!title || title.length < 5 || title.length > 100) {
-        throw new APIerror(400, "Title must be between 5 and 100 characters");
+    // Validate file types
+    const videoMimeType = videoFile.mimetype.startsWith("video/");
+    const imageMimeType = thumbnail.mimetype.startsWith("image/");
+    if (!videoMimeType || !imageMimeType) {
+        throw new APIerror(400, "Invalid file format");
     }
 
-    // Parse duration
-    const durationNumber = parseFloat(duration);
-    if (isNaN(durationNumber)) {
-        throw new APIerror(400, "Invalid duration value");
-    }
-
-    // Parse tags
-    let parsedTags = [];
-    if (typeof tags === "string") {
+    // Upload to Cloudinary with error handling
+    const uploadFile = async (file, resourceType) => {
         try {
-            parsedTags = JSON.parse(tags);
-            if (!Array.isArray(parsedTags)) {
-                throw new APIerror(400, "Tags must be an array");
-            }
-        } catch (err) {
-            throw new APIerror(400, "Invalid tags format");
+            return await cloudinary.uploader.upload(
+                `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+                {
+                    resource_type: resourceType,
+                    folder: "video-platform",
+                    chunk_size: 6000000, // 6MB chunks for large files
+                }
+            );
+        } catch (error) {
+            console.error(`Cloudinary ${resourceType} upload error:`, error);
+            throw new APIerror(500, `${resourceType} upload failed`);
         }
-    } else if (Array.isArray(tags)) {
-        parsedTags = tags;
-    }
+    };
 
-    // Upload to Cloudinary
-    const videoUpload = await uploadOnCloudinary(videoFile.path).catch(
-        (err) => {
-            throw new APIerror(500, "Failed to upload video to Cloudinary");
-        }
-    );
-    const thumbnailUpload = await uploadOnCloudinary(thumbnail.path).catch(
-        (err) => {
-            throw new APIerror(500, "Failed to upload thumbnail to Cloudinary");
-        }
-    );
+    // Parallel uploads
+    const [videoUpload, thumbnailUpload] = await Promise.all([
+        uploadFile(videoFile, "video"),
+        uploadFile(thumbnail, "image"),
+    ]);
 
-    // Create video
+    // Create video document
     const video = await Video.create({
         title,
         description,
-        duration: durationNumber,
-        tags: parsedTags,
-        videoFile: videoUpload.secure_url,
-        thumbnail: thumbnailUpload.secure_url,
+        duration: parseFloat(duration),
+        tags: JSON.parse(tags),
+        videoFile: {
+            url: videoUpload.secure_url,
+            publicId: videoUpload.public_id,
+            duration: videoUpload.duration,
+        },
+        thumbnail: {
+            url: thumbnailUpload.secure_url,
+            publicId: thumbnailUpload.public_id,
+        },
         owner: req.user._id,
     });
 
     return res
-        .status(200)
-        .json(new APIresponse(200, video, "Video uploaded successfully"));
+        .status(201)
+        .json(new APIresponse(201, video, "Video uploaded successfully"));
 });
 
 // Fetch all videos (with optional filters)
