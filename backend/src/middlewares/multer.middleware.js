@@ -33,7 +33,6 @@ const storage = new CloudinaryStorage({
 // File filter middleware
 const fileFilter = (req, file, cb) => {
     try {
-        // Allow only video and image files
         if (
             file.mimetype.startsWith("video/") ||
             file.mimetype.startsWith("image/")
@@ -53,55 +52,26 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-// Configure multer with error handling
-const upload = multer({
+// Configure multer with different upload handlers
+const uploadAvatar = multer({
     storage,
     fileFilter,
-    limits: {
-        fileSize: 1024 * 1024 * 500, // 500MB limit
-        files: 2, // Maximum 2 files (video + thumbnail)
-    },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit for avatar
+}).single("avatar");
+
+const uploadCoverImage = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for cover image
+}).single("coverImage");
+
+const uploadFields = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for each file
 }).fields([
-    { name: "videoFile", maxCount: 1 },
-    { name: "thumbnail", maxCount: 1 },
+    { name: "avatar", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
 ]);
 
-// Custom error handling middleware wrapper
-const handleUpload = (req, res, next) => {
-    upload(req, res, (err) => {
-        try {
-            if (err) {
-                if (err instanceof multer.MulterError) {
-                    // Handle specific Multer errors
-                    if (err.code === "LIMIT_FILE_SIZE") {
-                        throw new APIerror(
-                            413,
-                            "File too large - Maximum 500MB allowed"
-                        );
-                    }
-                    if (err.code === "LIMIT_FILE_COUNT") {
-                        throw new APIerror(
-                            400,
-                            "Too many files - Only video and thumbnail allowed"
-                        );
-                    }
-                }
-                throw err;
-            }
-
-            // Validate required files
-            if (!req.files?.videoFile?.[0] || !req.files?.thumbnail?.[0]) {
-                throw new APIerror(
-                    400,
-                    "Both video and thumbnail are required"
-                );
-            }
-
-            next();
-        } catch (error) {
-            next(error);
-        }
-    });
-};
-
-export { handleUpload as upload };
+export { uploadAvatar, uploadCoverImage, uploadFields };

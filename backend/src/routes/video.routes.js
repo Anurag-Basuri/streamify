@@ -1,6 +1,6 @@
 import Router from "express";
 import { body, param } from "express-validator";
-import { upload } from "../middlewares/multer.middleware.js";
+import { uploadFields } from "../middlewares/multer.middleware.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js"; // Import access token middleware
 import {
     create_new_video,
@@ -35,10 +35,7 @@ const createVideoRules = [
 
 // Route to upload a new video
 router.route("/upload").post(
-    upload.fields([
-        { name: "videoFile", maxCount: 1 }, // Ensure maxCount is appropriate
-        { name: "thumbnail", maxCount: 1 },
-    ]),
+    uploadFields,
     createVideoRules,
     validateResult,
     create_new_video

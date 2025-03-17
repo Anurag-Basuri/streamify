@@ -15,7 +15,11 @@ import {
     get_watch_history,
 } from "../controllers/user.controller.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js";
+import {
+    uploadAvatar,
+    uploadCoverImage,
+    uploadFields,
+} from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
@@ -68,10 +72,7 @@ const registerValidationRules = [
 // Auth Routes
 router.post(
     "/register",
-    upload.fields([
-        { name: "avatar", maxCount: 1 },
-        { name: "coverImage", maxCount: 1 },
-    ]),
+    uploadFields, // ✅ Using predefined upload middleware for avatar & cover image
     registerValidationRules,
     registerUser
 );
@@ -100,22 +101,19 @@ router.patch("/change-password", verifyAccessToken, change_current_password);
 router.patch(
     "/change-avatar",
     verifyAccessToken,
-    upload.single("avatar"),
+    uploadAvatar, // ✅ Use specific upload middleware
     change_Avatar
 );
 router.patch(
     "/change-cover-image",
     verifyAccessToken,
-    upload.single("coverImage"),
+    uploadCoverImage, // ✅ Use specific upload middleware
     change_CoverImage
 );
 router.patch(
     "/update-details",
     verifyAccessToken,
-    upload.fields([
-        { name: "avatar", maxCount: 1 },
-        { name: "coverImage", maxCount: 1 },
-    ]),
+    uploadFields, // ✅ Use predefined upload middleware
     update_account_details
 );
 

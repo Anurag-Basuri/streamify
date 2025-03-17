@@ -1,4 +1,4 @@
-import Router from "express";
+import { Router } from "express";
 import passport from "passport";
 import { body, validationResult } from "express-validator";
 import {
@@ -9,10 +9,18 @@ import {
     googleAuth,
 } from "../controllers/auth.controller.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js";
-import { generateTokens } from "../controllers/auth.controller.js"; // Ensure this function is imported
+import { uploadAvatar } from "../middlewares/multer.middleware.js";
 
 const router = Router();
+
+// ✅ Middleware to handle validation errors
+const validateRequest = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+};
 
 // ✅ Google OAuth - Redirect User to Google
 router.get(
@@ -20,7 +28,7 @@ router.get(
     passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// ✅ Google OAuth - Callback URL (Moved logic to controller)
+// ✅ Google OAuth - Callback URL (Handled in controller)
 router.get(
     "/google/callback",
     passport.authenticate("google", { session: false }),
@@ -42,22 +50,10 @@ const registerValidation = [
         .withMessage("Password must be at least 6 characters"),
 ];
 
-// ✅ Middleware to handle validation errors
-const validateRequest = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-};
-
 // ✅ Register User
 router.post(
     "/register",
-    upload.fields([
-        { name: "avatar", maxCount: 1 },
-        { name: "coverImage", maxCount: 1 },
-    ]),
+    uploadAvatar,
     registerValidation,
     validateRequest,
     registerUser
