@@ -54,7 +54,7 @@ const create_new_video = asynchandler(async (req, res) => {
     const video = await Video.create({
         title,
         description,
-        duration: parseFloat(duration),
+        duration: videoUpload.duration,
         tags: JSON.parse(tags),
         videoFile: {
             url: videoUpload.secure_url,

@@ -30,7 +30,6 @@ const createVideoRules = [
     body("description")
         .notEmpty()
         .withMessage("Description should not be empty"),
-    body("duration").isNumeric().withMessage("Duration must be a valid number"),
 ];
 
 // Route to upload a new video
