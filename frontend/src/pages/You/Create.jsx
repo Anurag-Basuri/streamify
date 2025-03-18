@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaCloudUploadAlt, FaTimes, FaSpinner } from "react-icons/fa";
+import { FaCloudUploadAlt, FaTimes, FaSpinner, FaTag } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 const Create = () => {
     const navigate = useNavigate();
@@ -9,25 +10,33 @@ const Create = () => {
         description: "",
         tags: [],
         newTag: "",
-        duration: 0,
     });
     const [videoFile, setVideoFile] = useState(null);
     const [thumbnail, setThumbnail] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [isDragging, setIsDragging] = useState(false); // For drag-and-drop feedback
     const videoRef = useRef(null);
     const thumbnailRef = useRef(null);
 
+    // Cleanup object URLs
+    useEffect(() => {
+        return () => {
+            if (videoRef.current?.src) {
+                URL.revokeObjectURL(videoRef.current.src);
+            }
+            if (thumbnailRef.current?.src) {
+                URL.revokeObjectURL(thumbnailRef.current.src);
+            }
+        };
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Add this tag removal function if missing
     const removeTag = (indexToRemove) => {
         setFormData((prev) => ({
             ...prev,
@@ -35,7 +44,6 @@ const Create = () => {
         }));
     };
 
-    // Add this tag input handler if missing
     const handleTagInput = (e) => {
         if (e.key === "Enter" && formData.newTag.trim()) {
             setFormData((prev) => ({
@@ -47,54 +55,52 @@ const Create = () => {
         }
     };
 
-    // Preview handlers
-    const handleVideoUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
+    const handleFileUpload = (type, file) => {
+        if (!file) return;
+
+        if (type === "video") {
+            if (!file.type.startsWith("video/")) {
+                setError("Please upload a valid video file (MP4, MOV, AVI)");
+                return;
+            }
             setVideoFile(file);
             if (videoRef.current) {
-                const previewUrl = URL.createObjectURL(file);
-                videoRef.current.src = previewUrl;
-            } else {
-                console.error("Video ref is not attached to a DOM element");
+                videoRef.current.src = URL.createObjectURL(file);
             }
-        }
-    };
-
-    const handleThumbnailUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
+        } else {
+            if (!file.type.startsWith("image/")) {
+                setError("Please upload a valid image file (JPG, PNG)");
+                return;
+            }
             setThumbnail(file);
             if (thumbnailRef.current) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    thumbnailRef.current.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                console.error("Thumbnail ref is not attached to a DOM element");
+                thumbnailRef.current.src = URL.createObjectURL(file);
             }
         }
     };
 
-    // Enhanced form handling
+    const handleDragDrop = (type, e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        handleFileUpload(type, file);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        setUploadProgress(0);
 
         try {
-            setLoading(true);
             if (!videoFile || !thumbnail) {
                 throw new Error("Please select both video and thumbnail");
             }
 
+            setLoading(true);
             const formPayload = new FormData();
             formPayload.append("videoFile", videoFile);
             formPayload.append("thumbnail", thumbnail);
             formPayload.append("title", formData.title);
             formPayload.append("description", formData.description);
-            formPayload.append("duration", parseFloat(formData.duration));
             formPayload.append("tags", JSON.stringify(formData.tags));
 
             const xhr = new XMLHttpRequest();
@@ -106,18 +112,20 @@ const Create = () => {
 
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    setUploadProgress(percent);
+                    setUploadProgress(Math.round((e.loaded / e.total) * 100));
                 }
             };
 
             xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const data = JSON.parse(xhr.response);
-                    navigate(`/video/${data.data._id}`);
+                    try {
+                        const data = JSON.parse(xhr.response);
+                        navigate(`/video/${data.data._id}`);
+                    } catch (err) {
+                        throw new Error("Invalid server response");
+                    }
                 } else {
-                    const error = JSON.parse(xhr.response);
-                    throw new Error(error.message || "Upload failed");
+                    throw new Error(xhr.responseText || "Upload failed");
                 }
             };
 
@@ -134,106 +142,128 @@ const Create = () => {
         }
     };
 
-    // UI components
-    const FileUploadBox = ({ type, onChange, accept, file, previewRef }) => (
-        <div className="border-2 border-dashed border-gray-700 rounded-xl p-6 text-center hover:border-orange-500 transition-colors">
-            <label className="cursor-pointer block">
+    const FileUploadArea = ({ type, file, previewRef }) => (
+        <motion.div
+            className={`border-3 border-dashed rounded-xl p-6 text-center transition-colors
+                ${
+                    file
+                        ? "border-green-500/30"
+                        : isDragging
+                        ? "border-orange-400"
+                        : "border-gray-700 hover:border-orange-400"
+                }
+                relative overflow-hidden group`}
+            whileHover={{ scale: 1.02 }}
+            onDrop={(e) => handleDragDrop(type, e)}
+            onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+        >
+            <label className="cursor-pointer block space-y-4">
                 <input
                     type="file"
-                    accept={accept}
-                    onChange={onChange}
+                    accept={type === "video" ? "video/*" : "image/*"}
+                    onChange={(e) => handleFileUpload(type, e.target.files[0])}
                     className="hidden"
                     required
                 />
+
                 {file ? (
-                    <div className="relative group">
+                    <>
                         {type === "video" ? (
                             <video
                                 ref={previewRef}
-                                className="w-full h-48 object-cover rounded-lg mb-4"
+                                className="w-full h-48 object-cover rounded-lg mb-4 shadow-xl"
                                 controls
                             />
                         ) : (
                             <img
                                 ref={previewRef}
-                                className="w-full h-48 object-cover rounded-lg mb-4"
+                                className="w-full h-48 object-cover rounded-lg mb-4 shadow-xl"
                                 alt="Thumbnail preview"
                             />
                         )}
-                    </div>
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-white font-medium">
+                                Click to change {type}
+                            </p>
+                        </div>
+                    </>
                 ) : (
                     <div className="space-y-4 py-8">
-                        <FaCloudUploadAlt className="text-4xl mx-auto text-orange-500" />
-                        <p className="text-lg">
-                            {type === "video"
-                                ? "Select video file"
-                                : "Select thumbnail"}
+                        <FaCloudUploadAlt className="text-4xl mx-auto text-orange-400" />
+                        <p className="text-lg font-medium">
+                            Drag & drop {type} or click to upload
                         </p>
                         <p className="text-gray-400 text-sm">
                             {type === "video"
                                 ? "MP4, MOV, AVI (Max 2GB)"
-                                : "JPG, PNG (Recommended 1280x720)"}
+                                : "JPG, PNG (Recommended 16:9)"}
                         </p>
                     </div>
                 )}
             </label>
-        </div>
+        </motion.div>
     );
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold mb-8">Upload New Video</h1>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-4xl mx-auto"
+            >
+                <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
+                    Upload New Video
+                </h1>
 
                 {error && (
-                    <div className="bg-red-500/20 text-red-300 p-3 rounded-lg mb-6 flex items-center gap-2">
-                        <FaTimes className="flex-shrink-0" />
-                        {error}
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-red-500/20 border border-red-500/30 p-4 rounded-xl mb-6 flex items-center gap-3"
+                    >
+                        <FaTimes className="flex-shrink-0 text-red-400" />
+                        <p className="text-red-300">{error}</p>
+                    </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Video Upload */}
-                    <FileUploadBox
-                        type="video"
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                        file={videoFile}
-                        previewRef={videoRef}
-                    />
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="grid gap-8 md:grid-cols-2">
+                        <FileUploadArea
+                            type="video"
+                            file={videoFile}
+                            previewRef={videoRef}
+                        />
+                        <FileUploadArea
+                            type="image"
+                            file={thumbnail}
+                            previewRef={thumbnailRef}
+                        />
+                    </div>
 
-                    {/* Thumbnail Upload */}
-                    <FileUploadBox
-                        type="image"
-                        accept="image/*"
-                        onChange={handleThumbnailUpload}
-                        file={thumbnail}
-                        previewRef={thumbnailRef}
-                    />
-
-                    {/* Progress Bar */}
                     {uploadProgress > 0 && (
-                        <div className="relative pt-1">
-                            <div className="flex mb-2 items-center justify-between">
-                                <div className="text-right">
-                                    <span className="text-xs font-semibold inline-block text-orange-500">
-                                        {uploadProgress}%
-                                    </span>
-                                </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm text-gray-400">
+                                <span>Upload Progress:</span>
+                                <span>{uploadProgress}%</span>
                             </div>
-                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-800">
-                                <div
-                                    style={{ width: `${uploadProgress}%` }}
-                                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500 transition-all duration-300"
+                            <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-orange-400 to-pink-500"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${uploadProgress}%` }}
+                                    transition={{ duration: 0.3 }}
                                 />
                             </div>
                         </div>
                     )}
 
-                    {/* Form Inputs */}
                     <div className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium mb-2">
+                            <label className="block text-sm font-medium mb-3">
                                 Title
                             </label>
                             <input
@@ -241,8 +271,8 @@ const Create = () => {
                                 name="title"
                                 value={formData.title}
                                 onChange={handleInputChange}
-                                className="w-full bg-gray-800 rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                placeholder="Enter video title"
+                                className="w-full bg-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-500"
+                                placeholder="Awesome video title..."
                                 minLength={5}
                                 maxLength={100}
                                 required
@@ -250,55 +280,41 @@ const Create = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">
-                                Duration (seconds)
-                            </label>
-                            <input
-                                type="number"
-                                name="duration"
-                                value={formData.duration}
-                                onChange={handleInputChange}
-                                className="w-full bg-gray-800 rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                placeholder="Enter video duration"
-                                min="0.1"
-                                step="0.1"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">
+                            <label className="block text-sm font-medium mb-3">
                                 Description
                             </label>
                             <textarea
                                 name="description"
                                 value={formData.description}
                                 onChange={handleInputChange}
-                                className="w-full bg-gray-800 rounded-lg p-3 h-32 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                placeholder="Describe your video"
+                                className="w-full bg-gray-800 rounded-xl p-4 h-32 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-500"
+                                placeholder="Describe your video content..."
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">
+                            <label className="block text-sm font-medium mb-3 flex items-center gap-2">
+                                <FaTag className="text-orange-400" />
                                 Tags
                             </label>
-                            <div className="bg-gray-800 rounded-lg p-2">
-                                <div className="flex flex-wrap gap-2 mb-2">
+                            <div className="bg-gray-800 rounded-xl p-4 space-y-3">
+                                <div className="flex flex-wrap gap-2">
                                     {formData.tags.map((tag, index) => (
-                                        <span
+                                        <motion.div
                                             key={index}
-                                            className="bg-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            className="bg-gray-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2"
                                         >
-                                            {tag}
+                                            <span>{tag}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => removeTag(index)}
-                                                className="text-gray-400 hover:text-orange-500"
+                                                className="text-gray-400 hover:text-orange-400 transition-colors"
                                             >
                                                 <FaTimes className="text-xs" />
                                             </button>
-                                        </span>
+                                        </motion.div>
                                     ))}
                                 </div>
                                 <input
@@ -308,29 +324,31 @@ const Create = () => {
                                     onChange={handleInputChange}
                                     onKeyDown={handleTagInput}
                                     className="bg-transparent w-full p-2 focus:outline-none placeholder-gray-500"
-                                    placeholder="Type tag and press Enter"
+                                    placeholder="Add tag and press Enter..."
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* Submit Button */}
-                    <button
+                    <motion.button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={!loading ? { scale: 1.02 } : {}}
+                        whileTap={!loading ? { scale: 0.98 } : {}}
+                        className="w-full bg-gradient-to-r from-orange-400 to-pink-500 text-white font-medium py-4 rounded-xl transition-all 
+                                   flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <>
                                 <FaSpinner className="animate-spin" />
-                                <span>Uploading ({uploadProgress}%)</span>
+                                <span>Uploading... {uploadProgress}%</span>
                             </>
                         ) : (
-                            "Publish Video"
+                            "Publish Video 🚀"
                         )}
-                    </button>
+                    </motion.button>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 };
