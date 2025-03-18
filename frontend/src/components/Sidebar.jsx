@@ -87,9 +87,9 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                             isOpen={isOpen}
                         />
                         <NavItem
-                            to="/uservideos"
+                            to="/create"
                             icon={Download}
-                            label="Downloads"
+                            label="Create"
                             isOpen={isOpen}
                         />
                     </SidebarSection>
