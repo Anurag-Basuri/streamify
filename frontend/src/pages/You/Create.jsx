@@ -52,8 +52,12 @@ const Create = () => {
         const file = e.target.files[0];
         if (file) {
             setVideoFile(file);
-            const previewUrl = URL.createObjectURL(file);
-            videoRef.current.src = previewUrl;
+            if (videoRef.current) {
+                const previewUrl = URL.createObjectURL(file);
+                videoRef.current.src = previewUrl;
+            } else {
+                console.error("Video ref is not attached to a DOM element");
+            }
         }
     };
 
@@ -61,11 +65,15 @@ const Create = () => {
         const file = e.target.files[0];
         if (file) {
             setThumbnail(file);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                thumbnailRef.current.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            if (thumbnailRef.current) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    thumbnailRef.current.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                console.error("Thumbnail ref is not attached to a DOM element");
+            }
         }
     };
 
