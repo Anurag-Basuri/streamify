@@ -12,44 +12,34 @@ cloudinary.config({
 
 // Custom Cloudinary storage configuration
 const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
+    cloudinary,
+    params: (req, file) => ({
         folder: "video-platform",
-        resource_type: "auto",
-        allowed_formats: [
-            "mp4",
-            "mov",
-            "avi",
-            "mkv",
-            "webm",
-            "jpg",
-            "jpeg",
-            "png",
-        ],
-        transformation: [{ width: 1280, height: 720, crop: "limit" }],
-    },
+        resource_type: file.mimetype.startsWith("video/") ? "video" : "image",
+        public_id: `${Date.now()}-${file.originalname}`,
+    }),
 });
 
 // File filter middleware
 const fileFilter = (req, file, cb) => {
-    try {
-        if (
-            file.mimetype.startsWith("video/") ||
-            file.mimetype.startsWith("image/")
-        ) {
-            cb(null, true);
-        } else {
-            cb(
-                new APIerror(
-                    400,
-                    "Invalid file type - Only videos and images allowed"
-                ),
-                false
-            );
-        }
-    } catch (error) {
-        cb(new APIerror(500, "File filtering failed"), false);
+    const validVideoTypes = ["video/mp4", "video/quicktime", "video/x-msvideo"];
+    const validImageTypes = ["image/jpeg", "image/png"];
+
+    if (
+        file.fieldname === "videoFile" &&
+        !validVideoTypes.includes(file.mimetype)
+    ) {
+        return cb(new APIerror(400, "Invalid video format"), false);
     }
+
+    if (
+        file.fieldname === "thumbnail" &&
+        !validImageTypes.includes(file.mimetype)
+    ) {
+        return cb(new APIerror(400, "Invalid image format"), false);
+    }
+
+    cb(null, true);
 };
 
 // Configure multer with different upload handlers
@@ -65,13 +55,14 @@ const uploadCoverImage = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for cover image
 }).single("coverImage");
 
+// Configure multer
 const uploadFields = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for each file
+    limits: { fileSize: 2 * 1024 * 1024 * 1024 },
 }).fields([
-    { name: "avatar", maxCount: 1 },
-    { name: "coverImage", maxCount: 1 },
+    { name: "videoFile", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 },
 ]);
 
 export { uploadAvatar, uploadCoverImage, uploadFields };

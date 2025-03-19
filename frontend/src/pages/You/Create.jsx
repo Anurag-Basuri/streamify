@@ -88,70 +88,25 @@ const Create = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
+        const formPayload = new FormData();
+        formPayload.append("videoFile", videoFile);
+        formPayload.append("thumbnail", thumbnail);
+        formPayload.append("title", formData.title);
+        formPayload.append("description", formData.description);
+        formPayload.append("tags", JSON.stringify(formData.tags));
 
-        try {
-            if (!videoFile || !thumbnail) {
-                throw new Error("Please select both video and thumbnail");
-            }
+        // Send request
+        const response = await fetch("/api/v1/videos/upload", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+            body: formPayload,
+        });
 
-            setLoading(true);
-            const formPayload = new FormData();
-            formPayload.append("videoFile", videoFile, videoFile.name);
-            formPayload.append("thumbnail", thumbnail, thumbnail.name);
-            formPayload.append("title", formData.title);
-            formPayload.append("description", formData.description);
-            formPayload.append("tags", JSON.stringify(formData.tags));
-            formPayload.append("duration", videoRef.current?.duration || 0);
-
-            console.log("Sending files:", {
-                video: videoFile.name,
-                thumbnail: thumbnail.name,
-                title: formData.title,
-            });
-
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/api/v1/videos/upload");
-            xhr.setRequestHeader(
-                "Authorization",
-                `Bearer ${localStorage.getItem("accessToken")}`
-            );
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    setUploadProgress(Math.round((e.loaded / e.total) * 100));
-                }
-            };
-
-            xhr.onload = () => {
-                console.log("Response status:", xhr.status);
-                console.log("Response text:", xhr.responseText);
-
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const data = JSON.parse(xhr.response);
-                        navigate(`/video/${data.data._id}`);
-                    } catch (err) {
-                        throw new Error("Invalid server response");
-                    }
-                } else {
-                    throw new Error(xhr.responseText || "Upload failed");
-                }
-            };
-
-            xhr.onerror = () => {
-                console.error("XHR error:", xhr.statusText);
-                throw new Error("Network error - please try again");
-            };
-
-            xhr.send(formPayload);
-        } catch (err) {
-            console.error("Upload error:", err);
-            setError(err.message);
-            setUploadProgress(0);
-        } finally {
-            setLoading(false);
-        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        navigate(`/video/${data.data._id}`);
     };
 
     const FileUploadArea = ({ type, file, previewRef }) => (
