@@ -33,9 +33,16 @@ const createVideoRules = [
 ];
 
 // Route to upload a new video
-router
-    .route("/upload")
-    .post(uploadFields, createVideoRules, validateResult, create_new_video);
+router.route("/upload").post(
+    uploadFields,
+    (req, res, next) => {
+        console.log("Upload route hit");
+        next();
+    },
+    createVideoRules,
+    validateResult,
+    create_new_video
+);
 
 // Route to fetch all videos
 router.get("/", get_videos);

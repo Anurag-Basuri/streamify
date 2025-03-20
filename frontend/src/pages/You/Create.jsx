@@ -88,25 +88,66 @@ const Create = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formPayload = new FormData();
-        formPayload.append("videoFile", videoFile);
-        formPayload.append("thumbnail", thumbnail);
-        formPayload.append("title", formData.title);
-        formPayload.append("description", formData.description);
-        formPayload.append("tags", JSON.stringify(formData.tags));
+        console.log("Submit handler triggered"); // Initial log
 
-        // Send request
-        const response = await fetch("/api/v1/videos/upload", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-            body: formPayload,
-        });
+        try {
+            // 1. Basic validation
+            if (!videoFile || !thumbnail) {
+                console.log("Files missing validation failed");
+                throw new Error("Please select both video and thumbnail");
+            }
 
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-        navigate(`/video/${data.data._id}`);
+            // 2. Create FormData and log entries
+            const formPayload = new FormData();
+            formPayload.append("videoFile", videoFile, videoFile.name);
+            formPayload.append("thumbnail", thumbnail, thumbnail.name);
+            formPayload.append("title", formData.title);
+            formPayload.append("description", formData.description);
+            formPayload.append("tags", JSON.stringify(formData.tags));
+
+            // Log FormData entries
+            for (const [key, value] of formPayload.entries()) {
+                console.log(key, value);
+            }
+
+            // 3. Send request with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+            const response = await fetch("/api/v1/videos/upload", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
+                },
+                body: formPayload,
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+
+            // 4. Handle response
+            console.log("Response status:", response.status);
+            const data = await response.json();
+            console.log("Response data:", data);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || `HTTP error! status: ${response.status}`
+                );
+            }
+
+            navigate(`/video/${data.data._id}`);
+        } catch (err) {
+            console.error("Full error details:", {
+                message: err.message,
+                stack: err.stack,
+                name: err.name,
+            });
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const FileUploadArea = ({ type, file, previewRef }) => (
