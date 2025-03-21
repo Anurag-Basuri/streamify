@@ -8,16 +8,30 @@ import fs from "fs";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
+    console.log("Finally!!!!!!!!");
     try {
-        // Get files from Multer (now stored locally)
+        // Get files from Multer
         const videoFile = req.files?.videoFile?.[0];
         const thumbnail = req.files?.thumbnail?.[0];
 
-        // Get local file paths
-        const videoPath = videoFile?.path;
-        const thumbnailPath = thumbnail?.path;
+        // Validate required fields
+        if (!videoFile || !thumbnail) {
+            throw new APIerror(400, "Both video and thumbnail are required");
+        }
 
-        // Upload to Cloudinary using local paths
+        // Validate file types
+        if (!videoFile.mimetype.startsWith("video/")) {
+            throw new APIerror(400, "Invalid video file type");
+        }
+        if (!thumbnail.mimetype.startsWith("image/")) {
+            throw new APIerror(400, "Invalid thumbnail format");
+        }
+
+        // Get local file paths
+        const videoPath = videoFile.path;
+        const thumbnailPath = thumbnail.path;
+
+        // Upload to Cloudinary
         const [videoUpload, thumbnailUpload] = await Promise.all([
             uploadOnCloudinary(videoPath),
             uploadOnCloudinary(thumbnailPath),
@@ -27,12 +41,34 @@ const create_new_video = asynchandler(async (req, res) => {
         fs.unlinkSync(videoPath);
         fs.unlinkSync(thumbnailPath);
 
-        // Rest of your code
+        // Create video document
+        const video = await Video.create({
+            title: req.body.title,
+            description: req.body.description,
+            duration: videoUpload.duration,
+            tags: JSON.parse(req.body.tags),
+            videoFile: {
+                url: videoUpload.secure_url,
+                publicId: videoUpload.public_id,
+            },
+            thumbnail: {
+                url: thumbnailUpload.secure_url,
+                publicId: thumbnailUpload.public_id,
+            },
+            owner: req.user._id,
+        });
+
+        return res
+            .status(201)
+            .json(new APIresponse(201, video, "Video uploaded successfully"));
     } catch (error) {
         // Cleanup files even if error occurs
-        if (videoPath && fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-        if (thumbnailPath && fs.existsSync(thumbnailPath))
-            fs.unlinkSync(thumbnailPath);
+        if (videoFile?.path && fs.existsSync(videoFile.path)) {
+            fs.unlinkSync(videoFile.path);
+        }
+        if (thumbnail?.path && fs.existsSync(thumbnail.path)) {
+            fs.unlinkSync(thumbnail.path);
+        }
         throw error;
     }
 });

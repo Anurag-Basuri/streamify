@@ -2,6 +2,8 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { APIerror } from "../utils/APIerror.js";
+import fs from "fs";
+import path from "path";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -11,7 +13,7 @@ cloudinary.config({
 });
 
 // Create temporary directory
-const tmpDir = "./tmp";
+const tmpDir = "./public";
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir, { recursive: true });
 }
@@ -60,7 +62,7 @@ const uploadCoverImage = multer({
 const uploadFields = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 2 * 1024 * 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB limit
 }).fields([
     { name: "videoFile", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 },

@@ -35,19 +35,21 @@ const createVideoRules = [
 // Route to upload the video
 router.route("/upload").post(
     (req, res, next) => {
-      // Handle Multer errors
-      uploadFields(req, res, (err) => {
-        if (err) {
-          console.error("Multer error:", err);
-          return res.status(400).json({ error: err.message });
-        }
-        next();
-      });
+        console.log("upload route hit");
+        // Handle Multer errors
+        uploadFields(req, res, (err) => {
+            console.log("-------Entered into uploadFields--------");
+            if (err) {
+                console.error("Multer error:", err);
+                return res.status(400).json({ error: err.message });
+            }
+            next();
+        });
     },
     createVideoRules,
     validateResult,
     create_new_video
-  );
+);
 
 // Route to fetch all videos
 router.get("/", get_videos);
