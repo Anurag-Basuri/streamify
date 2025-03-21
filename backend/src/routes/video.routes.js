@@ -18,6 +18,16 @@ const router = Router();
 // Public route
 router.get("/home", getRandomVideos);
 
+// Route to fetch a single video by ID
+router
+    .route("/:videoID")
+    .get(
+        param("videoID").isMongoId().withMessage("Invalid video ID"),
+        validateResult,
+        get_video_by_id
+    );
+
+
 // Apply verifyAccessToken middleware to all routes
 router.use(verifyAccessToken);
 
@@ -50,15 +60,6 @@ router.route("/upload").post(
 
 // Route to fetch all videos
 router.get("/", get_videos);
-
-// Route to fetch a single video by ID
-router
-    .route("/:videoID")
-    .get(
-        param("videoID").isMongoId().withMessage("Invalid video ID"),
-        validateResult,
-        get_video_by_id
-    );
 
 // Route to update a video
 router.patch(
