@@ -11,10 +11,11 @@ import { compressVideo } from "../middlewares/multer.middleware.js";
 const create_new_video = asynchandler(async (req, res) => {
     console.log("🏁 Entering create_new_video controller");
     let compressedVideoPath = null;
+    let videoFile, thumbnail; // Declare variables outside the try block
 
     try {
-        const videoFile = req.files?.videoFile?.[0];
-        const thumbnail = req.files?.thumbnail?.[0];
+        videoFile = req.files?.videoFile?.[0]; // Assign values inside try
+        thumbnail = req.files?.thumbnail?.[0];
 
         // Validate required files
         if (!videoFile || !thumbnail) {
@@ -61,27 +62,25 @@ const create_new_video = asynchandler(async (req, res) => {
         });
 
         // Cleanup files
-        [videoFile.path, thumbnail.path, compressedVideoPath].forEach(
-            (path) => {
-                if (fs.existsSync(path)) {
-                    fs.unlinkSync(path);
-                    console.log(`Cleaned up file: ${path}`);
-                }
+        [videoFile.path, thumbnail.path, compressedVideoPath].forEach(path => {
+            if (fs.existsSync(path)) {
+                fs.unlinkSync(path);
+                console.log(`Cleaned up file: ${path}`);
             }
-        );
+        });
 
-        return res
-            .status(201)
+        return res.status(201)
             .json(new APIresponse(201, video, "Video uploaded successfully"));
+
     } catch (error) {
         // Cleanup any remaining files on error
         const filesToClean = [
             videoFile?.path,
             thumbnail?.path,
-            compressedVideoPath,
+            compressedVideoPath
         ].filter(Boolean);
 
-        filesToClean.forEach((path) => {
+        filesToClean.forEach(path => {
             if (fs.existsSync(path)) {
                 fs.unlinkSync(path);
                 console.log(`Error cleanup file: ${path}`);
@@ -91,17 +90,12 @@ const create_new_video = asynchandler(async (req, res) => {
         console.error("Error in create_new_video:", error);
 
         if (error.http_code === 413) {
-            throw new APIerror(
-                400,
-                "File size limit exceeded. Max 100MB. Compress or upgrade plan."
-            );
+            throw new APIerror(400,
+                "File size limit exceeded. Max 100MB. Compress or upgrade plan.");
         }
 
-        if (error.message.includes("FFmpeg")) {
-            throw new APIerror(
-                500,
-                "Video processing failed. Try a different format."
-            );
+        if (error.message.includes('FFmpeg')) {
+            throw new APIerror(500, "Video processing failed. Try a different format.");
         }
 
         throw error;

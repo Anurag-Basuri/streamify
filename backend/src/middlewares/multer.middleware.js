@@ -4,6 +4,7 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { APIerror } from "../utils/APIerror.js";
 import fs from "fs";
 import path from "path";
+import Ffmpeg from "fluent-ffmpeg";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -65,7 +66,7 @@ const compressVideo = (inputPath, outputPath) => {
           return reject(new Error("Input file not found"));
       }
 
-      ffmpeg(inputPath)
+      Ffmpeg(inputPath)
           .output(outputPath)
           .videoCodec('libx264')
           .outputOptions(['-crf 28', '-preset medium']) // Better compression settings
