@@ -11,6 +11,7 @@ import Watchlater from "../pages/Account/Watchlater.jsx";
 import YourVideos from "../pages/Account/YourVideos.jsx";
 import Create from "../pages/You/Create.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
+import VideoPlayer from "../components/VideoPlayer.jsx";
 import { Navigate } from "react-router-dom";
 
 // Import other pages
@@ -20,6 +21,7 @@ const AppRoutes = () => {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<SignInAndUp />} />
+            <Route path="/video/:videoID" element={<VideoPlayer />} />
 
             {/* Protected Routes - Wrap individual routes */}
             <Route
