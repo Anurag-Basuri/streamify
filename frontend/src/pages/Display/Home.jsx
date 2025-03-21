@@ -18,15 +18,14 @@ const Home = () => {
     useEffect(() => {
         const fetchRandomVideos = async () => {
             try {
-                const response = await axios.get(
-                    "http://localhost:8000/api/v1/videos/home"
-                );
-                setVideos(response.data.videos);
+                const response = await axios.get("/api/v1/videos/home");
+                if (!response.data.success) {
+                    throw new Error("Failed to fetch videos");
+                }
+                setVideos(response.data.data.videos);
             } catch (err) {
-                setError(
-                    err.response?.data?.message ||
-                        "Failed to load videos. Please try again."
-                );
+                setError(err.message);
+                console.error("Fetch error:", err);
             } finally {
                 setIsLoading(false);
             }
@@ -119,45 +118,28 @@ const Home = () => {
 };
 
 // Video Card Component
+// Update VideoCard component
 const VideoCard = ({ video }) => (
-    <Link
-        to={`/video/${video._id}`}
-        className="group bg-gray-800 rounded-xl overflow-hidden hover:bg-gray-700/50 transition-all duration-300 shadow-xl hover:shadow-2xl"
-    >
+    <Link to={`/video/${video._id}`} className="...">
         <div className="relative aspect-video">
             <img
-                src={video.thumbnail.url}
+                src={video.thumbnail?.url || "/default-thumbnail.jpg"}
                 alt={video.title}
-                className="w-full h-full object-cover"
+                className="..."
             />
-            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-            <div className="absolute bottom-2 left-2 flex items-center gap-2 text-sm bg-black/50 px-2 py-1 rounded-lg">
-                <FaPlay className="text-white" />
-                <span className="text-white">{video.duration}m</span>
-            </div>
+            {/* ... */}
         </div>
-
         <div className="p-4 space-y-2">
-            <h3 className="font-semibold line-clamp-2">{video.title}</h3>
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <span className="flex items-center gap-1">
-                    <FaEye />
-                    {video.views.toLocaleString()} views
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                    <FaClock />
-                    {new Date(video.createdAt).toLocaleDateString()}
-                </span>
-            </div>
+            <h3 className="...">{video.title}</h3>
+            {/* ... */}
             {video.owner && (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="...">
                     <img
-                        src={video.owner.avatar}
+                        src={video.owner.avatar || "/default-avatar.png"}
                         alt={video.owner.userName}
-                        className="w-6 h-6 rounded-full"
+                        className="..."
                     />
-                    <span className="text-sm text-gray-300">
+                    <span className="...">
                         {video.owner.userName}
                     </span>
                 </div>

@@ -260,17 +260,34 @@ const togglePublishStatus = asynchandler(async (req, res) => {
 
 // Get random videos
 const getRandomVideos = asynchandler(async (req, res) => {
-    const videos = await Video.aggregate([{ $sample: { size: 10 } }]);
+    const videos = await Video.aggregate([
+        { $match: { isPublished: true } },  // Add published filter
+        { $sample: { size: 10 } },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [{
+                    $project: {
+                        userName: 1,
+                        avatar: 1,
+                        fullName: 1
+                    }
+                }]
+            }
+        },
+        { $unwind: "$owner" }
+    ]);
 
     if (!videos.length) {
         throw new APIerror(404, "No videos found");
     }
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(200, videos, "Random videos fetched successfully")
-        );
+    return res.status(200).json(
+        new APIresponse(200, { videos }, "Random videos fetched successfully")
+    );
 });
 
 export {
