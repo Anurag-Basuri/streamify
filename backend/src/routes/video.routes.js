@@ -32,17 +32,22 @@ const createVideoRules = [
     body("tags").notEmpty().withMessage("Tags should not be empty"),
 ];
 
-// Route to upload a new video
+// Route to upload the video
 router.route("/upload").post(
-    uploadFields,
     (req, res, next) => {
-        console.log("Upload route hit");
+      // Handle Multer errors
+      uploadFields(req, res, (err) => {
+        if (err) {
+          console.error("Multer error:", err);
+          return res.status(400).json({ error: err.message });
+        }
         next();
+      });
     },
     createVideoRules,
     validateResult,
     create_new_video
-);
+  );
 
 // Route to fetch all videos
 router.get("/", get_videos);

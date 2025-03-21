@@ -88,16 +88,15 @@ const Create = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Submit handler triggered"); // Initial log
+        console.log("Submit handler triggered"); // Debug log
 
         try {
             // 1. Basic validation
             if (!videoFile || !thumbnail) {
-                console.log("Files missing validation failed");
                 throw new Error("Please select both video and thumbnail");
             }
 
-            // 2. Create FormData and log entries
+            // 2. Create FormData
             const formPayload = new FormData();
             formPayload.append("videoFile", videoFile, videoFile.name);
             formPayload.append("thumbnail", thumbnail, thumbnail.name);
@@ -105,31 +104,28 @@ const Create = () => {
             formPayload.append("description", formData.description);
             formPayload.append("tags", JSON.stringify(formData.tags));
 
-            // Log FormData entries
+            // 3. Log FormData entries
             for (const [key, value] of formPayload.entries()) {
                 console.log(key, value);
             }
 
-            // 3. Send request with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            // 4. Use full backend URL
+            const response = await fetch(
+                "http://localhost:8000/api/v1/videos/upload",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                    body: formPayload,
+                }
+            );
 
-            const response = await fetch("/api/v1/videos/upload", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-                body: formPayload,
-                signal: controller.signal,
-            });
-            clearTimeout(timeoutId);
-
-            // 4. Handle response
-            console.log("Response status:", response.status);
+            console.log("Response status:", response.status); // Debug log
             const data = await response.json();
-            console.log("Response data:", data);
+            console.log("Response data:", data); // Debug log
 
             if (!response.ok) {
                 throw new Error(
