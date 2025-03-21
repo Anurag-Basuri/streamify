@@ -1,15 +1,12 @@
-/* Add smooth transitions
-.sidebar-transition {
-    transition: all 0.3s ease-in-out;
+.swiper-button-next::after,
+.swiper-button-prev::after {
+    font-size: 1.5rem !important;
+    font-weight: 700;
 }
 
-.group::-webkit-scrollbar {
-    width: 0;
-    background: transparent;
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
-
-@media (max-width: 767px) {
-    .sidebar-overlay {
-        background: rgba(0, 0, 0, 0.5);
-    }
-} */
