@@ -5,6 +5,7 @@ import { Video } from "../models/video.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 import fs from "fs";
+import { compressVideo } from "../middlewares/multer.middleware.js";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {

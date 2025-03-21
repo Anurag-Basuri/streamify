@@ -58,6 +58,32 @@ const uploadCoverImage = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for cover image
 }).single("coverImage");
 
+// Compressor
+const compressVideo = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+      if (!fs.existsSync(inputPath)) {
+          return reject(new Error("Input file not found"));
+      }
+
+      ffmpeg(inputPath)
+          .output(outputPath)
+          .videoCodec('libx264')
+          .outputOptions(['-crf 28', '-preset medium']) // Better compression settings
+          .on('progress', (progress) => {
+              console.log(`Processing: ${Math.round(progress.percent)}% done`);
+          })
+          .on('end', () => {
+              console.log('Compression finished successfully');
+              resolve();
+          })
+          .on('error', (err) => {
+              console.error('Compression error:', err);
+              reject(new Error('Video compression failed'));
+          })
+          .run();
+  });
+};
+
 // Configure multer
 const uploadFields = multer({
     storage,
@@ -68,4 +94,4 @@ const uploadFields = multer({
     { name: "thumbnail", maxCount: 1 },
 ]);
 
-export { uploadAvatar, uploadCoverImage, uploadFields };
+export { uploadAvatar, uploadCoverImage, uploadFields, compressVideo };
