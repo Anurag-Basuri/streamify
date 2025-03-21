@@ -106,7 +106,7 @@ const Create = () => {
                         Authorization: `Bearer ${localStorage.getItem(
                             "accessToken"
                         )}`,
-                        "Content-Type": "multipart/form-data", // Ensure proper content type
+                        "Content-Type": "multipart/form-data",
                     },
                     onUploadProgress: (progressEvent) => {
                         const percent = Math.round(
@@ -117,18 +117,14 @@ const Create = () => {
                 }
             );
 
-            console.log("Response status:", response.status); // Debug log
-            const data = response.data;
-            console.log("Response data:", data); // Debug log
-
-            if (!response.status === 201) {
-                throw new Error(data.message || "Upload failed");
+            if (response.status !== 201) {
+                throw new Error(response.data.message || "Upload failed");
             }
-
-            navigate(`/video/${data.data._id}`);
+    
+            navigate(`/video/${response.data.data._id}`);
         } catch (err) {
             console.error("Upload error:", err);
-            setError(err.message || "Upload failed. Please try again.");
+            setError(err.response?.data?.message || "Upload failed. Please try again.");
         } finally {
             setLoading(false);
         }
