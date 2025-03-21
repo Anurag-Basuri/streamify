@@ -9,22 +9,36 @@ import fs from "fs";
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
     console.log("🏁 Entering create_new_video controller");
+    let compressedVideoPath = null;
+
     try {
         const videoFile = req.files?.videoFile?.[0];
         const thumbnail = req.files?.thumbnail?.[0];
 
-        // Check file size before uploading
-        if (videoFile.size > 100 * 1024 * 1024) {
-            // 100MB limit
-            throw new APIerror(
-                400,
-                "Video file size exceeds Cloudinary's limit (100MB)."
-            );
+        // Validate required files
+        if (!videoFile || !thumbnail) {
+            throw new APIerror(400, "Both video and thumbnail are required");
+        }
+
+        // Validate file paths
+        if (!fs.existsSync(videoFile.path) || !fs.existsSync(thumbnail.path)) {
+            throw new APIerror(400, "Uploaded files not found");
+        }
+
+        // Generate unique compressed file name
+        compressedVideoPath = `compressed_${Date.now()}_${videoFile.filename}`;
+
+        // Compress video
+        await compressVideo(videoFile.path, compressedVideoPath);
+
+        // Verify compressed file was created
+        if (!fs.existsSync(compressedVideoPath)) {
+            throw new APIerror(500, "Video compression failed");
         }
 
         // Upload to Cloudinary
         const [videoUpload, thumbnailUpload] = await Promise.all([
-            uploadOnCloudinary(videoFile.path),
+            uploadOnCloudinary(compressedVideoPath),
             uploadOnCloudinary(thumbnail.path),
         ]);
 
@@ -45,17 +59,50 @@ const create_new_video = asynchandler(async (req, res) => {
             owner: req.user._id,
         });
 
+        // Cleanup files
+        [videoFile.path, thumbnail.path, compressedVideoPath].forEach(
+            (path) => {
+                if (fs.existsSync(path)) {
+                    fs.unlinkSync(path);
+                    console.log(`Cleaned up file: ${path}`);
+                }
+            }
+        );
+
         return res
             .status(201)
             .json(new APIresponse(201, video, "Video uploaded successfully"));
     } catch (error) {
+        // Cleanup any remaining files on error
+        const filesToClean = [
+            videoFile?.path,
+            thumbnail?.path,
+            compressedVideoPath,
+        ].filter(Boolean);
+
+        filesToClean.forEach((path) => {
+            if (fs.existsSync(path)) {
+                fs.unlinkSync(path);
+                console.log(`Error cleanup file: ${path}`);
+            }
+        });
+
         console.error("Error in create_new_video:", error);
+
         if (error.http_code === 413) {
             throw new APIerror(
                 400,
-                "File size exceeds Cloudinary's limit. Please upload a smaller file or upgrade your plan."
+                "File size limit exceeded. Max 100MB. Compress or upgrade plan."
             );
         }
+
+        if (error.message.includes("FFmpeg")) {
+            throw new APIerror(
+                500,
+                "Video processing failed. Try a different format."
+            );
+        }
+
         throw error;
     }
 });
