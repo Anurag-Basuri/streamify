@@ -14,12 +14,12 @@ const VideoPlayer = () => {
         const fetchVideo = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:8000//api/v1/videos/${videoID}`
+                    `http://localhost:8000/api/v1/videos/${videoID}`
                 );
                 if (!response.data.success) {
                     throw new Error("Failed to fetch video details");
                 }
-                setVideo(response.data.video);
+                setVideo(response.data.data); // Set the nested `data` object
             } catch (err) {
                 setError(err.message || "Failed to load video");
             } finally {
