@@ -3,6 +3,7 @@ import { APIerror } from "../utils/APIerror.js";
 import { asynchandler } from "../utils/asynchandler.js";
 
 const validateResult = asynchandler(async (req, res, next) => {
+    console.log("_________validation is going on_________");
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -18,6 +19,8 @@ const validateResult = asynchandler(async (req, res, next) => {
         }
         next(); // Proceed if no errors
     }
+
+    console.log("_________validation is completed_________");
 });
 
 export { validateResult };

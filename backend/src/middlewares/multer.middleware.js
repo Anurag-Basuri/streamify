@@ -2,6 +2,8 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { APIerror } from "../utils/APIerror.js";
+import fs from "fs";
+import path from "path";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -10,37 +12,38 @@ cloudinary.config({
     api_secret: process.env.API_SECRET,
 });
 
-// Custom Cloudinary storage configuration
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: (req, file) => ({
-        folder: "video-platform",
-        resource_type: file.mimetype.startsWith("video/") ? "video" : "image",
-        public_id: `${Date.now()}-${file.originalname}`,
-    }),
+// Create temporary directory
+const tmpDir = "./public";
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir, { recursive: true });
+}
+
+// Configure disk storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, tmpDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Requires path
+  },
 });
 
 // File filter middleware
 const fileFilter = (req, file, cb) => {
     const validVideoTypes = ["video/mp4", "video/quicktime", "video/x-msvideo"];
     const validImageTypes = ["image/jpeg", "image/png"];
-
-    if (
-        file.fieldname === "videoFile" &&
-        !validVideoTypes.includes(file.mimetype)
-    ) {
-        return cb(new APIerror(400, "Invalid video format"), false);
+  
+    if (file.fieldname === "videoFile" && !validVideoTypes.includes(file.mimetype)) {
+      return cb(new APIerror(400, "Invalid video format"), false);
     }
-
-    if (
-        file.fieldname === "thumbnail" &&
-        !validImageTypes.includes(file.mimetype)
-    ) {
-        return cb(new APIerror(400, "Invalid image format"), false);
+  
+    if (file.fieldname === "thumbnail" && !validImageTypes.includes(file.mimetype)) {
+      return cb(new APIerror(400, "Invalid image format"), false);
     }
-
+  
     cb(null, true);
-};
+  };
 
 // Configure multer with different upload handlers
 const uploadAvatar = multer({
@@ -59,7 +62,7 @@ const uploadCoverImage = multer({
 const uploadFields = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 2 * 1024 * 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB limit
 }).fields([
     { name: "videoFile", maxCount: 1 },
     { name: "thumbnail", maxCount: 1 },
