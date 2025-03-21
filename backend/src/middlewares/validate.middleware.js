@@ -21,6 +21,7 @@ const validateResult = asynchandler(async (req, res, next) => {
     }
 
     console.log("_________validation is completed_________");
+    next();
 });
 
 export { validateResult };

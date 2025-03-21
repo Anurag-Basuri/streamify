@@ -10,38 +10,23 @@ import fs from "fs";
 const create_new_video = asynchandler(async (req, res) => {
     console.log("🏁 Entering create_new_video controller");
     try {
-        console.log("Req.files:", req.files);
         const videoFile = req.files?.videoFile?.[0];
         const thumbnail = req.files?.thumbnail?.[0];
-        console.log("Video File:", videoFile);
-        console.log("Thumbnail:", thumbnail);
 
-        // Validate required fields
-        if (!videoFile || !thumbnail) {
-            throw new APIerror(400, "Both video and thumbnail are required");
+        // Check file size before uploading
+        if (videoFile.size > 100 * 1024 * 1024) {
+            // 100MB limit
+            throw new APIerror(
+                400,
+                "Video file size exceeds Cloudinary's limit (100MB)."
+            );
         }
-
-        // Validate file types
-        if (!videoFile.mimetype.startsWith("video/")) {
-            throw new APIerror(400, "Invalid video file type");
-        }
-        if (!thumbnail.mimetype.startsWith("image/")) {
-            throw new APIerror(400, "Invalid thumbnail format");
-        }
-
-        // Get local file paths
-        const videoPath = videoFile.path;
-        const thumbnailPath = thumbnail.path;
 
         // Upload to Cloudinary
         const [videoUpload, thumbnailUpload] = await Promise.all([
-            uploadOnCloudinary(videoPath),
-            uploadOnCloudinary(thumbnailPath),
+            uploadOnCloudinary(videoFile.path),
+            uploadOnCloudinary(thumbnail.path),
         ]);
-
-        // Cleanup temporary files
-        fs.unlinkSync(videoPath);
-        fs.unlinkSync(thumbnailPath);
 
         // Create video document
         const video = await Video.create({
@@ -65,6 +50,12 @@ const create_new_video = asynchandler(async (req, res) => {
             .json(new APIresponse(201, video, "Video uploaded successfully"));
     } catch (error) {
         console.error("Error in create_new_video:", error);
+        if (error.http_code === 413) {
+            throw new APIerror(
+                400,
+                "File size exceeds Cloudinary's limit. Please upload a smaller file or upgrade your plan."
+            );
+        }
         throw error;
     }
 });
