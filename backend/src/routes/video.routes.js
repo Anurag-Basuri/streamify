@@ -35,16 +35,13 @@ const createVideoRules = [
 // Route to upload the video
 router.route("/upload").post(
     (req, res, next) => {
-        console.log("upload route hit");
-        // Handle Multer errors
-        uploadFields(req, res, (err) => {
-            console.log("-------Entered into uploadFields--------");
-            if (err) {
-                console.error("Multer error:", err);
-                return res.status(400).json({ error: err.message });
-            }
-            next();
-        });
+        console.log("Upload route hit");
+        next();
+    },
+    uploadFields,
+    (req, res, next) => {
+        console.log("Files uploaded to server:", req.files);
+        next();
     },
     createVideoRules,
     validateResult,

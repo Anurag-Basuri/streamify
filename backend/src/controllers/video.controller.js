@@ -8,11 +8,13 @@ import fs from "fs";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
-    console.log("Finally!!!!!!!!");
+    console.log("🏁 Entering create_new_video controller");
     try {
-        // Get files from Multer
+        console.log("Req.files:", req.files);
         const videoFile = req.files?.videoFile?.[0];
         const thumbnail = req.files?.thumbnail?.[0];
+        console.log("Video File:", videoFile);
+        console.log("Thumbnail:", thumbnail);
 
         // Validate required fields
         if (!videoFile || !thumbnail) {
@@ -62,13 +64,7 @@ const create_new_video = asynchandler(async (req, res) => {
             .status(201)
             .json(new APIresponse(201, video, "Video uploaded successfully"));
     } catch (error) {
-        // Cleanup files even if error occurs
-        if (videoFile?.path && fs.existsSync(videoFile.path)) {
-            fs.unlinkSync(videoFile.path);
-        }
-        if (thumbnail?.path && fs.existsSync(thumbnail.path)) {
-            fs.unlinkSync(thumbnail.path);
-        }
+        console.error("Error in create_new_video:", error);
         throw error;
     }
 });
