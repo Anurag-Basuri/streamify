@@ -65,6 +65,17 @@ const videoSchema = new Schema(
     }
 );
 
+videoSchema.pre("save", async function (next) {
+    if (!this.slug) {
+        // Generate a slug from the title (or any unique field)
+        this.slug = this.title
+            .toLowerCase()
+            .replace(/[^\w\s]/g, "") // Remove special characters
+            .replace(/\s+/g, "-") // Replace spaces with hyphens
+            .substring(0, 50); // Limit length
+    }
+    next();
+});
 videoSchema.index({ owner: 1, isPublished: 1 });
 videoSchema.plugin(mongooseAggregatePaginate);
 

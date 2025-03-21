@@ -79,13 +79,25 @@ const Create = () => {
         setError("");
 
         try {
+            // 1. Basic validation
+            if (!videoFile || !thumbnail) {
+                throw new Error("Please select both video and thumbnail");
+            }
+
+            // 2. Create FormData with correct field names
             const formPayload = new FormData();
-            formPayload.append("video", videoFile);
-            formPayload.append("thumbnail", thumbnail);
+            formPayload.append("videoFile", videoFile); // Correct field name
+            formPayload.append("thumbnail", thumbnail); // Correct field name
             formPayload.append("title", formData.title);
             formPayload.append("description", formData.description);
-            formData.tags.forEach((tag) => formPayload.append("tags", tag));
+            formPayload.append("tags", JSON.stringify(formData.tags)); // Ensure tags are sent as JSON
 
+            // 3. Log FormData entries for debugging
+            for (const [key, value] of formPayload.entries()) {
+                console.log(key, value);
+            }
+
+            // 4. Send request to backend
             const response = await axios.post(
                 "http://localhost:8000/api/v1/videos/upload",
                 formPayload,
@@ -94,7 +106,7 @@ const Create = () => {
                         Authorization: `Bearer ${localStorage.getItem(
                             "accessToken"
                         )}`,
-                        "Content-Type": "multipart/form-data",
+                        "Content-Type": "multipart/form-data", // Ensure proper content type
                     },
                     onUploadProgress: (progressEvent) => {
                         const percent = Math.round(
@@ -105,14 +117,18 @@ const Create = () => {
                 }
             );
 
-            if (response.data.statusCode === 201) {
-                navigate(`/video/${response.data.data._id}`);
+            console.log("Response status:", response.status); // Debug log
+            const data = response.data;
+            console.log("Response data:", data); // Debug log
+
+            if (!response.status === 201) {
+                throw new Error(data.message || "Upload failed");
             }
+
+            navigate(`/video/${data.data._id}`);
         } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                    "Upload failed. Please try again."
-            );
+            console.error("Upload error:", err);
+            setError(err.message || "Upload failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -363,6 +379,7 @@ const Create = () => {
                         </button>
                         <motion.button
                             type="submit"
+                            onClick={handleSubmit}
                             disabled={loading}
                             whileHover={!loading ? { scale: 1.05 } : {}}
                             whileTap={!loading ? { scale: 0.95 } : {}}

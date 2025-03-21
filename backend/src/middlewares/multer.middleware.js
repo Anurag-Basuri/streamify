@@ -70,15 +70,10 @@ const uploadCoverImage = multer({
 
 // Compressor
 const compressVideo = (inputPath, outputPath) => {
-    console.log("Windows input path:", inputPath);
-    console.log("FFmpeg path:", ffmpegInstaller.path);
-
     return new Promise((resolve, reject) => {
         if (!fs.existsSync(inputPath)) {
             return reject(new Error("Input file not found"));
         }
-
-        console.log(`Starting compression from: ${inputPath} to ${outputPath}`);
 
         ffmpeg(inputPath)
             .output(outputPath)
@@ -88,9 +83,10 @@ const compressVideo = (inputPath, outputPath) => {
                 console.log("FFmpeg command:", commandLine);
             })
             .on("progress", (progress) => {
-                console.log(
-                    `Processing: ${Math.round(progress.percent)}% done`
+                const percent = Math.round(
+                    (progress.timemark / progress.targetSize) * 100
                 );
+                console.log(`Processing: ${percent}% done`);
             })
             .on("end", () => {
                 console.log("Compression finished successfully");

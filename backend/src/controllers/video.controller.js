@@ -59,6 +59,7 @@ const create_new_video = asynchandler(async (req, res) => {
                 publicId: thumbnailUpload.public_id,
             },
             owner: req.user._id,
+            slug: req.body.title, // This will trigger the pre-save hook
         });
 
         // Cleanup files
@@ -77,10 +78,10 @@ const create_new_video = asynchandler(async (req, res) => {
         const filesToClean = [
             videoFile?.path,
             thumbnail?.path,
-            compressedVideoPath
+            compressedVideoPath,
         ].filter(Boolean);
 
-        filesToClean.forEach(path => {
+        filesToClean.forEach((path) => {
             if (fs.existsSync(path)) {
                 fs.unlinkSync(path);
                 console.log(`Error cleanup file: ${path}`);
@@ -89,16 +90,29 @@ const create_new_video = asynchandler(async (req, res) => {
 
         console.error("Error in create_new_video:", error);
 
+        // Handle MongoDB duplicate key error
+        if (error.code === 11000) {
+            throw new APIerror(
+                400,
+                "Duplicate key error. Please ensure all fields are unique."
+            );
+        }
+
+        // Handle FFmpeg errors
+        if (error.message.includes("FFmpeg")) {
+            throw new APIerror(
+                500,
+                "Video processing failed. Try a different format."
+            );
+        }
+
+        // Handle file size errors
         if (error.http_code === 413) {
-            throw new APIerror(400,
-                "File size limit exceeded. Max 100MB. Compress or upgrade plan.");
+            throw new APIerror(400, "File size limit exceeded. Max 2GB.");
         }
 
-        if (error.message.includes('FFmpeg')) {
-            throw new APIerror(500, "Video processing failed. Try a different format.");
-        }
-
-        throw error;
+        // Generic error
+        throw new APIerror(500, "Internal Server Error");
     }
 });
 
