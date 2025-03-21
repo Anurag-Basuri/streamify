@@ -4,20 +4,24 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 const videoSchema = new Schema(
     {
         videoFile: {
-            type: String,
-            required: [true, "Video is required"],
-            match: [
-                /^(https?:\/\/.*\.(?:mp4|mov|avi|flv|mkv))$/i,
-                "Invalid URL format for video file",
-            ],
+            url: {
+                type: String,
+                required: true,
+            },
+            publicId: {
+                type: String,
+                required: true,
+            },
         },
         thumbnail: {
-            type: String,
-            required: [true, "Thumbnail is required"],
-            match: [
-                /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/i,
-                "Invalid URL format for thumbnail",
-            ],
+            url: {
+                type: String,
+                required: true,
+            },
+            publicId: {
+                type: String,
+                required: true,
+            },
         },
         title: {
             type: String,
