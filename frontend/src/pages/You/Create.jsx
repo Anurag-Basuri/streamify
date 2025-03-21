@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaCloudUploadAlt, FaTimes, FaSpinner, FaTag } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 const Create = () => {
     const navigate = useNavigate();
@@ -16,131 +17,102 @@ const Create = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [isDragging, setIsDragging] = useState(false); // For drag-and-drop feedback
+    const [isDragging, setIsDragging] = useState(false);
     const videoRef = useRef(null);
     const thumbnailRef = useRef(null);
 
-    // Cleanup object URLs
     useEffect(() => {
         return () => {
-            if (videoRef.current?.src) {
-                URL.revokeObjectURL(videoRef.current.src);
-            }
-            if (thumbnailRef.current?.src) {
-                URL.revokeObjectURL(thumbnailRef.current.src);
-            }
+            [videoRef, thumbnailRef].forEach((ref) => {
+                if (ref.current?.src) URL.revokeObjectURL(ref.current.src);
+            });
         };
     }, []);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
+    const validateFile = (file, type) => {
+        const validVideoTypes = [
+            "video/mp4",
+            "video/quicktime",
+            "video/x-msvideo",
+        ];
+        const validImageTypes = ["image/jpeg", "image/png", "image/webp"];
 
-    const removeTag = (indexToRemove) => {
-        setFormData((prev) => ({
-            ...prev,
-            tags: prev.tags.filter((_, index) => index !== indexToRemove),
-        }));
-    };
+        if (type === "video" && !validVideoTypes.includes(file.type)) {
+            throw new Error("Supported video formats: MP4, MOV, AVI");
+        }
 
-    const handleTagInput = (e) => {
-        if (e.key === "Enter" && formData.newTag.trim()) {
-            setFormData((prev) => ({
-                ...prev,
-                tags: [...prev.tags, prev.newTag.trim()],
-                newTag: "",
-            }));
-            e.preventDefault();
+        if (type === "image" && !validImageTypes.includes(file.type)) {
+            throw new Error("Supported image formats: JPEG, PNG, WEBP");
+        }
+
+        if (type === "video" && file.size > 2 * 1024 * 1024 * 1024) {
+            throw new Error("Video file size must be less than 2GB");
+        }
+
+        if (type === "image" && file.size > 5 * 1024 * 1024) {
+            throw new Error("Thumbnail size must be less than 5MB");
         }
     };
 
     const handleFileUpload = (type, file) => {
-        if (!file) return;
+        try {
+            if (!file) return;
+            validateFile(file, type);
+            setError("");
 
-        if (type === "video") {
-            if (!file.type.startsWith("video/")) {
-                setError("Please upload a valid video file (MP4, MOV, AVI)");
-                return;
+            const previewURL = URL.createObjectURL(file);
+            if (type === "video") {
+                setVideoFile(file);
+                if (videoRef.current) videoRef.current.src = previewURL;
+            } else {
+                setThumbnail(file);
+                if (thumbnailRef.current) thumbnailRef.current.src = previewURL;
             }
-            setVideoFile(file);
-            if (videoRef.current) {
-                videoRef.current.src = URL.createObjectURL(file);
-            }
-        } else {
-            if (!file.type.startsWith("image/")) {
-                setError("Please upload a valid image file (JPG, PNG)");
-                return;
-            }
-            setThumbnail(file);
-            if (thumbnailRef.current) {
-                thumbnailRef.current.src = URL.createObjectURL(file);
-            }
+        } catch (err) {
+            setError(err.message);
         }
-    };
-
-    const handleDragDrop = (type, e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files[0];
-        handleFileUpload(type, file);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Submit handler triggered"); // Debug log
+        setLoading(true);
+        setError("");
 
         try {
-            // 1. Basic validation
-            if (!videoFile || !thumbnail) {
-                throw new Error("Please select both video and thumbnail");
-            }
-
-            // 2. Create FormData
             const formPayload = new FormData();
-            formPayload.append("videoFile", videoFile, videoFile.name);
-            formPayload.append("thumbnail", thumbnail, thumbnail.name);
+            formPayload.append("video", videoFile);
+            formPayload.append("thumbnail", thumbnail);
             formPayload.append("title", formData.title);
             formPayload.append("description", formData.description);
-            formPayload.append("tags", JSON.stringify(formData.tags));
+            formData.tags.forEach((tag) => formPayload.append("tags", tag));
 
-            // 3. Log FormData entries
-            for (const [key, value] of formPayload.entries()) {
-                console.log(key, value);
-            }
-
-            // 4. Use full backend URL
-            const response = await fetch(
+            const response = await axios.post(
                 "http://localhost:8000/api/v1/videos/upload",
+                formPayload,
                 {
-                    method: "POST",
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
                             "accessToken"
                         )}`,
+                        "Content-Type": "multipart/form-data",
                     },
-                    body: formPayload,
+                    onUploadProgress: (progressEvent) => {
+                        const percent = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(percent);
+                    },
                 }
             );
 
-            console.log("Response status:", response.status); // Debug log
-            const data = await response.json();
-            console.log("Response data:", data); // Debug log
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message || `HTTP error! status: ${response.status}`
-                );
+            if (response.data.statusCode === 201) {
+                navigate(`/video/${response.data.data._id}`);
             }
-
-            navigate(`/video/${data.data._id}`);
         } catch (err) {
-            console.error("Full error details:", {
-                message: err.message,
-                stack: err.stack,
-                name: err.name,
-            });
-            setError(err.message);
+            setError(
+                err.response?.data?.message ||
+                    "Upload failed. Please try again."
+            );
         } finally {
             setLoading(false);
         }
@@ -148,21 +120,23 @@ const Create = () => {
 
     const FileUploadArea = ({ type, file, previewRef }) => (
         <motion.div
-            className={`border-3 border-dashed rounded-xl p-6 text-center transition-colors
+            className={`border-3 border-dashed rounded-2xl p-6 text-center transition-all
                 ${
                     file
-                        ? "border-green-500/30"
+                        ? "border-green-500/20 bg-green-500/5"
                         : isDragging
-                        ? "border-orange-400"
-                        : "border-gray-700 hover:border-orange-400"
+                        ? "border-orange-400 bg-orange-500/10"
+                        : "border-gray-700 hover:border-orange-400 bg-gray-800/30"
                 }
-                relative overflow-hidden group`}
+                relative overflow-hidden group backdrop-blur-sm`}
             whileHover={{ scale: 1.02 }}
-            onDrop={(e) => handleDragDrop(type, e)}
-            onDragOver={(e) => {
+            onDrop={(e) => {
                 e.preventDefault();
-                setIsDragging(true);
+                setIsDragging(false);
+                handleFileUpload(type, e.dataTransfer.files[0]);
             }}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setIsDragging(true)}
             onDragLeave={() => setIsDragging(false)}
         >
             <label className="cursor-pointer block space-y-4">
@@ -173,69 +147,85 @@ const Create = () => {
                     className="hidden"
                     required
                 />
-
-                {file ? (
-                    <>
-                        {type === "video" ? (
-                            <video
-                                ref={previewRef}
-                                className="w-full h-48 object-cover rounded-lg mb-4 shadow-xl"
-                                controls
-                            />
-                        ) : (
-                            <img
-                                ref={previewRef}
-                                className="w-full h-48 object-cover rounded-lg mb-4 shadow-xl"
-                                alt="Thumbnail preview"
-                            />
-                        )}
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <p className="text-white font-medium">
-                                Click to change {type}
+                <div className="space-y-4 py-8">
+                    {file ? (
+                        <>
+                            {type === "video" ? (
+                                <video
+                                    ref={previewRef}
+                                    className="w-full h-48 object-cover rounded-xl mb-4 shadow-2xl"
+                                    controls
+                                />
+                            ) : (
+                                <img
+                                    ref={previewRef}
+                                    className="w-full h-48 object-cover rounded-xl mb-4 shadow-2xl"
+                                    alt="Thumbnail preview"
+                                />
+                            )}
+                            <motion.div
+                                className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+                                initial={{ opacity: 0 }}
+                            >
+                                <p className="text-white font-medium text-lg">
+                                    Click to replace {type}
+                                </p>
+                            </motion.div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="inline-block p-4 rounded-full bg-gradient-to-r from-orange-400/20 to-pink-500/20">
+                                <FaCloudUploadAlt className="text-4xl text-orange-400" />
+                            </div>
+                            <p className="text-lg font-medium mt-4">
+                                {isDragging
+                                    ? "Drop it here!"
+                                    : `Upload ${type}`}
                             </p>
-                        </div>
-                    </>
-                ) : (
-                    <div className="space-y-4 py-8">
-                        <FaCloudUploadAlt className="text-4xl mx-auto text-orange-400" />
-                        <p className="text-lg font-medium">
-                            Drag & drop {type} or click to upload
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                            {type === "video"
-                                ? "MP4, MOV, AVI (Max 2GB)"
-                                : "JPG, PNG (Recommended 16:9)"}
-                        </p>
-                    </div>
-                )}
+                            <p className="text-gray-400 text-sm">
+                                {type === "video"
+                                    ? "Drag & drop video file"
+                                    : "Drag & drop thumbnail image"}
+                            </p>
+                        </>
+                    )}
+                </div>
             </label>
         </motion.div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+        <div className="min-h-screen bg-gray-900 p-6">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-4xl mx-auto"
             >
-                <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
-                    Upload New Video
-                </h1>
+                <div className="text-center mb-12">
+                    <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
+                        Share Your Creation
+                    </h1>
+                    <p className="text-gray-400 text-lg">
+                        Upload your video and connect with the community
+                    </p>
+                </div>
 
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-red-500/20 border border-red-500/30 p-4 rounded-xl mb-6 flex items-center gap-3"
-                    >
-                        <FaTimes className="flex-shrink-0 text-red-400" />
-                        <p className="text-red-300">{error}</p>
-                    </motion.div>
-                )}
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="bg-red-500/20 border border-red-500/40 p-4 rounded-xl mb-8 flex items-center gap-3 backdrop-blur-sm"
+                        >
+                            <FaTimes className="flex-shrink-0 text-red-400" />
+                            <p className="text-red-300">{error}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
-                    <div className="grid gap-8 md:grid-cols-2">
+                    <div className="grid gap-8 lg:grid-cols-2">
                         <FileUploadArea
                             type="video"
                             file={videoFile}
@@ -248,109 +238,155 @@ const Create = () => {
                         />
                     </div>
 
-                    {uploadProgress > 0 && (
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm text-gray-400">
-                                <span>Upload Progress:</span>
-                                <span>{uploadProgress}%</span>
-                            </div>
-                            <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-gradient-to-r from-orange-400 to-pink-500"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${uploadProgress}%` }}
-                                    transition={{ duration: 0.3 }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="space-y-6">
+                    <div className="space-y-6 bg-gray-800/30 p-8 rounded-2xl backdrop-blur-sm">
                         <div>
-                            <label className="block text-sm font-medium mb-3">
-                                Title
+                            <label className="block text-sm font-medium mb-4 text-gray-300">
+                                Video Title
                             </label>
                             <input
                                 type="text"
                                 name="title"
                                 value={formData.title}
-                                onChange={handleInputChange}
-                                className="w-full bg-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-500"
-                                placeholder="Awesome video title..."
-                                minLength={5}
-                                maxLength={100}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        title: e.target.value,
+                                    })
+                                }
+                                className="w-full bg-gray-900/50 rounded-xl p-4 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-600 text-gray-100"
+                                placeholder="Enter an engaging title..."
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-3">
-                                Description
+                            <label className="block text-sm font-medium mb-4 text-gray-300">
+                                Video Description
                             </label>
                             <textarea
                                 name="description"
                                 value={formData.description}
-                                onChange={handleInputChange}
-                                className="w-full bg-gray-800 rounded-xl p-4 h-32 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-500"
-                                placeholder="Describe your video content..."
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        description: e.target.value,
+                                    })
+                                }
+                                className="w-full bg-gray-900/50 rounded-xl p-4 h-40 focus:ring-2 focus:ring-orange-400 focus:border-transparent placeholder-gray-600 text-gray-100"
+                                placeholder="Tell viewers about your video..."
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-3 flex items-center gap-2">
+                            <div className="flex items-center gap-3 mb-4 text-gray-300">
                                 <FaTag className="text-orange-400" />
-                                Tags
-                            </label>
-                            <div className="bg-gray-800 rounded-xl p-4 space-y-3">
+                                <span className="text-sm font-medium">
+                                    Tags
+                                </span>
+                            </div>
+                            <div className="bg-gray-900/50 rounded-xl p-4 space-y-3">
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.tags.map((tag, index) => (
-                                        <motion.div
-                                            key={index}
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="bg-gray-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-2"
-                                        >
-                                            <span>{tag}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeTag(index)}
-                                                className="text-gray-400 hover:text-orange-400 transition-colors"
+                                    <AnimatePresence>
+                                        {formData.tags.map((tag, index) => (
+                                            <motion.div
+                                                key={tag}
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                exit={{ scale: 0 }}
+                                                className="bg-gray-800 px-3 py-1.5 rounded-full text-sm flex items-center gap-2"
                                             >
-                                                <FaTimes className="text-xs" />
-                                            </button>
-                                        </motion.div>
-                                    ))}
+                                                <span>{tag}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            tags: formData.tags.filter(
+                                                                (_, i) =>
+                                                                    i !== index
+                                                            ),
+                                                        })
+                                                    }
+                                                    className="text-gray-400 hover:text-orange-400"
+                                                >
+                                                    <FaTimes className="text-xs" />
+                                                </button>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
                                 </div>
                                 <input
                                     type="text"
-                                    name="newTag"
                                     value={formData.newTag}
-                                    onChange={handleInputChange}
-                                    onKeyDown={handleTagInput}
-                                    className="bg-transparent w-full p-2 focus:outline-none placeholder-gray-500"
-                                    placeholder="Add tag and press Enter..."
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            newTag: e.target.value,
+                                        })
+                                    }
+                                    onKeyDown={(e) => {
+                                        if (
+                                            ["Enter", ","].includes(e.key) &&
+                                            formData.newTag.trim()
+                                        ) {
+                                            e.preventDefault();
+                                            if (formData.tags.length >= 5) {
+                                                setError(
+                                                    "Maximum 5 tags allowed"
+                                                );
+                                                return;
+                                            }
+                                            setFormData({
+                                                ...formData,
+                                                tags: [
+                                                    ...formData.tags,
+                                                    formData.newTag.trim(),
+                                                ],
+                                                newTag: "",
+                                            });
+                                        }
+                                    }}
+                                    className="bg-transparent w-full p-2 focus:outline-none placeholder-gray-600 text-gray-100"
+                                    placeholder="Add tags (press Enter or comma)"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <motion.button
-                        type="submit"
-                        disabled={loading}
-                        whileHover={!loading ? { scale: 1.02 } : {}}
-                        whileTap={!loading ? { scale: 0.98 } : {}}
-                        className="w-full bg-gradient-to-r from-orange-400 to-pink-500 text-white font-medium py-4 rounded-xl transition-all 
-                                   flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <>
-                                <FaSpinner className="animate-spin" />
-                                <span>Uploading... {uploadProgress}%</span>
-                            </>
-                        ) : (
-                            "Publish Video 🚀"
-                        )}
-                    </motion.button>
+                    <div className="flex gap-4 justify-end">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="px-8 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <motion.button
+                            type="submit"
+                            disabled={loading}
+                            whileHover={!loading ? { scale: 1.05 } : {}}
+                            whileTap={!loading ? { scale: 0.95 } : {}}
+                            className="px-8 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-pink-500 text-white font-medium
+                                       flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                        >
+                            {loading && (
+                                <motion.div
+                                    className="absolute inset-0 bg-orange-500/20"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${uploadProgress}%` }}
+                                    transition={{ ease: "linear" }}
+                                />
+                            )}
+                            {loading ? (
+                                <>
+                                    <FaSpinner className="animate-spin" />
+                                    <span>Uploading ({uploadProgress}%)</span>
+                                </>
+                            ) : (
+                                "Publish Video 🚀"
+                            )}
+                        </motion.button>
+                    </div>
                 </form>
             </motion.div>
         </div>
