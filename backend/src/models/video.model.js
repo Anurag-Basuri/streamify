@@ -66,17 +66,39 @@ const videoSchema = new Schema(
 );
 
 videoSchema.pre("save", async function (next) {
-    if (!this.slug) {
-        // Generate a slug from the title (or any unique field)
-        this.slug = this.title
+    if (!this.slug || this.isModified("title")) {
+        const baseSlug = this.title
             .toLowerCase()
-            .replace(/[^\w\s]/g, "") // Remove special characters
-            .replace(/\s+/g, "-") // Replace spaces with hyphens
-            .substring(0, 50); // Limit length
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .substring(0, 50);
+
+        let uniqueSlug = baseSlug;
+        let counter = 1;
+
+        while (true) {
+            const exists = await Video.findOne({ slug: uniqueSlug })
+                .collation({ locale: "en", strength: 2 })
+                .lean();
+            if (!exists || exists._id.equals(this._id)) break;
+            uniqueSlug = `${baseSlug}-${counter}`;
+            counter++;
+        }
+
+        this.slug = uniqueSlug;
     }
     next();
 });
-videoSchema.index({ owner: 1, isPublished: 1 });
+videoSchema.virtual("ownerProfile", {
+    ref: "User",
+    localField: "owner",
+    foreignField: "_id",
+    justOne: true,
+    select: "userName fullName avatar channelName",
+});
+
+videoSchema.index({ createdAt: -1 });
+videoSchema.index({ views: -1 });
 videoSchema.plugin(mongooseAggregatePaginate);
 
 export const Video = mongoose.model("Video", videoSchema);

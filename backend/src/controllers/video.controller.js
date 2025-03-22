@@ -9,38 +9,27 @@ import { compressVideo } from "../middlewares/multer.middleware.js";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
-    console.log("🏁 Entering create_new_video controller");
-    let compressedVideoPath = null;
-    let videoFile, thumbnail; // Declare variables outside the try block
-
     try {
-        videoFile = req.files?.videoFile?.[0]; // Assign values inside try
-        thumbnail = req.files?.thumbnail?.[0];
+        const videoFile = req.files?.videoFile?.[0];
+        const thumbnail = req.files?.thumbnail?.[0];
 
-        // Validate required files
+        // Validate files
         if (!videoFile || !thumbnail) {
             throw new APIerror(400, "Both video and thumbnail are required");
         }
 
-        // Validate file paths
+        // File path validation
         if (!fs.existsSync(videoFile.path) || !fs.existsSync(thumbnail.path)) {
             throw new APIerror(400, "Uploaded files not found");
         }
 
-        // Generate unique compressed file name
-        compressedVideoPath = `compressed_${Date.now()}_${videoFile.filename}`;
-
-        // Compress video
-        await compressVideo(videoFile.path, compressedVideoPath);
-
-        // Verify compressed file was created
-        if (!fs.existsSync(compressedVideoPath)) {
-            throw new APIerror(500, "Video compression failed");
-        }
+        // Process video
+        const compressedPath = `compressed_${Date.now()}_${videoFile.filename}`;
+        await compressVideo(videoFile.path, compressedPath);
 
         // Upload to Cloudinary
         const [videoUpload, thumbnailUpload] = await Promise.all([
-            uploadOnCloudinary(compressedVideoPath),
+            uploadOnCloudinary(compressedPath),
             uploadOnCloudinary(thumbnail.path),
         ]);
 
@@ -49,7 +38,7 @@ const create_new_video = asynchandler(async (req, res) => {
             title: req.body.title,
             description: req.body.description,
             duration: videoUpload.duration,
-            tags: JSON.parse(req.body.tags),
+            tags: JSON.parse(req.body.tags || "[]"),
             videoFile: {
                 url: videoUpload.secure_url,
                 publicId: videoUpload.public_id,
@@ -59,60 +48,31 @@ const create_new_video = asynchandler(async (req, res) => {
                 publicId: thumbnailUpload.public_id,
             },
             owner: req.user._id,
-            slug: req.body.title, // This will trigger the pre-save hook
         });
 
         // Cleanup files
-        [videoFile.path, thumbnail.path, compressedVideoPath].forEach(path => {
-            if (fs.existsSync(path)) {
-                fs.unlinkSync(path);
-                console.log(`Cleaned up file: ${path}`);
-            }
+        [videoFile.path, thumbnail.path, compressedPath].forEach((path) => {
+            fs.existsSync(path) && fs.unlinkSync(path);
         });
 
-        return res.status(201)
+        return res
+            .status(201)
             .json(new APIresponse(201, video, "Video uploaded successfully"));
-
     } catch (error) {
-        // Cleanup any remaining files on error
-        const filesToClean = [
-            videoFile?.path,
-            thumbnail?.path,
-            compressedVideoPath,
-        ].filter(Boolean);
-
-        filesToClean.forEach((path) => {
-            if (fs.existsSync(path)) {
-                fs.unlinkSync(path);
-                console.log(`Error cleanup file: ${path}`);
-            }
+        // Cleanup on error
+        [
+            req.files?.videoFile?.[0]?.path,
+            req.files?.thumbnail?.[0]?.path,
+            compressedPath,
+        ].forEach((path) => {
+            path && fs.existsSync(path) && fs.unlinkSync(path);
         });
 
-        console.error("Error in create_new_video:", error);
-
-        // Handle MongoDB duplicate key error
+        // Handle specific errors
         if (error.code === 11000) {
-            throw new APIerror(
-                400,
-                "Duplicate key error. Please ensure all fields are unique."
-            );
+            throw new APIerror(400, "Duplicate video entry detected");
         }
-
-        // Handle FFmpeg errors
-        if (error.message.includes("FFmpeg")) {
-            throw new APIerror(
-                500,
-                "Video processing failed. Try a different format."
-            );
-        }
-
-        // Handle file size errors
-        if (error.http_code === 413) {
-            throw new APIerror(400, "File size limit exceeded. Max 2GB.");
-        }
-
-        // Generic error
-        throw new APIerror(500, "Internal Server Error");
+        throw error;
     }
 });
 
