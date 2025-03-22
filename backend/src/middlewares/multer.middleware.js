@@ -1,6 +1,5 @@
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import { APIerror } from "../utils/APIerror.js";
 import fs from "fs";
 import path from "path";

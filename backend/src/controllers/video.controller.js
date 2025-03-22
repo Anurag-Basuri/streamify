@@ -79,38 +79,36 @@ const create_new_video = asynchandler(async (req, res) => {
 // Fetch all videos
 const get_videos = asynchandler(async (req, res) => {
     const { page = 1, limit = 10, search, userId } = req.query;
-    const match = { isDeleted: false };
+    const filter = { isDeleted: false };
 
-    if (userId) {
-        match.owner = mongoose.Types.ObjectId(userId);
+    if (userId && mongoose.isValidObjectId(userId)) {
+        filter.owner = userId;
     }
 
     if (search) {
-        match.$or = [
+        filter.$or = [
             { title: { $regex: search, $options: "i" } },
             { description: { $regex: search, $options: "i" } },
         ];
     }
 
-    const videos = await Video.aggregate([
-        { $match: match },
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: +limit },
-    ]);
+    const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sort: { createdAt: -1 },
+        populate: "ownerProfile",
+    };
 
-    const totalVideos = await Video.countDocuments(match);
+    const result = await Video.paginate(filter, options);
 
     return res.status(200).json(
         new APIresponse(
             200,
             {
-                videos,
-                pagination: {
-                    currentPage: +page,
-                    totalPages: Math.ceil(totalVideos / limit),
-                    totalVideos,
-                },
+                videos: result.docs,
+                total: result.totalDocs,
+                pages: result.totalPages,
+                page: result.page,
             },
             "Videos fetched successfully"
         )
@@ -141,67 +139,69 @@ const get_video_by_id = asynchandler(async (req, res) => {
         );
 });
 
-// Update a video
+// Update video details
 const update_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
-    const { title, description, tags } = req.body;
+    const updates = {};
 
-    if (!mongoose.isValidObjectId(videoID)) {
-        throw new APIerror(400, "Invalid video ID");
+    // Validate video ownership
+    const video = await Video.findById(videoID);
+    if (!video.owner.equals(req.user._id)) {
+        throw new APIerror(403, "Unauthorized to update this video");
     }
 
-    const updateFields = {};
-    if (title) updateFields.title = title;
-    if (description) updateFields.description = description;
-    if (tags) updateFields.tags = JSON.parse(tags);
+    // Process updates
+    if (req.body.title) updates.title = req.body.title;
+    if (req.body.description) updates.description = req.body.description;
+    if (req.body.tags) updates.tags = JSON.parse(req.body.tags);
 
-    const video = await Video.findByIdAndUpdate(videoID, updateFields, {
+    // Handle thumbnail update
+    if (req.files?.thumbnail?.[0]) {
+        const thumbnail = await uploadOnCloudinary(req.files.thumbnail[0].path);
+        updates.thumbnail = {
+            url: thumbnail.secure_url,
+            publicId: thumbnail.public_id,
+        };
+        fs.unlinkSync(req.files.thumbnail[0].path);
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(videoID, updates, {
         new: true,
+        runValidators: true,
     });
-
-    if (!video) {
-        throw new APIerror(404, "Video not found");
-    }
 
     return res
         .status(200)
-        .json(new APIresponse(200, video, "Video updated successfully"));
+        .json(new APIresponse(200, updatedVideo, "Video updated"));
 });
 
-// Delete a video (soft delete)
+// Delete video (soft delete)
 const delete_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
-    if (!mongoose.isValidObjectId(videoID)) {
-        throw new APIerror(400, "Invalid video ID");
+    // Validate ownership
+    const video = await Video.findById(videoID);
+    if (!video.owner.equals(req.user._id)) {
+        throw new APIerror(403, "Unauthorized to delete this video");
     }
 
-    const video = await Video.findByIdAndUpdate(
-        videoID,
-        { isDeleted: true },
-        { new: true }
-    );
-
-    if (!video) {
-        throw new APIerror(404, "Video not found");
-    }
+    await Video.findByIdAndUpdate(videoID, {
+        isDeleted: true,
+        deletedAt: new Date(),
+    });
 
     return res
         .status(200)
-        .json(new APIresponse(200, null, "Video deleted successfully"));
+        .json(new APIresponse(200, null, "Video marked as deleted"));
 });
 
 // Toggle publish status
 const togglePublishStatus = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
-    if (!mongoose.isValidObjectId(videoID)) {
-        throw new APIerror(400, "Invalid video ID");
-    }
-
     const video = await Video.findById(videoID);
-    if (!video) {
-        throw new APIerror(404, "Video not found");
+    if (!video.owner.equals(req.user._id)) {
+        throw new APIerror(403, "Unauthorized to modify this video");
     }
 
     video.isPublished = !video.isPublished;
@@ -213,7 +213,7 @@ const togglePublishStatus = asynchandler(async (req, res) => {
             new APIresponse(
                 200,
                 video,
-                `Video ${video.isPublished ? "published" : "unpublished"} successfully`
+                `Video ${video.isPublished ? "published" : "unpublished"}`
             )
         );
 });
@@ -221,7 +221,7 @@ const togglePublishStatus = asynchandler(async (req, res) => {
 // Get random videos
 const getRandomVideos = asynchandler(async (req, res) => {
     const videos = await Video.aggregate([
-        { $match: { isPublished: true } },  // Add published filter
+        { $match: { isPublished: true } }, // Add published filter
         { $sample: { size: 10 } },
         {
             $lookup: {
@@ -229,49 +229,63 @@ const getRandomVideos = asynchandler(async (req, res) => {
                 localField: "owner",
                 foreignField: "_id",
                 as: "owner",
-                pipeline: [{
-                    $project: {
-                        userName: 1,
-                        avatar: 1,
-                        fullName: 1
-                    }
-                }]
-            }
+                pipeline: [
+                    {
+                        $project: {
+                            userName: 1,
+                            avatar: 1,
+                            fullName: 1,
+                        },
+                    },
+                ],
+            },
         },
-        { $unwind: "$owner" }
+        { $unwind: "$owner" },
     ]);
 
     if (!videos.length) {
         throw new APIerror(404, "No videos found");
     }
 
-    return res.status(200).json(
-        new APIresponse(200, { videos }, "Random videos fetched successfully")
-    );
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { videos },
+                "Random videos fetched successfully"
+            )
+        );
 });
 
 // Increment in views
 const incrementViewCount = asynchandler(async (req, res) => {
     const { videoID } = req.params;
-  
+
     if (!mongoose.isValidObjectId(videoID)) {
-      throw new APIerror(400, "Invalid Video ID");
+        throw new APIerror(400, "Invalid Video ID");
     }
-  
+
     const video = await Video.findByIdAndUpdate(
-      videoID,
-      { $inc: { views: 1 } }, // Atomically increment views
-      { new: true }
+        videoID,
+        { $inc: { views: 1 } }, // Atomically increment views
+        { new: true }
     );
-  
+
     if (!video) {
-      throw new APIerror(404, "Video not found");
+        throw new APIerror(404, "Video not found");
     }
-  
+
     return res
-      .status(200)
-      .json(new APIresponse(200, { views: video.views }, "View count incremented"));
-  });
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { views: video.views },
+                "View count incremented"
+            )
+        );
+});
 
 export {
     create_new_video,
