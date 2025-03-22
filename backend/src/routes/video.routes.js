@@ -27,7 +27,6 @@ router
         get_video_by_id
     );
 
-
 // Apply verifyAccessToken middleware to all routes
 router.use(verifyAccessToken);
 
