@@ -76,45 +76,6 @@ const create_new_video = asynchandler(async (req, res) => {
     }
 });
 
-// Fetch all videos
-const get_videos = asynchandler(async (req, res) => {
-    const { page = 1, limit = 10, search, userId } = req.query;
-    const filter = { isDeleted: false };
-
-    if (userId && mongoose.isValidObjectId(userId)) {
-        filter.owner = userId;
-    }
-
-    if (search) {
-        filter.$or = [
-            { title: { $regex: search, $options: "i" } },
-            { description: { $regex: search, $options: "i" } },
-        ];
-    }
-
-    const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { createdAt: -1 },
-        populate: "ownerProfile",
-    };
-
-    const result = await Video.paginate(filter, options);
-
-    return res.status(200).json(
-        new APIresponse(
-            200,
-            {
-                videos: result.docs,
-                total: result.totalDocs,
-                pages: result.totalPages,
-                page: result.page,
-            },
-            "Videos fetched successfully"
-        )
-    );
-});
-
 // Get a single video by ID
 const get_video_by_id = asynchandler(async (req, res) => {
     const { videoID } = req.params;
@@ -289,7 +250,6 @@ const incrementViewCount = asynchandler(async (req, res) => {
 
 export {
     create_new_video,
-    get_videos,
     get_video_by_id,
     update_video,
     delete_video,

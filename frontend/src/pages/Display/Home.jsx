@@ -18,7 +18,7 @@ const Home = () => {
     useEffect(() => {
         const fetchRandomVideos = async () => {
             try {
-                const response = await axios.get("/api/v1/videos/home");
+                const response = await axios.get("/api/v1/videos/");
                 if (!response.data.success) {
                     throw new Error("Failed to fetch videos");
                 }

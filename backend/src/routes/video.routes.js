@@ -4,7 +4,6 @@ import { uploadFields } from "../middlewares/multer.middleware.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
 import {
     create_new_video,
-    get_videos,
     get_video_by_id,
     update_video,
     delete_video,
@@ -17,7 +16,7 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 const router = Router();
 
 // Public route
-router.get("/home", getRandomVideos);
+router.get("/", getRandomVideos);
 
 // Route to fetch a single video by ID
 router
@@ -36,7 +35,7 @@ router
         validateResult,
         incrementViewCount
     );
-
+    
 // Apply verifyAccessToken middleware to all routes
 router.use(verifyAccessToken);
 
@@ -67,8 +66,7 @@ router.route("/upload").post(
     create_new_video
 );
 
-// Route to fetch all videos
-router.get("/", get_videos);
+
 
 // Route to update a video
 router.patch(
