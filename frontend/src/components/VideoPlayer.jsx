@@ -32,15 +32,20 @@ const VideoPlayer = () => {
     }, [videoID]);
 
     const handlePlay = () => {
-        fetch(`/api/videos/${videoID}/view`, { method: "POST" })
-            .then((response) => {
-                if (!response.ok) {
-                    console.error("Failed to increment view count");
-                }
+        const viewedKey = `viewed_${videoID}`;
+        if (!localStorage.getItem(viewedKey)) {
+            fetch(`http://localhost:8000/api/v1/videos/${videoID}/view`, {
+                method: "POST",
             })
-            .catch((error) => {
-                console.error("Error incrementing view count:", error);
-            });
+                .then((response) => {
+                    if (response.ok) {
+                        localStorage.setItem(viewedKey, true);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error incrementing view count:", error);
+                });
+        }
     };
 
     if (loading) {
