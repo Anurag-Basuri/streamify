@@ -10,6 +10,7 @@ import {
     delete_video,
     togglePublishStatus,
     getRandomVideos,
+    incrementViewCount,
 } from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -25,6 +26,15 @@ router
         param("videoID").isMongoId().withMessage("Invalid video ID"),
         validateResult,
         get_video_by_id
+    );
+
+// Route to increment views
+router
+    .route("/:videoID/view")
+    .post(
+        param("videoID").isMongoId().withMessage("Invalid video ID"),
+        validateResult,
+        incrementViewCount
     );
 
 // Apply verifyAccessToken middleware to all routes

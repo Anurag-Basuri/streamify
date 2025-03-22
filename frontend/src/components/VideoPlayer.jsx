@@ -31,6 +31,18 @@ const VideoPlayer = () => {
         fetchVideo();
     }, [videoID]);
 
+    const handlePlay = () => {
+        fetch(`/api/videos/${videoID}/view`, { method: "POST" })
+            .then((response) => {
+                if (!response.ok) {
+                    console.error("Failed to increment view count");
+                }
+            })
+            .catch((error) => {
+                console.error("Error incrementing view count:", error);
+            });
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -53,6 +65,7 @@ const VideoPlayer = () => {
                 <div className="aspect-video bg-black rounded-xl overflow-hidden">
                     {video?.videoFile?.url && (
                         <ReactPlayer
+                            onPlay={handlePlay}
                             url={video.videoFile.url}
                             controls
                             width="100%"
