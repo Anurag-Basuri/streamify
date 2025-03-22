@@ -290,6 +290,29 @@ const getRandomVideos = asynchandler(async (req, res) => {
     );
 });
 
+// Increment in views
+const incrementViewCount = asynchandler(async (req, res) => {
+    const { videoID } = req.params;
+  
+    if (!mongoose.isValidObjectId(videoID)) {
+      throw new APIerror(400, "Invalid Video ID");
+    }
+  
+    const video = await Video.findByIdAndUpdate(
+      videoID,
+      { $inc: { views: 1 } }, // Atomically increment views
+      { new: true }
+    );
+  
+    if (!video) {
+      throw new APIerror(404, "Video not found");
+    }
+  
+    return res
+      .status(200)
+      .json(new APIresponse(200, { views: video.views }, "View count incremented"));
+  });
+
 export {
     create_new_video,
     get_videos,
@@ -298,4 +321,5 @@ export {
     delete_video,
     togglePublishStatus,
     getRandomVideos,
+    incrementViewCount
 };
