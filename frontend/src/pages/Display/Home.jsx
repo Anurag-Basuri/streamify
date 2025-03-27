@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaPlay, FaEye, FaClock } from "react-icons/fa";
+import { FaPlay, FaEye, FaClock,FaUser } from "react-icons/fa";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";

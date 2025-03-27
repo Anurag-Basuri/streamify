@@ -24,7 +24,7 @@ const create_new_video = asynchandler(async (req, res) => {
         }
 
         // Process video
-        const compressedPath = `compressed_${Date.now()}_${videoFile.filename}`;
+        const compressedPath = `../../public/compressed_${Date.now()}_${videoFile.filename}`;
         await compressVideo(videoFile.path, compressedPath);
 
         // Upload to Cloudinary

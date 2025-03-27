@@ -66,11 +66,10 @@ router.route("/upload").post(
     create_new_video
 );
 
-
-
 // Route to update a video
-router.patch(
-    "/:videoID",
+router
+    .route("/update/:videoID")
+    .patch(
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     body("title")
         .optional()
