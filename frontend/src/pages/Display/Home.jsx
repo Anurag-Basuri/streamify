@@ -126,6 +126,7 @@ const Home = () => {
     );
 };
 
+// This component displays individual video cards with thumbnail, title, and stats.
 const VideoCard = ({ video, index }) => {
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -214,6 +215,8 @@ const VideoCard = ({ video, index }) => {
     );
 };
 
+// Skeleton component for loading state
+// This component shows a placeholder while the video data is being fetched.
 const VideoCardSkeleton = ({ index }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}

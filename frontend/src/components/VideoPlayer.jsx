@@ -5,11 +5,13 @@ import ReactPlayer from "react-player";
 import { FaSpinner } from "react-icons/fa";
 
 const VideoPlayer = () => {
-    const [videoID, setVideoID] = useState("");
+    console.log(useParams()); // Debug log
+    const [videoID, setVideoID] = useState(useParams().videoID);
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Get video ID from URL parameters
     useEffect(() => {
         const fetchVideo = async () => {
             try {
@@ -32,6 +34,7 @@ const VideoPlayer = () => {
         fetchVideo();
     }, [videoID]);
 
+    // Handle video play event to increment view count
     const handlePlay = () => {
         const viewedKey = `viewed_${videoID}`;
         if (!localStorage.getItem(viewedKey)) {
@@ -49,6 +52,7 @@ const VideoPlayer = () => {
         }
     };
 
+    // Handle video ID from URL parameters
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -57,6 +61,7 @@ const VideoPlayer = () => {
         );
     }
 
+    //check if video is not found
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
