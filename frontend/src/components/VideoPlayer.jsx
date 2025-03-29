@@ -40,15 +40,26 @@ const VideoPlayer = () => {
         if (!localStorage.getItem(viewedKey)) {
             fetch(`http://localhost:8000/api/v1/videos/${videoID}/views`, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
             })
                 .then((response) => {
                     if (response.ok) {
+                        console.log("View count incremented successfully");
                         localStorage.setItem(viewedKey, true);
+                    } else {
+                        console.error(
+                            "Failed to increment view count:",
+                            response.statusText
+                        );
                     }
                 })
                 .catch((error) => {
                     console.error("Error incrementing view count:", error);
                 });
+        }else {
+            console.log("View already counted for this video");
         }
     };
 
