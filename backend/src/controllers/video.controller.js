@@ -229,7 +229,7 @@ const incrementViewCount = asynchandler(async (req, res) => {
 
     const video = await Video.findByIdAndUpdate(
         videoID,
-        { $inc: { views: 1 } }, // Atomically increment views
+        { $inc: { views: 1 } },
         { new: true }
     );
 

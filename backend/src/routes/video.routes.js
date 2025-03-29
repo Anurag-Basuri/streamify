@@ -29,13 +29,13 @@ router
 
 // Route to increment views
 router
-    .route("/:videoID/view")
+    .route("/:videoID/views")
     .post(
         param("videoID").isMongoId().withMessage("Invalid video ID"),
         validateResult,
         incrementViewCount
     );
-    
+
 // Apply verifyAccessToken middleware to all routes
 router.use(verifyAccessToken);
 

@@ -5,7 +5,7 @@ import ReactPlayer from "react-player";
 import { FaSpinner } from "react-icons/fa";
 
 const VideoPlayer = () => {
-    const { videoID } = useParams();
+    const [videoID, setVideoID] = useState("");
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -20,7 +20,8 @@ const VideoPlayer = () => {
                 if (!response.data.success) {
                     throw new Error("Failed to fetch video details");
                 }
-                setVideo(response.data.data); // Set the nested `data` object
+                setVideo(response.data.data);
+                setVideoID(response.data.data._id);
             } catch (err) {
                 setError(err.message || "Failed to load video");
             } finally {
@@ -34,7 +35,7 @@ const VideoPlayer = () => {
     const handlePlay = () => {
         const viewedKey = `viewed_${videoID}`;
         if (!localStorage.getItem(viewedKey)) {
-            fetch(`http://localhost:8000/api/v1/videos/${videoID}/view`, {
+            fetch(`http://localhost:8000/api/v1/videos/${videoID}/views`, {
                 method: "POST",
             })
                 .then((response) => {
