@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AuthContext } from "../services/AuthContext";
+import { AuthContext } from "../../services/AuthContext.jsx";
 import axios from "axios";
 import { motion } from "framer-motion";
 
