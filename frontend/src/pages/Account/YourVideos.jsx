@@ -52,7 +52,14 @@ const YourVideos = () => {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 });
-                if (!response.ok) throw new Error("Failed to delete video");
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(
+                        errorData.message || "Failed to delete video"
+                    );
+                }
+
                 setVideos((prev) =>
                     prev.filter((video) => video._id !== videoId)
                 );
@@ -65,7 +72,7 @@ const YourVideos = () => {
     const handleTogglePublish = async (videoId) => {
         try {
             const response = await fetch(
-                `/api/v1/videos/${videoId}/toggle-publish`,
+                `/api/v1/videos/${videoId}/publish`,
                 {
                     method: "PATCH",
                     headers: {

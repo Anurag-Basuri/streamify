@@ -215,7 +215,6 @@ const VideoCard = ({ video, index }) => {
     );
 };
 
-// Skeleton component for loading state
 // This component shows a placeholder while the video data is being fetched.
 const VideoCardSkeleton = ({ index }) => (
     <motion.div
