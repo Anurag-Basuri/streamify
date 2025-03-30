@@ -160,23 +160,22 @@ const delete_video = asynchandler(async (req, res) => {
 const togglePublishStatus = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
+    // Validate video ownership
     const video = await Video.findById(videoID);
     if (!video.owner.equals(req.user._id)) {
-        throw new APIerror(403, "Unauthorized to modify this video");
+        throw new APIerror(403, "Unauthorized to update this video");
     }
 
-    video.isPublished = !video.isPublished;
-    await video.save();
+    // Toggle the publish status
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoID,
+        { $set: { isPublished: !video.isPublished } },
+        { new: true, runValidators: true }
+    );
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                video,
-                `Video ${video.isPublished ? "published" : "unpublished"}`
-            )
-        );
+    return res.status(200).json(
+        new APIresponse(200, updatedVideo, `Video ${updatedVideo.isPublished ? 'published' : 'unpublished'}`)
+    );
 });
 
 // Get random videos

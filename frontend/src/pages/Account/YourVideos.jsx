@@ -71,18 +71,20 @@ const YourVideos = () => {
 
     const handleTogglePublish = async (videoId) => {
         try {
-            const response = await fetch(
-                `/api/v1/videos/${videoId}/publish`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }
-            );
+            const response = await fetch(`/api/v1/videos/${videoId}/publish`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to update status");
+            }
+
             const data = await response.json();
-            if (!response.ok)
-                throw new Error(data.message || "Failed to update status");
 
             setVideos((prev) =>
                 prev.map((video) =>
@@ -91,6 +93,14 @@ const YourVideos = () => {
                         : video
                 )
             );
+
+            // Show success message
+            alert(
+                `Video ${
+                    data.data.isPublished ? "published" : "unpublished"
+                } successfully`
+            );
+            
         } catch (err) {
             setError(err.message);
         }

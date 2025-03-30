@@ -95,7 +95,7 @@ const AppRoutes = () => {
                     <ProtectedRoute>
                         <EditVodeos />
                     </ProtectedRoute>
-                }   
+                }
             />
             <Route
                 path="/create"
