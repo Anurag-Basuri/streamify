@@ -106,8 +106,8 @@ const update_video = asynchandler(async (req, res) => {
     const updates = {};
 
     // Validate video ownership
-    const video = await Video.findById(videoID).populate('owner');
-    if (!video.owner.equals(req.user._id)) {
+    const video = await Video.findById(videoID).populate("owner");
+    if (video.owner.toString() !== user._id.toString()) {
         throw new APIerror(403, "Unauthorized to update this video");
     }
 
@@ -173,9 +173,15 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         { new: true, runValidators: true }
     );
 
-    return res.status(200).json(
-        new APIresponse(200, updatedVideo, `Video ${updatedVideo.isPublished ? 'published' : 'unpublished'}`)
-    );
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                updatedVideo,
+                `Video ${updatedVideo.isPublished ? "published" : "unpublished"}`
+            )
+        );
 });
 
 // Get random videos
@@ -247,6 +253,26 @@ const incrementViewCount = asynchandler(async (req, res) => {
         );
 });
 
+// Get user videos
+const get_User_Videos = asynchandler(async (req, res) => {
+    const { sort = "newest", search = "" } = req.query;
+
+    const sortOptions = {
+        newest: { createdAt: -1 },
+        oldest: { createdAt: 1 },
+        views: { views: -1 },
+    };
+
+    const videos = await Video.find({
+        owner: req.user._id,
+        title: { $regex: search, $options: "i" },
+    })
+        .sort(sortOptions[sort] || sortOptions.newest)
+        .populate("owner", "username");
+
+    res.status(200).json(new APIresponse(200, { videos }, "Videos fetched"));
+});
+
 export {
     create_new_video,
     get_video_by_id,
@@ -254,5 +280,6 @@ export {
     delete_video,
     togglePublishStatus,
     getRandomVideos,
-    incrementViewCount
+    incrementViewCount,
+    get_User_Videos,
 };

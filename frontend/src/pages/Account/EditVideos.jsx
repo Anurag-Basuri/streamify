@@ -24,10 +24,10 @@ const EditVideo = () => {
                 const response = await axios.get(`/api/v1/videos/${videoID}`);
                 const video = response.data.data;
 
-                if (!video.owner._id.equals(user._id)) {
-                    throw new Error(
-                        "You are not authorized to edit this video"
-                    );
+                if (video.owner.toString() !== user._id.toString()) {
+                    navigate("/uservideos");
+                    toast.error("Unauthorized access");
+                    return;
                 }
 
                 setFormData({
