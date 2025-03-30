@@ -106,7 +106,7 @@ const update_video = asynchandler(async (req, res) => {
     const updates = {};
 
     // Validate video ownership
-    const video = await Video.findById(videoID);
+    const video = await Video.findById(videoID).populate('owner');
     if (!video.owner.equals(req.user._id)) {
         throw new APIerror(403, "Unauthorized to update this video");
     }

@@ -11,6 +11,7 @@ import {
     PlusCircleIcon,
     EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
+import { EyeSlashIcon } from "@heroicons/react/24/solid";
 
 const YourVideos = () => {
     const [videos, setVideos] = useState([]);
@@ -52,7 +53,7 @@ const YourVideos = () => {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(
@@ -100,7 +101,6 @@ const YourVideos = () => {
                     data.data.isPublished ? "published" : "unpublished"
                 } successfully`
             );
-            
         } catch (err) {
             setError(err.message);
         }
@@ -231,7 +231,7 @@ const YourVideos = () => {
                                                     >
                                                         {video.isPublished ? (
                                                             <>
-                                                                <EyeIcon className="w-4 h-4" />
+                                                                <EyeSlashIcon className="w-4 h-4" />
                                                                 Unpublish
                                                             </>
                                                         ) : (
