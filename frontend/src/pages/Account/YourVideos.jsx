@@ -39,7 +39,12 @@ const YourVideos = () => {
             const data = await response.json();
             if (!response.ok)
                 throw new Error(data.message || "Failed to fetch videos");
-            setVideos(data.data?.videos || []);
+
+            // Filter out soft-deleted videos
+            const filteredVideos = data.data?.videos.filter(
+                (v) => !v.isDeleted
+            );
+            setVideos(filteredVideos || []);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -51,7 +56,7 @@ const YourVideos = () => {
         if (user) fetchVideos();
     }, [user, sortBy, searchQuery]);
 
-    // Enhanced delete handler with confirmation modal
+    // Handle delete with confirmation
     const handleDelete = async (videoId) => {
         const deleteToast = toast.loading("Processing...");
 
@@ -109,11 +114,8 @@ const YourVideos = () => {
                 throw new Error(errorData.message || "Delete failed");
             }
 
-            setVideos((prev) => {
-                const updatedVideos = prev.filter((v) => v._id !== videoId);
-                console.log("Updated videos:", updatedVideos);
-                return updatedVideos;
-            });
+            // Update the UI by removing the deleted video
+            setVideos((prev) => prev.filter((v) => v._id !== videoId));
 
             toast.success("Video deleted successfully", { id: deleteToast });
         } catch (err) {

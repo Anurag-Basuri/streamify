@@ -139,7 +139,6 @@ const update_video = asynchandler(async (req, res) => {
 // Delete video (soft delete)
 const delete_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
-    console.log("delete_video called", videoID);
 
     // Validate video ID
     if (!mongoose.isValidObjectId(videoID)) {
@@ -275,6 +274,7 @@ const get_User_Videos = asynchandler(async (req, res) => {
 
     const videos = await Video.find({
         owner: req.user._id,
+        isDeleted: false, // Exclude soft-deleted videos
         title: { $regex: search, $options: "i" },
     })
         .sort(sortOptions[sort] || sortOptions.newest)
