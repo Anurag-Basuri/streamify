@@ -164,72 +164,73 @@ const YourVideos = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Enhanced Header Section */}
+                <motion.div
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm"
+                >
                     <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <div className="p-3 bg-blue-100 rounded-xl">
                             <FilmIcon className="w-8 h-8 text-blue-600" />
-                            Your Video Library
-                        </h1>
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                            {videos.length} video{videos.length !== 1 && "s"}
-                        </span>
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">
+                                My Video Studio
+                            </h1>
+                            <p className="text-gray-600">
+                                {videos.length} video
+                                {videos.length !== 1 && "s"} •{" "}
+                                {videos.filter((v) => v.isPublished).length}{" "}
+                                published
+                            </p>
+                        </div>
                     </div>
 
                     <Link
                         to="/upload"
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition-all"
+                        className="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
                     >
-                        <PlusCircleIcon className="w-5 h-5" />
-                        Upload New Video
+                        <PlusCircleIcon className="w-6 h-6" />
+                        <span className="font-semibold">New Video</span>
                     </Link>
-                </div>
+                </motion.div>
 
-                {/* Controls Section */}
-                <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl shadow-sm">
+                {/* Enhanced Controls Section */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4"
+                >
                     <div className="flex-1 relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SparklesIcon className="w-5 h-5 text-gray-400" />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Search videos..."
+                            placeholder="Search your videos..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50"
                         />
-                        <svg
-                            className="w-5 h-5 absolute left-3 top-2.5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    </div>
+
+                    <div className="flex gap-4">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-4 py-2.5 border border-gray-200 rounded-lg bg-white/50 focus:ring-2 focus:ring-blue-500"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                            />
-                        </svg>
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="views">Most Views</option>
+                        </select>
                     </div>
+                </motion.div>
 
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="px-4 py-2 border rounded-lg bg-white"
-                    >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="views">Most Views</option>
-                    </select>
-                </div>
-
-                {/* Content Area */}
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 p-4 rounded-lg">
-                        {error}
-                    </div>
-                )}
-
+                {/* Enhanced Content Area */}
                 <AnimatePresence mode="wait">
                     {loading ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -239,26 +240,27 @@ const YourVideos = () => {
                         </div>
                     ) : videos.length === 0 ? (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-center py-12 bg-white rounded-xl"
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm"
                         >
                             <div className="max-w-md mx-auto">
-                                <div className="text-gray-500 text-6xl mb-4">
+                                <div className="text-blue-500 text-6xl mb-4">
                                     🎥
                                 </div>
-                                <h3 className="text-xl font-semibold mb-2">
-                                    No videos found
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Ready to Create?
                                 </h3>
-                                <p className="text-gray-500 mb-4">
-                                    Start sharing your content with the world
+                                <p className="text-gray-600 mb-6">
+                                    Your video library is empty. Start sharing
+                                    your story with the world!
                                 </p>
                                 <Link
                                     to="/upload"
-                                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-br from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
                                 >
                                     <PlusCircleIcon className="w-5 h-5" />
-                                    Upload Your First Video
+                                    Upload First Video
                                 </Link>
                             </div>
                         </motion.div>
@@ -276,25 +278,50 @@ const YourVideos = () => {
                                         animate="visible"
                                         exit="exit"
                                         layout
-                                        className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
+                                        className="group relative bg-white/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden"
                                     >
-                                        {/* Thumbnail Section */}
-                                        <div className="relative aspect-video group">
+                                        {/* Enhanced Thumbnail Section */}
+                                        <div className="relative aspect-video overflow-hidden">
                                             <img
                                                 src={video.thumbnail?.url}
                                                 alt={video.title}
                                                 className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                                             />
 
-                                            {/* Quick Actions Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                                            {/* Enhanced Action Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-between">
+                                                {/* Top Badges */}
+                                                <div className="flex justify-between items-start">
+                                                    <span
+                                                        className={`px-3 py-1 rounded-full text-sm ${
+                                                            video.isPublished
+                                                                ? "bg-green-100 text-green-800"
+                                                                : "bg-yellow-100 text-yellow-800"
+                                                        }`}
+                                                    >
+                                                        {video.isPublished
+                                                            ? "PUBLISHED"
+                                                            : "DRAFT"}
+                                                    </span>
+                                                    <span className="bg-black/80 text-white px-2 py-1 rounded text-sm">
+                                                        {Math.floor(
+                                                            video.duration / 60
+                                                        )}
+                                                        :
+                                                        {(video.duration % 60)
+                                                            .toString()
+                                                            .padStart(2, "0")}
+                                                    </span>
+                                                </div>
+
+                                                {/* Bottom Actions */}
                                                 <div className="flex gap-2 w-full">
                                                     <Link
                                                         to={`/edit-video/${video._id}`}
-                                                        className="flex-1 flex items-center gap-2 bg-white/90 text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition-colors"
+                                                        className="flex-1 flex items-center justify-center gap-2 bg-white/90 text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition-all"
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
-                                                        Edit
+                                                        Edit Video
                                                     </Link>
                                                     <button
                                                         onClick={() =>
@@ -302,77 +329,60 @@ const YourVideos = () => {
                                                                 video._id
                                                             )
                                                         }
-                                                        className="flex items-center gap-2 bg-white/90 text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition-colors"
+                                                        className="p-2 bg-white/90 rounded-lg hover:bg-white transition-colors"
                                                     >
                                                         {video.isPublished ? (
-                                                            <EyeSlashIcon className="w-4 h-4 text-red-600" />
+                                                            <EyeSlashIcon className="w-5 h-5 text-red-600" />
                                                         ) : (
-                                                            <EyeIcon className="w-4 h-4 text-green-600" />
+                                                            <EyeIcon className="w-5 h-5 text-green-600" />
                                                         )}
                                                     </button>
                                                 </div>
                                             </div>
-
-                                            {/* Top Badges */}
-                                            <div className="absolute top-2 left-2 flex gap-2">
-                                                <span
-                                                    className={`px-2 py-1 rounded text-sm ${
-                                                        video.isPublished
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-yellow-100 text-yellow-800"
-                                                    }`}
-                                                >
-                                                    {video.isPublished
-                                                        ? "Live"
-                                                        : "Draft"}
-                                                </span>
-                                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
-                                                    {Math.floor(
-                                                        video.duration / 60
-                                                    )}
-                                                    :
-                                                    {(video.duration % 60)
-                                                        .toString()
-                                                        .padStart(2, "0")}
-                                                </span>
-                                            </div>
                                         </div>
 
-                                        {/* Video Details */}
+                                        {/* Enhanced Video Details */}
                                         <div className="p-4 space-y-3">
                                             <Link
                                                 to={`/video/${video._id}`}
-                                                className="font-semibold text-lg hover:text-blue-600 line-clamp-2"
+                                                className="block font-semibold text-lg text-gray-900 hover:text-blue-600 line-clamp-2"
                                             >
                                                 {video.title}
                                             </Link>
 
                                             <div className="flex items-center justify-between text-sm text-gray-600">
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-1.5">
                                                     <ChartBarIcon className="w-4 h-4" />
                                                     <span>
                                                         {video.views?.toLocaleString()}{" "}
                                                         views
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-1.5">
                                                     <ClockIcon className="w-4 h-4" />
                                                     <span>
                                                         {new Date(
                                                             video.createdAt
-                                                        ).toLocaleDateString()}
+                                                        ).toLocaleDateString(
+                                                            "en-US",
+                                                            {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                            }
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {video.tags?.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {video.tags
                                                         .slice(0, 3)
                                                         .map((tag) => (
                                                             <span
                                                                 key={tag}
-                                                                className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                                                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-200 transition-colors cursor-default"
                                                             >
                                                                 #{tag}
                                                             </span>
