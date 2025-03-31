@@ -139,21 +139,31 @@ const update_video = asynchandler(async (req, res) => {
 // Delete video (soft delete)
 const delete_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
+    console.log("delete_video called", videoID);
+
+    // Validate video ID
+    if (!mongoose.isValidObjectId(videoID)) {
+        throw new APIerror(400, "Invalid Video ID");
+    }
+
+    // Find the video
+    const video = await Video.findById(videoID);
+    if (!video) {
+        throw new APIerror(404, "Video not found");
+    }
 
     // Validate ownership
-    const video = await Video.findById(videoID);
     if (!video.owner.equals(req.user._id)) {
         throw new APIerror(403, "Unauthorized to delete this video");
     }
 
-    await Video.findByIdAndUpdate(videoID, {
-        isDeleted: true,
-        deletedAt: new Date(),
-    });
+    // Perform soft delete
+    video.isDeleted = true;
+    await video.save();
 
     return res
         .status(200)
-        .json(new APIresponse(200, null, "Video marked as deleted"));
+        .json(new APIresponse(200, video, "Video marked as deleted"));
 });
 
 // Toggle publish status

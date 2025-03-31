@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../services/AuthContext.jsx";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FilmIcon,
@@ -11,9 +11,8 @@ import {
     ClockIcon,
     ChartBarIcon,
     PlusCircleIcon,
-    EllipsisVerticalIcon,
-    ArrowPathIcon,
     SparklesIcon,
+    ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 
@@ -24,6 +23,7 @@ const YourVideos = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("newest");
     const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
 
     // Fetch videos with filters
     const fetchVideos = async () => {
@@ -37,7 +37,6 @@ const YourVideos = () => {
                 }
             );
             const data = await response.json();
-            console.log(data);
             if (!response.ok)
                 throw new Error(data.message || "Failed to fetch videos");
             setVideos(data.data?.videos || []);
@@ -52,57 +51,82 @@ const YourVideos = () => {
         if (user) fetchVideos();
     }, [user, sortBy, searchQuery]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-4 max-w-4xl mx-auto">
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-                    {error}
-                </div>
-            </div>
-        );
-    }
-
-    // Handle delete video
+    // Enhanced delete handler with confirmation modal
     const handleDelete = async (videoId) => {
-        const confirm = window.confirm(
-            "Are you sure you want to delete this video?"
-        );
-        if (!confirm) return;
-
-        const deleteToast = toast.loading("Deleting video...");
+        const deleteToast = toast.loading("Processing...");
 
         try {
+            const confirm = await new Promise((resolve) => {
+                toast(
+                    <div className="text-center p-4">
+                        <h3 className="font-bold text-lg mb-2">
+                            Delete Video?
+                        </h3>
+                        <p className="mb-4">This action cannot be undone</p>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={() => {
+                                    toast.dismiss(deleteToast);
+                                    resolve(false); // User canceled
+                                }}
+                                className="px-4 py-2 bg-gray-200 rounded-lg"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    resolve(true); // User confirmed
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg"
+                            >
+                                Confirm Delete
+                            </button>
+                        </div>
+                    </div>,
+                    {
+                        id: deleteToast,
+                        duration: Infinity,
+                    }
+                );
+            });
+
+            if (!confirm) {
+                toast.dismiss(deleteToast);
+                return; // Exit if user canceled
+            }
+
+            // Proceed with deletion
             const response = await fetch(`/api/v1/videos/${videoId}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${user?.token}` },
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
             });
 
-            if (!response.ok) throw new Error("Delete failed");
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Delete failed:", errorData);
+                throw new Error(errorData.message || "Delete failed");
+            }
 
-            setVideos((prev) => prev.filter((video) => video._id !== videoId));
+            setVideos((prev) => {
+                const updatedVideos = prev.filter((v) => v._id !== videoId);
+                console.log("Updated videos:", updatedVideos);
+                return updatedVideos;
+            });
+
             toast.success("Video deleted successfully", { id: deleteToast });
         } catch (err) {
-            toast.error(err.message || "Failed to delete video", {
-                id: deleteToast,
-            });
+            console.error("Error deleting video:", err);
+            toast.error(err.message || "Delete failed", { id: deleteToast });
+        } finally {
+            toast.dismiss(deleteToast); // Ensure toast is dismissed
         }
     };
 
-    // Handle toggle publish status
+    // Toggle publish status with better feedback
     const handleTogglePublish = async (videoId) => {
-        const action = videos.find((v) => v._id === videoId)?.isPublished
-            ? "unpublishing"
-            : "publishing";
-        const publishToast = toast.loading(`${action} video...`);
-
+        const toastId = toast.loading("Updating status...");
         try {
             const response = await fetch(`/api/v1/videos/${videoId}/publish`, {
                 method: "PATCH",
@@ -112,7 +136,7 @@ const YourVideos = () => {
                 },
             });
 
-            if (!response.ok) throw new Error("Status update failed");
+            if (!response.ok) throw new Error("Update failed");
 
             const data = await response.json();
             setVideos((prev) =>
@@ -126,86 +150,110 @@ const YourVideos = () => {
             toast.success(
                 `Video ${data.data.isPublished ? "published" : "unpublished"}`,
                 {
-                    id: publishToast,
-                    icon: data.data.isPublished ? "🎥" : "📁",
+                    id: toastId,
+                    icon: data.data.isPublished ? "📢" : "🔒",
                 }
             );
         } catch (err) {
-            toast.error(err.message || "Update failed", { id: publishToast });
+            toast.error(err.message || "Update failed", { id: toastId });
         }
     };
 
+    // Animation variants
     const cardVariants = {
-        hidden: { opacity: 0, scale: 0.95 },
+        hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
-            scale: 1,
-            transition: { type: "spring", stiffness: 300 },
+            y: 0,
+            transition: { type: "spring", stiffness: 300, damping: 20 },
         },
-        exit: {
-            opacity: 0,
-            scale: 0.9,
-            transition: { duration: 0.2 },
-        },
+        exit: { opacity: 0, scale: 0.95 },
     };
 
-    // Skeleton loader
-    const SkeletonLoader = () => (
-        <div className="animate-pulse bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-            <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200" />
-            <div className="p-4 space-y-3">
-                <div className="h-6 bg-gray-100 rounded-full w-3/4" />
-                <div className="h-4 bg-gray-100 rounded-full w-1/2" />
-                <div className="flex gap-4">
-                    <div className="h-4 bg-gray-100 rounded-full w-16" />
-                    <div className="h-4 bg-gray-100 rounded-full w-16" />
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-full bg-blue-100 animate-pulse" />
+                        <FilmIcon className="w-8 h-8 text-blue-600 absolute top-4 left-4" />
+                    </div>
+                    <p className="text-gray-600 font-medium">
+                        Loading your video library...
+                    </p>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+                <div className="bg-white p-6 rounded-xl shadow-lg max-w-md mx-4">
+                    <div className="text-red-500 text-center">
+                        <ExclamationTriangleIcon className="w-12 h-12 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold mb-2">
+                            Error Loading Videos
+                        </h3>
+                        <p className="text-gray-600 mb-4">{error}</p>
+                        <button
+                            onClick={fetchVideos}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-8">
-                {/* Enhanced Header Section */}
+                {/* Header Section */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm"
+                    transition={{ duration: 0.3 }}
+                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
                 >
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-blue-100 rounded-xl">
+                        <div className="p-3 bg-blue-100/80 rounded-xl shadow-inner">
                             <FilmIcon className="w-8 h-8 text-blue-600" />
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">
-                                My Video Studio
+                                Video Dashboard
                             </h1>
                             <p className="text-gray-600">
                                 {videos.length} video
-                                {videos.length !== 1 && "s"} •{" "}
-                                {videos.filter((v) => v.isPublished).length}{" "}
-                                published
+                                {videos.length !== 1 && "s"} •
+                                <span className="text-green-600 ml-1">
+                                    {videos.filter((v) => v.isPublished).length}{" "}
+                                    published
+                                </span>
                             </p>
                         </div>
                     </div>
 
                     <Link
                         to="/create"
-                        className="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
                     >
                         <PlusCircleIcon className="w-6 h-6" />
-                        <span className="font-semibold">New Video</span>
+                        <span>New Video</span>
                     </Link>
                 </motion.div>
 
-                {/* Enhanced Controls Section */}
+                {/* Search and Filter */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4"
+                    transition={{ delay: 0.1 }}
+                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm p-4 flex flex-col sm:flex-row gap-4"
                 >
-                    <div className="flex-1 relative">
+                    <div className="relative flex-1">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <SparklesIcon className="w-5 h-5 text-gray-400" />
                         </div>
@@ -214,15 +262,18 @@ const YourVideos = () => {
                             placeholder="Search your videos..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50"
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/70"
                         />
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <ArrowsUpDownIcon className="w-5 h-5 text-gray-400" />
+                        </div>
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-200 rounded-lg bg-white/50 focus:ring-2 focus:ring-blue-500"
+                            className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/70 appearance-none"
                         >
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
@@ -231,57 +282,50 @@ const YourVideos = () => {
                     </div>
                 </motion.div>
 
-                {/* Enhanced Content Area */}
+                {/* Content Area */}
                 <AnimatePresence mode="wait">
-                    {loading ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {[...Array(6)].map((_, i) => (
-                                <SkeletonLoader key={i} />
-                            ))}
-                        </div>
-                    ) : videos.length === 0 ? (
+                    {videos.length === 0 ? (
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm"
+                            className="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm p-12 text-center"
                         >
                             <div className="max-w-md mx-auto">
-                                <div className="text-blue-500 text-6xl mb-4">
-                                    🎥
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Ready to Create?
-                                </h3>
+                                <div className="text-6xl mb-4">🎬</div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Your Studio Awaits
+                                </h2>
                                 <p className="text-gray-600 mb-6">
-                                    Your video library is empty. Start sharing
-                                    your story with the world!
+                                    No videos found. Ready to create your first
+                                    masterpiece?
                                 </p>
                                 <Link
-                                    to="/upload"
-                                    className="inline-flex items-center gap-2 bg-gradient-to-br from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+                                    to="/create"
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
                                 >
                                     <PlusCircleIcon className="w-5 h-5" />
-                                    Upload First Video
+                                    Upload Video
                                 </Link>
                             </div>
                         </motion.div>
                     ) : (
                         <motion.div
                             layout
-                            className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                         >
                             <AnimatePresence>
                                 {videos.map((video) => (
                                     <motion.div
                                         key={video._id}
+                                        layout
                                         variants={cardVariants}
                                         initial="hidden"
                                         animate="visible"
                                         exit="exit"
-                                        layout
-                                        className="group relative bg-white/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden"
+                                        whileHover={{ y: -5 }}
+                                        className="group relative bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg overflow-hidden transition-all"
                                     >
-                                        {/* Enhanced Thumbnail Section */}
+                                        {/* Thumbnail */}
                                         <div className="relative aspect-video overflow-hidden">
                                             <img
                                                 src={video.thumbnail?.url}
@@ -289,40 +333,39 @@ const YourVideos = () => {
                                                 className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                                             />
 
-                                            {/* Enhanced Action Overlay */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-between">
-                                                {/* Top Badges */}
-                                                <div className="flex justify-between items-start">
-                                                    <span
-                                                        className={`px-3 py-1 rounded-full text-sm ${
-                                                            video.isPublished
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-yellow-100 text-yellow-800"
-                                                        }`}
-                                                    >
-                                                        {video.isPublished
-                                                            ? "PUBLISHED"
-                                                            : "DRAFT"}
-                                                    </span>
-                                                    <span className="bg-black/80 text-white px-2 py-1 rounded text-sm">
-                                                        {Math.floor(
-                                                            video.duration / 60
-                                                        )}
-                                                        :
-                                                        {(video.duration % 60)
-                                                            .toString()
-                                                            .padStart(2, "0")}
-                                                    </span>
-                                                </div>
+                                            {/* Status Badges */}
+                                            <div className="absolute top-3 left-3 flex gap-2">
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                        video.isPublished
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                    }`}
+                                                >
+                                                    {video.isPublished
+                                                        ? "LIVE"
+                                                        : "DRAFT"}
+                                                </span>
+                                                <span className="bg-black/80 text-white px-2 py-1 rounded-full text-xs">
+                                                    {Math.floor(
+                                                        video.duration / 60
+                                                    )}
+                                                    :
+                                                    {(video.duration % 60)
+                                                        .toString()
+                                                        .padStart(2, "0")}
+                                                </span>
+                                            </div>
 
-                                                {/* Bottom Actions */}
-                                                <div className="flex gap-2 w-full">
+                                            {/* Action Buttons */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                                <div className="flex gap-3 w-full">
                                                     <Link
                                                         to={`/edit-video/${video._id}`}
-                                                        className="flex-1 flex items-center justify-center gap-2 bg-white/90 text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition-all"
+                                                        className="flex-1 flex items-center justify-center gap-2 bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg font-medium transition-all"
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
-                                                        Edit Video {video._id}
+                                                        Edit
                                                     </Link>
                                                     <button
                                                         onClick={() =>
@@ -330,7 +373,7 @@ const YourVideos = () => {
                                                                 video._id
                                                             )
                                                         }
-                                                        className="p-2 bg-white/90 rounded-lg hover:bg-white transition-colors"
+                                                        className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
                                                     >
                                                         {video.isPublished ? (
                                                             <EyeSlashIcon className="w-5 h-5 text-red-600" />
@@ -338,28 +381,35 @@ const YourVideos = () => {
                                                             <EyeIcon className="w-5 h-5 text-green-600" />
                                                         )}
                                                     </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                video._id
+                                                            )
+                                                        }
+                                                        className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors text-red-600"
+                                                    >
+                                                        <TrashIcon className="w-5 h-5" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Enhanced Video Details */}
+                                        {/* Video Info */}
                                         <div className="p-4 space-y-3">
-                                            <Link
-                                                to={`/video/${video._id}`}
-                                                className="block font-semibold text-lg text-gray-900 hover:text-blue-600 line-clamp-2"
-                                            >
+                                            <h3 className="font-bold text-gray-900 line-clamp-2">
                                                 {video.title}
-                                            </Link>
+                                            </h3>
 
-                                            <div className="flex items-center justify-between text-sm text-gray-600">
-                                                <div className="flex items-center gap-1.5">
+                                            <div className="flex justify-between text-sm text-gray-600">
+                                                <div className="flex items-center gap-1">
                                                     <ChartBarIcon className="w-4 h-4" />
                                                     <span>
                                                         {video.views?.toLocaleString()}{" "}
                                                         views
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex items-center gap-1">
                                                     <ClockIcon className="w-4 h-4" />
                                                     <span>
                                                         {new Date(
@@ -383,7 +433,7 @@ const YourVideos = () => {
                                                         .map((tag) => (
                                                             <span
                                                                 key={tag}
-                                                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-200 transition-colors cursor-default"
+                                                                className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-200 transition-colors"
                                                             >
                                                                 #{tag}
                                                             </span>
