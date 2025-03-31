@@ -16,6 +16,7 @@ const EditVideo = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -23,16 +24,22 @@ const EditVideo = () => {
     });
     const [thumbnail, setThumbnail] = useState(null);
     const [currentThumbnail, setCurrentThumbnail] = useState("");
+    const [video, setVideo] = useState(null); // Added video state
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
         const fetchVideo = async () => {
             try {
-                const response = await axios.get(`/api/v1/videos/${videoID}`);
+                const response = await axios.get(`/api/v1/videos/${videoID}`, {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`, // Added Authorization header
+                    },
+                });
                 const video = response.data.data;
 
-                if (video.owner.toString() !== user._id.toString()) {
+                if (video.owner._id !== user._id.toString()) {
+                    console.error("Unauthorized access");
                     navigate("/uservideos");
                     toast.error("Unauthorized access");
                     return;
@@ -44,6 +51,7 @@ const EditVideo = () => {
                     tags: video.tags.join(", "),
                 });
                 setCurrentThumbnail(video.thumbnail?.url || "");
+                setVideo(video); // Store video details
                 setLoading(false);
             } catch (err) {
                 setError(err.response?.data?.message || err.message);
@@ -52,7 +60,7 @@ const EditVideo = () => {
         };
 
         fetchVideo();
-    }, [videoID, user._id]);
+    }, [videoID, user._id, user.token, navigate]);
 
     const handleChange = (e) => {
         setFormData({
@@ -62,9 +70,20 @@ const EditVideo = () => {
     };
 
     const handleThumbnailChange = (e) => {
-        if (e.target.files[0]) {
-            setThumbnail(e.target.files[0]);
-            setCurrentThumbnail(URL.createObjectURL(e.target.files[0]));
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type and size
+            if (!file.type.startsWith("image/")) {
+                toast.error("Please upload a valid image file");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Thumbnail size must be less than 5MB");
+                return;
+            }
+
+            setThumbnail(file);
+            setCurrentThumbnail(URL.createObjectURL(file));
         }
     };
 
@@ -87,19 +106,15 @@ const EditVideo = () => {
                 formPayload.append("thumbnail", thumbnail);
             }
 
-            const response = await axios.patch(
-                `/api/v1/videos/update/${videoID}`,
-                formPayload,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: `Bearer ${user.token}`,
-                    },
-                }
-            );
+            await axios.patch(`/api/v1/videos/update/${videoID}`, formPayload, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${user.token}`,
+                },
+            });
 
             toast.success("Video updated successfully");
-            navigate("/your-videos");
+            navigate("/uservideos"); // Ensure the correct route
         } catch (err) {
             setError(err.response?.data?.message || "Failed to update video");
             toast.error(
@@ -172,12 +187,17 @@ const EditVideo = () => {
                                             alt="Video thumbnail"
                                             className="w-full h-full object-cover"
                                         />
-                                        <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-sm">
-                                            {Math.floor(video.duration / 60)}:
-                                            {(video.duration % 60)
-                                                .toString()
-                                                .padStart(2, "0")}
-                                        </div>
+                                        {video?.duration && (
+                                            <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-sm">
+                                                {Math.floor(
+                                                    video.duration / 60
+                                                )}
+                                                :
+                                                {(video.duration % 60)
+                                                    .toString()
+                                                    .padStart(2, "0")}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

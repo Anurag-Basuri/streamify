@@ -37,6 +37,7 @@ const YourVideos = () => {
                 }
             );
             const data = await response.json();
+            console.log(data);
             if (!response.ok)
                 throw new Error(data.message || "Failed to fetch videos");
             setVideos(data.data?.videos || []);
@@ -321,7 +322,7 @@ const YourVideos = () => {
                                                         className="flex-1 flex items-center justify-center gap-2 bg-white/90 text-gray-900 px-4 py-2 rounded-lg hover:bg-white transition-all"
                                                     >
                                                         <PencilIcon className="w-4 h-4" />
-                                                        Edit Video
+                                                        Edit Video {video._id}
                                                     </Link>
                                                     <button
                                                         onClick={() =>

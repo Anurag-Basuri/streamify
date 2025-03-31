@@ -13,7 +13,7 @@ import Create from "../pages/You/Create.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import VideoPlayer from "../components/VideoPlayer.jsx";
 import { Navigate } from "react-router-dom";
-import EditVodeos from "../pages/Account/EditVideos.jsx";
+import EditVodeo from "../pages/Account/EditVideos.jsx";
 
 // Import other pages
 const AppRoutes = () => {
@@ -90,10 +90,10 @@ const AppRoutes = () => {
                 }
             />
             <Route
-                path="/edit-videos/:videoID"
+                path="/edit-video/:videoID"
                 element={
                     <ProtectedRoute>
-                        <EditVodeos />
+                        <EditVodeo />
                     </ProtectedRoute>
                 }
             />
