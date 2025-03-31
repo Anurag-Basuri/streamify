@@ -85,4 +85,24 @@ const deleteTweet = asynchandler(async (req, res) => {
         .json(new APIresponse(204, null, "Tweet deleted successfully"));
 });
 
-export { createTweet, get_user_tweet, updateTweet, deleteTweet };
+const get_latest_tweets = asynchandler(async (req, res) => {
+    const tweets = await Tweet.find()
+        .sort({ createdAt: -1 }) // Sort tweets by newest first
+        .limit(50) // Limit to the latest 10 tweets
+        .select("content createdAt owner") // Select only necessary fields
+        .populate("owner", "username"); // Populate the owner field with username
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, tweets, "Latest tweets fetched successfully")
+        );
+});
+
+export {
+    createTweet,
+    get_user_tweet,
+    updateTweet,
+    deleteTweet,
+    get_latest_tweets,
+};
