@@ -13,7 +13,9 @@ import {
     PlusCircleIcon,
     EllipsisVerticalIcon,
     ArrowPathIcon,
+    SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
 
 const YourVideos = () => {
     const [videos, setVideos] = useState([]);
@@ -49,68 +51,6 @@ const YourVideos = () => {
         if (user) fetchVideos();
     }, [user, sortBy, searchQuery]);
 
-    const handleDelete = async (videoId) => {
-        if (window.confirm("Are you sure you want to delete this video?")) {
-            try {
-                const response = await fetch(`/api/v1/videos/${videoId}`, {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(
-                        errorData.message || "Failed to delete video"
-                    );
-                }
-
-                setVideos((prev) =>
-                    prev.filter((video) => video._id !== videoId)
-                );
-            } catch (err) {
-                setError(err.message);
-            }
-        }
-    };
-
-    const handleTogglePublish = async (videoId) => {
-        try {
-            const response = await fetch(`/api/v1/videos/${videoId}/publish`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${user?.token}`,
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update status");
-            }
-
-            const data = await response.json();
-
-            setVideos((prev) =>
-                prev.map((video) =>
-                    video._id === videoId
-                        ? { ...video, isPublished: !video.isPublished }
-                        : video
-                )
-            );
-
-            // Show success message
-            alert(
-                `Video ${
-                    data.data.isPublished ? "published" : "unpublished"
-                } successfully`
-            );
-        } catch (err) {
-            setError(err.message);
-        }
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -129,22 +69,95 @@ const YourVideos = () => {
         );
     }
 
+    // Handle delete video
+    const handleDelete = async (videoId) => {
+        const confirm = window.confirm(
+            "Are you sure you want to delete this video?"
+        );
+        if (!confirm) return;
+
+        const deleteToast = toast.loading("Deleting video...");
+
+        try {
+            const response = await fetch(`/api/v1/videos/${videoId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${user?.token}` },
+            });
+
+            if (!response.ok) throw new Error("Delete failed");
+
+            setVideos((prev) => prev.filter((video) => video._id !== videoId));
+            toast.success("Video deleted successfully", { id: deleteToast });
+        } catch (err) {
+            toast.error(err.message || "Failed to delete video", {
+                id: deleteToast,
+            });
+        }
+    };
+
+    // Handle toggle publish status
+    const handleTogglePublish = async (videoId) => {
+        const action = videos.find((v) => v._id === videoId)?.isPublished
+            ? "unpublishing"
+            : "publishing";
+        const publishToast = toast.loading(`${action} video...`);
+
+        try {
+            const response = await fetch(`/api/v1/videos/${videoId}/publish`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error("Status update failed");
+
+            const data = await response.json();
+            setVideos((prev) =>
+                prev.map((v) =>
+                    v._id === videoId
+                        ? { ...v, isPublished: !v.isPublished }
+                        : v
+                )
+            );
+
+            toast.success(
+                `Video ${data.data.isPublished ? "published" : "unpublished"}`,
+                {
+                    id: publishToast,
+                    icon: data.data.isPublished ? "🎥" : "📁",
+                }
+            );
+        } catch (err) {
+            toast.error(err.message || "Update failed", { id: publishToast });
+        }
+    };
+
     const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 },
-        exit: { opacity: 0, scale: 0.9 },
+        hidden: { opacity: 0, scale: 0.95 },
+        visible: {
+            opacity: 1,
+            scale: 1,
+            transition: { type: "spring", stiffness: 300 },
+        },
+        exit: {
+            opacity: 0,
+            scale: 0.9,
+            transition: { duration: 0.2 },
+        },
     };
 
     // Skeleton loader
     const SkeletonLoader = () => (
-        <div className="animate-pulse bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="aspect-video bg-gray-200" />
+        <div className="animate-pulse bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200" />
             <div className="p-4 space-y-3">
-                <div className="h-5 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
+                <div className="h-6 bg-gray-100 rounded-full w-3/4" />
+                <div className="h-4 bg-gray-100 rounded-full w-1/2" />
                 <div className="flex gap-4">
-                    <div className="h-4 bg-gray-200 rounded w-16" />
-                    <div className="h-4 bg-gray-200 rounded w-16" />
+                    <div className="h-4 bg-gray-100 rounded-full w-16" />
+                    <div className="h-4 bg-gray-100 rounded-full w-16" />
                 </div>
             </div>
         </div>
