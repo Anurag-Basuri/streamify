@@ -19,3 +19,14 @@
 .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
 }
+
+.transition-slow {
+    transition: all 0.3s ease-in-out;
+}
+
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+.hover-scale:hover {
+    transform: scale(1.02);
+}

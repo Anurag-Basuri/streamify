@@ -3,6 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { motion } from "framer-motion";
+import {
+    ArrowUturnLeftIcon,
+    CloudArrowUpIcon,
+    PhotoIcon,
+    ExclamationTriangleIcon,
+    ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 const EditVideo = () => {
     const { videoID } = useParams();
@@ -114,86 +122,217 @@ const EditVideo = () => {
         );
     }
 
+    const cardVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.95 },
+    };
+
     return (
-        <div className="max-w-3xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-6">Edit Video Details</h1>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium mb-1">
-                        Title
-                    </label>
-                    <input
-                        type="text"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                        minLength="5"
-                        maxLength="100"
-                        required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                        Title must be 5-100 characters
-                    </p>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50 py-8"
+        >
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                        <ArrowUturnLeftIcon className="w-5 h-5" />
+                        <span className="font-medium">Back to Videos</span>
+                    </button>
+                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <PhotoIcon className="w-8 h-8 text-blue-600" />
+                        Edit Video Details
+                    </h1>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium mb-1">
-                        Description
-                    </label>
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded h-32"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">
-                        Tags (comma separated)
-                    </label>
-                    <input
-                        type="text"
-                        name="tags"
-                        value={formData.tags}
-                        onChange={handleChange}
-                        className="w-full p-2 border rounded"
-                        placeholder="tag1, tag2, tag3"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium mb-1">
-                        Thumbnail
-                    </label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleThumbnailChange}
-                        className="w-full p-2 border rounded"
-                    />
-                    {currentThumbnail && (
-                        <div className="mt-2">
-                            <p className="text-sm mb-1">Current Thumbnail:</p>
-                            <img
-                                src={currentThumbnail}
-                                alt="Video thumbnail"
-                                className="w-48 h-auto rounded"
-                            />
-                        </div>
-                    )}
-                </div>
-
-                <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                {/* Main Content */}
+                <motion.div
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="bg-white rounded-2xl shadow-lg p-6 sm:p-8"
                 >
-                    Update Video
-                </button>
-            </form>
-        </div>
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Video Preview Section */}
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                            {currentThumbnail && (
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium text-gray-600 mb-2">
+                                        Current Preview
+                                    </p>
+                                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                                        <img
+                                            src={currentThumbnail}
+                                            alt="Video thumbnail"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-sm">
+                                            {Math.floor(video.duration / 60)}:
+                                            {(video.duration % 60)
+                                                .toString()
+                                                .padStart(2, "0")}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                {formData.title || "Untitled Video"}
+                            </h3>
+                            <p className="text-gray-600 text-sm line-clamp-2">
+                                {formData.description || "No description"}
+                            </p>
+                        </div>
+
+                        {/* Form Sections */}
+                        <div className="space-y-6">
+                            {/* Title Section */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-700">
+                                    Video Title
+                                </label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter video title"
+                                    minLength="5"
+                                    maxLength="100"
+                                    required
+                                />
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">
+                                        Minimum 5 characters
+                                    </span>
+                                    <span className="text-gray-500">
+                                        {formData.title.length}/100
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Description Section */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-700">
+                                    Description
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
+                                    placeholder="Describe your video content"
+                                />
+                            </div>
+
+                            {/* Tags Section */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-700">
+                                    Tags
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="tags"
+                                        value={formData.tags}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="comma, separated, tags"
+                                    />
+                                    <span className="absolute right-3 top-3 text-gray-400 text-sm">
+                                        {
+                                            formData.tags
+                                                .split(",")
+                                                .filter((t) => t.trim()).length
+                                        }{" "}
+                                        tags
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Thumbnail Upload Section */}
+                            <div className="space-y-4">
+                                <label className="block text-sm font-semibold text-gray-700">
+                                    Thumbnail Image
+                                </label>
+                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-blue-500 transition-colors">
+                                    <CloudArrowUpIcon className="w-12 h-12 text-gray-400 mb-4" />
+                                    <span className="text-blue-600 font-medium">
+                                        Click to upload new thumbnail
+                                    </span>
+                                    <span className="text-gray-500 text-sm mt-1">
+                                        PNG, JPG up to 5MB
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleThumbnailChange}
+                                        className="hidden"
+                                    />
+                                </label>
+
+                                {thumbnail && (
+                                    <div className="mt-4">
+                                        <p className="text-sm font-medium text-gray-700 mb-2">
+                                            New Thumbnail Preview
+                                        </p>
+                                        <img
+                                            src={currentThumbnail}
+                                            alt="New thumbnail preview"
+                                            className="w-48 h-auto rounded-lg shadow-sm"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+                            <button
+                                type="button"
+                                onClick={() => navigate(-1)}
+                                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            >
+                                {loading ? (
+                                    <>
+                                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    "Save Changes"
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </motion.div>
+
+                {/* Error Display */}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl"
+                    >
+                        <p className="text-red-600 flex items-center gap-2">
+                            <ExclamationTriangleIcon className="w-5 h-5" />
+                            {error}
+                        </p>
+                    </motion.div>
+                )}
+            </div>
+        </motion.div>
     );
 };
 
