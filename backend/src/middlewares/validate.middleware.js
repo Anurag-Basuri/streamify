@@ -16,6 +16,7 @@ const validateResult = asynchandler(async (req, res, next) => {
                 message: err.msg,
             }));
 
+            console.log("Validation errors:", errorMessages);
             return next(new APIerror(400, "Validation Error", errorMessages));
         }
         next(); // Proceed if no errors

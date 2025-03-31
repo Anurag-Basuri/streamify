@@ -103,37 +103,73 @@ const get_video_by_id = asynchandler(async (req, res) => {
 // Update video details
 const update_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
+    console.log("Request Body:", req.body);
+    console.log("Request Files:", req.files);
     const updates = {};
+
+    // Validate video ID
+    if (!mongoose.isValidObjectId(videoID)) {
+        throw new APIerror(400, "Invalid Video ID");
+    }
 
     // Validate video ownership
     const video = await Video.findById(videoID).populate("owner");
-    if (video.owner.toString() !== user._id.toString()) {
+    if (!video) {
+        throw new APIerror(404, "Video not found");
+    }
+    if (video.owner._id.toString() !== req.user._id.toString()) {
         throw new APIerror(403, "Unauthorized to update this video");
     }
 
     // Process updates
-    if (req.body.title) updates.title = req.body.title;
-    if (req.body.description) updates.description = req.body.description;
-    if (req.body.tags) updates.tags = JSON.parse(req.body.tags);
+    if (req.body.title) {
+        updates.title = req.body.title;
+    }
+    if (req.body.description) {
+        updates.description = req.body.description;
+    }
+    if (req.body.tags) {
+        try {
+            updates.tags = JSON.parse(req.body.tags);
+        } catch (err) {
+            throw new APIerror(400, "Invalid tags format");
+        }
+    }
 
     // Handle thumbnail update
     if (req.files?.thumbnail?.[0]) {
-        const thumbnail = await uploadOnCloudinary(req.files.thumbnail[0].path);
-        updates.thumbnail = {
-            url: thumbnail.secure_url,
-            publicId: thumbnail.public_id,
-        };
-        fs.unlinkSync(req.files.thumbnail[0].path);
+        try {
+            const thumbnail = await uploadOnCloudinary(
+                req.files.thumbnail[0].path
+            );
+            updates.thumbnail = {
+                url: thumbnail.secure_url,
+                publicId: thumbnail.public_id,
+            };
+            fs.unlinkSync(req.files.thumbnail[0].path);
+        } catch (err) {
+            throw new APIerror(500, "Failed to upload thumbnail");
+        }
     }
 
+    // Check if updates object is empty
+    if (Object.keys(updates).length === 0) {
+        throw new APIerror(400, "No fields provided for update");
+    }
+
+    // Update the video
     const updatedVideo = await Video.findByIdAndUpdate(videoID, updates, {
         new: true,
         runValidators: true,
     });
 
+    if (!updatedVideo) {
+        throw new APIerror(404, "Video not found");
+    }
+
     return res
         .status(200)
-        .json(new APIresponse(200, updatedVideo, "Video updated"));
+        .json(new APIresponse(200, updatedVideo, "Video updated successfully"));
 });
 
 // Delete video (soft delete)

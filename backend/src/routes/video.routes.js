@@ -68,22 +68,35 @@ router.route("/upload").post(
 );
 
 // Route to update a video
-router
-    .route("/update/:videoID")
-    .patch(
-        param("videoID").isMongoId().withMessage("Invalid video ID"),
-        body("title")
-            .optional()
-            .isLength({ min: 5, max: 100 })
-            .withMessage("Title must be between 5 and 100 characters"),
-        body("description").optional().isString(),
-        body("tags")
-            .optional()
-            .isArray()
-            .withMessage("Tags must be an array of strings"),
-        validateResult,
-        update_video
-    );
+router.route("/update/:videoID").patch(
+    uploadFields,
+    param("videoID").isMongoId().withMessage("Invalid video ID"),
+    body("title")
+        .optional()
+        .isLength({ min: 5, max: 100 })
+        .withMessage("Title must be between 5 and 100 characters"),
+    body("description").optional().isString(),
+    body("tags")
+        .optional()
+        .custom((value) => {
+            if (typeof value === "string") {
+                try {
+                    const parsed = JSON.parse(value);
+                    if (!Array.isArray(parsed)) {
+                        throw new Error("Tags must be an array of strings");
+                    }
+                    return true;
+                } catch (err) {
+                    throw new Error("Tags must be a valid JSON array");
+                }
+            } else if (!Array.isArray(value)) {
+                throw new Error("Tags must be an array of strings");
+            }
+            return true;
+        }),
+    validateResult,
+    update_video
+);
 
 // Route to delete a video
 router.delete(
