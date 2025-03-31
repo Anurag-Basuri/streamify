@@ -59,8 +59,9 @@ const YourVideos = () => {
     // Handle delete with confirmation
     const handleDelete = async (videoId) => {
         const deleteToast = toast.loading("Processing...");
-
+    
         try {
+            // Show confirmation dialog
             const confirm = await new Promise((resolve) => {
                 toast(
                     <div className="text-center p-4">
@@ -115,7 +116,11 @@ const YourVideos = () => {
             }
 
             // Update the UI by removing the deleted video
-            setVideos((prev) => prev.filter((v) => v._id !== videoId));
+            setVideos((prev) => {
+                const updatedVideos = prev.filter((v) => v._id !== videoId);
+                console.log("Updated videos after deletion:", updatedVideos);
+                return updatedVideos;
+            });
 
             toast.success("Video deleted successfully", { id: deleteToast });
         } catch (err) {
