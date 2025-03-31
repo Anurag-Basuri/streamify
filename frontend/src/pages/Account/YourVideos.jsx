@@ -190,7 +190,7 @@ const YourVideos = () => {
                     </div>
 
                     <Link
-                        to="/upload"
+                        to="/create"
                         className="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-xl"
                     >
                         <PlusCircleIcon className="w-6 h-6" />
