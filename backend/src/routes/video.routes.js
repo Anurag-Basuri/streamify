@@ -10,6 +10,7 @@ import {
     togglePublishStatus,
     getRandomVideos,
     incrementViewCount,
+    get_User_Videos,
 } from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -70,19 +71,19 @@ router.route("/upload").post(
 router
     .route("/update/:videoID")
     .patch(
-    param("videoID").isMongoId().withMessage("Invalid video ID"),
-    body("title")
-        .optional()
-        .isLength({ min: 5, max: 100 })
-        .withMessage("Title must be between 5 and 100 characters"),
-    body("description").optional().isString(),
-    body("tags")
-        .optional()
-        .isArray()
-        .withMessage("Tags must be an array of strings"),
-    validateResult,
-    update_video
-);
+        param("videoID").isMongoId().withMessage("Invalid video ID"),
+        body("title")
+            .optional()
+            .isLength({ min: 5, max: 100 })
+            .withMessage("Title must be between 5 and 100 characters"),
+        body("description").optional().isString(),
+        body("tags")
+            .optional()
+            .isArray()
+            .withMessage("Tags must be an array of strings"),
+        validateResult,
+        update_video
+    );
 
 // Route to delete a video
 router.delete(
@@ -98,6 +99,14 @@ router.patch(
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     togglePublishStatus
+);
+
+// Route to get all videos of a user
+router.get(
+    "/user/:userID",
+    param("userID").isMongoId().withMessage("Invalid user ID"),
+    validateResult,
+    get_User_Videos
 );
 
 export default router;

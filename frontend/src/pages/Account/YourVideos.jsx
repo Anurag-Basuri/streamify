@@ -27,7 +27,7 @@ const YourVideos = () => {
     const fetchVideos = async () => {
         try {
             const response = await fetch(
-                `/api/v1/videos/user?sort=${sortBy}&search=${searchQuery}`,
+                `/api/v1/videos/user/${user?._id}?sort=${sortBy}&search=${searchQuery}`,
                 {
                     headers: {
                         Authorization: `Bearer ${user?.token}`,
