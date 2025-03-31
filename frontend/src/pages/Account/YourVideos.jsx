@@ -13,6 +13,7 @@ import {
     PlusCircleIcon,
     SparklesIcon,
     ArrowsUpDownIcon,
+    ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 
@@ -28,6 +29,7 @@ const YourVideos = () => {
     // Fetch videos with filters
     const fetchVideos = async () => {
         try {
+            setLoading(true);
             const response = await fetch(
                 `/api/v1/videos/user/${user?._id}?sort=${sortBy}&search=${searchQuery}`,
                 {
@@ -37,16 +39,13 @@ const YourVideos = () => {
                 }
             );
             const data = await response.json();
-            if (!response.ok)
+            if (!response.ok) {
                 throw new Error(data.message || "Failed to fetch videos");
-
-            // Filter out soft-deleted videos
-            const filteredVideos = data.data?.videos.filter(
-                (v) => !v.isDeleted
-            );
-            setVideos(filteredVideos || []);
+            }
+            setVideos(data.data?.videos || []);
         } catch (err) {
             setError(err.message);
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
@@ -56,52 +55,13 @@ const YourVideos = () => {
         if (user) fetchVideos();
     }, [user, sortBy, searchQuery]);
 
-    // Handle delete with confirmation
+    // Handle delete with confirmation and proper state updates
     const handleDelete = async (videoId) => {
         const deleteToast = toast.loading("Processing...");
-    
         try {
-            // Show confirmation dialog
-            const confirm = await new Promise((resolve) => {
-                toast(
-                    <div className="text-center p-4">
-                        <h3 className="font-bold text-lg mb-2">
-                            Delete Video?
-                        </h3>
-                        <p className="mb-4">This action cannot be undone</p>
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={() => {
-                                    toast.dismiss(deleteToast);
-                                    resolve(false); // User canceled
-                                }}
-                                className="px-4 py-2 bg-gray-200 rounded-lg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    resolve(true); // User confirmed
-                                }}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg"
-                            >
-                                Confirm Delete
-                            </button>
-                        </div>
-                    </div>,
-                    {
-                        id: deleteToast,
-                        duration: Infinity,
-                    }
-                );
-            });
+            console.log("Deleting video with ID:", videoId);
 
-            if (!confirm) {
-                toast.dismiss(deleteToast);
-                return; // Exit if user canceled
-            }
-
-            // Proceed with deletion
+            // API call for soft delete
             const response = await fetch(`/api/v1/videos/${videoId}`, {
                 method: "DELETE",
                 headers: {
@@ -111,29 +71,30 @@ const YourVideos = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("Delete failed:", errorData);
                 throw new Error(errorData.message || "Delete failed");
             }
 
-            // Update the UI by removing the deleted video
-            setVideos((prev) => {
-                const updatedVideos = prev.filter((v) => v._id !== videoId);
-                console.log("Updated videos after deletion:", updatedVideos);
-                return updatedVideos;
-            });
+            // Refresh data from server instead of optimistic update
+            await fetchVideos();
 
-            toast.success("Video deleted successfully", { id: deleteToast });
+            toast.success("Video moved to trash", {
+                id: deleteToast,
+                icon: "🗑️",
+                position: "bottom-right",
+            });
         } catch (err) {
-            console.error("Error deleting video:", err);
-            toast.error(err.message || "Delete failed", { id: deleteToast });
-        } finally {
-            toast.dismiss(deleteToast); // Ensure toast is dismissed
+            toast.error(err.message || "Delete failed", {
+                id: deleteToast,
+                position: "bottom-right",
+            });
         }
     };
 
-    // Toggle publish status with better feedback
+    // Toggle publish status with server sync
     const handleTogglePublish = async (videoId) => {
-        const toastId = toast.loading("Updating status...");
+        const toastId = toast.loading("Updating status...", {
+            position: "bottom-right",
+        });
         try {
             const response = await fetch(`/api/v1/videos/${videoId}/publish`, {
                 method: "PATCH",
@@ -145,24 +106,23 @@ const YourVideos = () => {
 
             if (!response.ok) throw new Error("Update failed");
 
-            const data = await response.json();
-            setVideos((prev) =>
-                prev.map((v) =>
-                    v._id === videoId
-                        ? { ...v, isPublished: !v.isPublished }
-                        : v
-                )
-            );
+            // Refresh data from server
+            await fetchVideos();
 
+            const data = await response.json();
             toast.success(
                 `Video ${data.data.isPublished ? "published" : "unpublished"}`,
                 {
                     id: toastId,
                     icon: data.data.isPublished ? "📢" : "🔒",
+                    position: "bottom-right",
                 }
             );
         } catch (err) {
-            toast.error(err.message || "Update failed", { id: toastId });
+            toast.error(err.message || "Update failed", {
+                id: toastId,
+                position: "bottom-right",
+            });
         }
     };
 
@@ -174,7 +134,7 @@ const YourVideos = () => {
             y: 0,
             transition: { type: "spring", stiffness: 300, damping: 20 },
         },
-        exit: { opacity: 0, scale: 0.95 },
+        exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } },
     };
 
     if (loading) {
@@ -290,7 +250,7 @@ const YourVideos = () => {
                 </motion.div>
 
                 {/* Content Area */}
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="popLayout">
                     {videos.length === 0 ? (
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
@@ -324,7 +284,7 @@ const YourVideos = () => {
                                 {videos.map((video) => (
                                     <motion.div
                                         key={video._id}
-                                        layout
+                                        layoutId={video._id}
                                         variants={cardVariants}
                                         initial="hidden"
                                         animate="visible"
