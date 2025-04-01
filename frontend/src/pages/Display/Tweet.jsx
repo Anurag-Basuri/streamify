@@ -1,13 +1,29 @@
-// Tweet.jsx - Tweet Creation/View Page
-import React, { useState, useEffect } from "react";
-import { FaTwitter, FaEdit, FaTrash } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { toast } from "react-hot-toast";
+import {
+    SparklesIcon,
+    PencilIcon,
+    ArrowPathIcon,
+    ChatBubbleLeftIcon,
+} from "@heroicons/react/24/outline";
 
 const Tweet = () => {
     const [tweets, setTweets] = useState([]);
     const [newTweet, setNewTweet] = useState("");
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+
+    // Animation variants
+    const tweetVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { type: "spring", stiffness: 120, damping: 20 },
+        },
+        exit: { opacity: 0, x: -50 },
+    };
 
     useEffect(() => {
         const fetchTweets = async () => {
@@ -15,7 +31,7 @@ const Tweet = () => {
                 const { data } = await axios.get("/api/v1/tweets");
                 setTweets(data.tweets);
             } catch (err) {
-                setError("Failed to fetch tweets");
+                toast.error("Failed to fetch latest tweets");
             } finally {
                 setLoading(false);
             }
@@ -28,99 +44,152 @@ const Tweet = () => {
         if (!newTweet.trim()) return;
 
         try {
-            const { data } = await axios.post("/api/v1/tweets", {
+            const { data } = await axios.post("/api/v1/tweets/create", {
                 content: newTweet,
             });
+
             setTweets([data.tweet, ...tweets]);
             setNewTweet("");
+            toast.success("Tweet created!", {
+                icon: "🚀",
+                style: {
+                    background: "#1a1a1a",
+                    color: "#fff",
+                },
+            });
         } catch (err) {
-            setError("Failed to post tweet");
-        }
-    };
-
-    const deleteTweet = async (id) => {
-        if (window.confirm("Delete this tweet?")) {
-            try {
-                await axios.delete(`/api/v1/tweets/${id}`);
-                setTweets(tweets.filter((t) => t._id !== id));
-            } catch (err) {
-                setError("Failed to delete tweet");
-            }
+            toast.error(err.response?.data?.message || "Failed to post tweet");
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-            <div className="max-w-2xl mx-auto">
-                <div className="mb-8 flex items-center gap-3">
-                    <FaTwitter className="text-blue-500 text-3xl" />
-                    <h1 className="text-3xl font-bold">Your Tweets</h1>
-                </div>
-
-                <form onSubmit={handleTweetSubmit} className="mb-8">
-                    <textarea
-                        value={newTweet}
-                        onChange={(e) => setNewTweet(e.target.value)}
-                        placeholder="What's happening?"
-                        className="w-full bg-gray-800 rounded-lg p-4 h-32 resize-none focus:ring-2 focus:ring-blue-500"
-                        maxLength={280}
-                    />
-                    <div className="flex justify-between items-center mt-4">
-                        <span className="text-gray-400">
-                            {newTweet.length}/280
-                        </span>
-                        <button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg"
-                        >
-                            Tweet
-                        </button>
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-6">
+            <div className="max-w-2xl mx-auto space-y-8">
+                {/* Header */}
+                <motion.div
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-2xl shadow-xl"
+                >
+                    <div className="flex items-center gap-4">
+                        <SparklesIcon className="w-12 h-12 text-yellow-400" />
+                        <div>
+                            <h1 className="text-4xl font-bold">Global Feed</h1>
+                            <p className="text-gray-200 mt-2">
+                                Share your thoughts with the world
+                            </p>
+                        </div>
                     </div>
-                </form>
+                </motion.div>
 
-                {error && <div className="text-red-400 mb-4">{error}</div>}
+                {/* Tweet Form */}
+                <motion.form
+                    onSubmit={handleTweetSubmit}
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-700"
+                >
+                    <div className="flex gap-4">
+                        <div className="pt-1">
+                            <PencilIcon className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                            <textarea
+                                value={newTweet}
+                                onChange={(e) => setNewTweet(e.target.value)}
+                                placeholder="What's on your mind?"
+                                className="w-full bg-transparent resize-none focus:outline-none text-lg"
+                                rows="3"
+                                maxLength={280}
+                            />
+                            <div className="flex justify-between items-center mt-4">
+                                <span
+                                    className={`text-sm ${
+                                        newTweet.length > 250
+                                            ? "text-red-400"
+                                            : "text-gray-400"
+                                    }`}
+                                >
+                                    {280 - newTweet.length}
+                                </span>
+                                <button
+                                    type="submit"
+                                    disabled={!newTweet.trim()}
+                                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    Post Tweet
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </motion.form>
 
+                {/* Tweets List */}
                 <div className="space-y-4">
                     {loading ? (
                         [...Array(3)].map((_, i) => (
-                            <div
+                            <motion.div
                                 key={i}
-                                className="animate-pulse bg-gray-800 h-32 rounded-lg"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl animate-pulse h-32"
                             />
                         ))
-                    ) : tweets.length === 0 ? (
-                        <div className="text-center text-gray-400 py-12">
-                            No tweets yet. Start tweeting!
-                        </div>
                     ) : (
-                        tweets.map((tweet) => (
-                            <div
-                                key={tweet._id}
-                                className="bg-gray-800 rounded-lg p-4"
-                            >
-                                <p className="mb-4">{tweet.content}</p>
-                                <div className="flex justify-between items-center text-gray-400 text-sm">
-                                    <span>
-                                        {new Date(
-                                            tweet.createdAt
-                                        ).toLocaleDateString()}
-                                    </span>
-                                    <div className="flex gap-3">
-                                        <button className="hover:text-blue-400">
-                                            <FaEdit />
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                deleteTweet(tweet._id)
-                                            }
-                                            className="hover:text-red-400"
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
+                        <AnimatePresence mode="popLayout">
+                            {tweets?.length === 0 ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-center py-12 text-gray-400"
+                                >
+                                    <ChatBubbleLeftIcon className="w-12 h-12 mx-auto mb-4" />
+                                    Be the first to share something amazing!
+                                </motion.div>
+                            ) : (
+                                tweets?.map((tweet) => (
+                                    <motion.div
+                                        key={tweet._id}
+                                        variants={tweetVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
+                                        className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-gray-700 hover:border-blue-500/30 transition-all"
+                                    >
+                                        <div className="flex gap-4">
+                                            <div className="bg-blue-600/20 p-2 rounded-lg">
+                                                <ChatBubbleLeftIcon className="w-6 h-6 text-blue-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-lg mb-2">
+                                                    {tweet.content}
+                                                </p>
+                                                <div className="flex items-center gap-4 text-gray-400 text-sm">
+                                                    <span className="flex items-center gap-1">
+                                                        <ArrowPathIcon className="w-4 h-4" />
+                                                        {new Date(
+                                                            tweet.createdAt
+                                                        ).toLocaleDateString(
+                                                            "en-US",
+                                                            {
+                                                                month: "short",
+                                                                day: "numeric",
+                                                            }
+                                                        )}
+                                                    </span>
+                                                    <span>
+                                                        @
+                                                        {tweet.owner
+                                                            ?.username ||
+                                                            "user"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </AnimatePresence>
                     )}
                 </div>
             </div>
