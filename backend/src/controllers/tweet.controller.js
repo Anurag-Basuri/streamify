@@ -94,17 +94,17 @@ const get_latest_tweets = asynchandler(async (req, res) => {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
-                as: "ownerDetails",
+                as: "owner",
             },
         },
-        { $unwind: "$ownerDetails" },
+        { $unwind: "$owner" },
         {
             $project: {
                 content: 1,
                 createdAt: 1,
-                "ownerDetails.userName": 1,
-                "ownerDetails.avatar": 1,
-                "ownerDetails.fullName": 1,
+                "owner.userName": 1,
+                "owner.avatar": 1,
+                "owner.fullName": 1,
             },
         },
     ]);
