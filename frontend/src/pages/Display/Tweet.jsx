@@ -11,8 +11,7 @@ import {
     ChartBarIcon,
     ArrowUpTrayIcon,
     ChatBubbleLeftIcon,
-    EllipsisHorizontalIcon,
-    XMarkIcon,
+    ShareIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import EmojiPicker from "emoji-picker-react";
@@ -25,8 +24,6 @@ const Tweet = () => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [likedTweets, setLikedTweets] = useState(new Set());
-    const [editingTweetId, setEditingTweetId] = useState(null);
-    const [editContent, setEditContent] = useState("");
 
     const tweetVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -38,7 +35,6 @@ const Tweet = () => {
         exit: { opacity: 0, x: -50 },
     };
 
-    // Memoized fetch function
     const fetchTweets = useCallback(async () => {
         try {
             const { data } = await axios.get("/api/v1/tweets");
@@ -101,7 +97,6 @@ const Tweet = () => {
         const file = e.target.files[0];
         if (file && file.type.startsWith("image/")) {
             if (file.size > 5 * 1024 * 1024) {
-                // 5MB limit
                 toast.error("Image size should be less than 5MB");
                 return;
             }
@@ -130,11 +125,11 @@ const Tweet = () => {
                 tweets.map((tweet) =>
                     tweet._id === tweetId
                         ? {
-                              ...tweet,
-                              likes: isLiked
-                                  ? tweet.likes - 1
-                                  : (tweet.likes || 0) + 1,
-                          }
+                            ...tweet,
+                            likes: isLiked
+                                ? tweet.likes - 1
+                                : (tweet.likes || 0) + 1,
+                        }
                         : tweet
                 )
             );
@@ -143,49 +138,12 @@ const Tweet = () => {
         }
     };
 
-    const startEditing = (tweet) => {
-        setEditingTweetId(tweet._id);
-        setEditContent(tweet.content);
+    const shareTweet = (tweetId) => {
+        const tweetUrl = `${window.location.origin}/tweet/${tweetId}`;
+        navigator.clipboard.writeText(tweetUrl);
+        toast.success("Tweet link copied to clipboard!");
     };
 
-    const cancelEditing = () => {
-        setEditingTweetId(null);
-        setEditContent("");
-    };
-
-    const handleEditSubmit = async (tweetId) => {
-        try {
-            const { data } = await axios.patch(`/api/v1/tweets/${tweetId}`, {
-                content: editContent,
-            });
-
-            setTweets(
-                tweets.map((tweet) =>
-                    tweet._id === tweetId ? data.data : tweet
-                )
-            );
-            setEditingTweetId(null);
-            toast.success("Tweet updated!");
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to update tweet"
-            );
-        }
-    };
-
-    const deleteTweet = async (tweetId) => {
-        try {
-            await axios.delete(`/api/v1/tweets/${tweetId}`);
-            setTweets(tweets.filter((tweet) => tweet._id !== tweetId));
-            toast.success("Tweet deleted!");
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to delete tweet"
-            );
-        }
-    };
-
-    // Memoized character count color
     const charCountColor = useMemo(() => {
         if (newTweet.length > 250) return "text-red-400";
         if (newTweet.length > 200) return "text-yellow-400";
@@ -195,7 +153,7 @@ const Tweet = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-4 md:p-6">
             <div className="max-w-2xl mx-auto space-y-6">
-                {/* Animated Header */}
+                {/* Header Section */}
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -217,7 +175,7 @@ const Tweet = () => {
                     </div>
                 </motion.div>
 
-                {/* Enhanced Tweet Form */}
+                {/* Tweet Input Section */}
                 <motion.form
                     onSubmit={handleTweetSubmit}
                     initial={{ scale: 0.95, opacity: 0 }}
@@ -232,6 +190,7 @@ const Tweet = () => {
                         </div>
 
                         <div className="flex-1 space-y-4">
+                            {/* Tweet Input Section */}
                             <textarea
                                 value={newTweet}
                                 onChange={(e) => setNewTweet(e.target.value)}
@@ -241,6 +200,7 @@ const Tweet = () => {
                                 maxLength={280}
                             />
 
+                            {/* Image Preview Section */}
                             {selectedImage && (
                                 <div className="relative group">
                                     <img
@@ -253,11 +213,12 @@ const Tweet = () => {
                                         onClick={() => setSelectedImage(null)}
                                         className="absolute top-2 right-2 bg-gray-900/80 p-1 md:p-2 rounded-full hover:bg-gray-800 transition-all"
                                     >
-                                        <XMarkIcon className="w-5 h-5" />
+                                        ✕
                                     </button>
                                 </div>
                             )}
 
+                            {/* Emoji Picker and Submit Button Section */}
                             <div className="flex justify-between items-center">
                                 <div className="flex gap-3 md:gap-4">
                                     <label className="cursor-pointer text-blue-400 hover:text-blue-300 transition-all">
@@ -284,7 +245,7 @@ const Tweet = () => {
                                         </button>
 
                                         {showEmojiPicker && (
-                                            <div className="absolute z-10 mt-2">
+                                            <div className="absolute z-20 mt-2">
                                                 <EmojiPicker
                                                     onEmojiClick={
                                                         handleEmojiClick
@@ -320,7 +281,7 @@ const Tweet = () => {
                     </div>
                 </motion.form>
 
-                {/* Enhanced Tweets List */}
+                {/* Tweets Section */}
                 <div className="space-y-4">
                     {loading ? (
                         [...Array(3)].map((_, i) => (
@@ -391,138 +352,79 @@ const Tweet = () => {
                                                             />
                                                         </span>
                                                     </div>
-
-                                                    <div className="relative group">
-                                                        <button className="text-gray-400 hover:text-gray-200">
-                                                            <EllipsisHorizontalIcon className="w-5 h-5" />
-                                                        </button>
-                                                        <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10 hidden group-hover:block border border-gray-700">
-                                                            <button
-                                                                onClick={() =>
-                                                                    startEditing(
-                                                                        tweet
-                                                                    )
-                                                                }
-                                                                className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
-                                                            >
-                                                                Edit Tweet
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    deleteTweet(
-                                                                        tweet._id
-                                                                    )
-                                                                }
-                                                                className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
-                                                            >
-                                                                Delete Tweet
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            shareTweet(
+                                                                tweet._id
+                                                            )
+                                                        }
+                                                        className="text-gray-400 hover:text-gray-200"
+                                                    >
+                                                        <ShareIcon className="w-5 h-5" />
+                                                    </button>
                                                 </div>
 
-                                                {editingTweetId ===
-                                                tweet._id ? (
-                                                    <div className="space-y-3">
-                                                        <textarea
-                                                            value={editContent}
-                                                            onChange={(e) =>
-                                                                setEditContent(
-                                                                    e.target
-                                                                        .value
+                                                <p className="text-base md:text-lg break-words whitespace-pre-wrap">
+                                                    {tweet.content}
+                                                </p>
+
+                                                {tweet.image && (
+                                                    <div className="mt-3">
+                                                        <img
+                                                            src={tweet.image}
+                                                            alt="Tweet media"
+                                                            className="rounded-2xl border border-gray-700 w-full max-h-96 object-cover"
+                                                            loading="lazy"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between text-gray-400 mt-3">
+                                                    <div className="flex items-center gap-4 md:gap-8">
+                                                        <button className="flex items-center gap-1 md:gap-2 hover:text-blue-400 transition-all text-sm md:text-base">
+                                                            <ChatBubbleLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                                            <span>
+                                                                {tweet.replies ||
+                                                                    0}
+                                                            </span>
+                                                        </button>
+                                                        <button className="flex items-center gap-1 md:gap-2 hover:text-green-400 transition-all text-sm md:text-base">
+                                                            <ArrowsRightLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                                            <span>
+                                                                {tweet.retweets ||
+                                                                    0}
+                                                            </span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                toggleLike(
+                                                                    tweet._id
                                                                 )
                                                             }
-                                                            className="w-full bg-gray-700/50 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            rows="3"
-                                                        />
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleEditSubmit(
+                                                            className="flex items-center gap-1 md:gap-2 hover:text-red-400 transition-all text-sm md:text-base"
+                                                        >
+                                                            {likedTweets.has(
+                                                                tweet._id
+                                                            ) ? (
+                                                                <HeartSolidIcon className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
+                                                            ) : (
+                                                                <HeartIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                                            )}
+                                                            <span>
+                                                                {(tweet.likes ||
+                                                                    0) +
+                                                                    (likedTweets.has(
                                                                         tweet._id
                                                                     )
-                                                                }
-                                                                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
-                                                            >
-                                                                Save Changes
-                                                            </button>
-                                                            <button
-                                                                onClick={
-                                                                    cancelEditing
-                                                                }
-                                                                className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
+                                                                        ? 1
+                                                                        : 0)}
+                                                            </span>
+                                                        </button>
                                                     </div>
-                                                ) : (
-                                                    <>
-                                                        <p className="text-base md:text-lg break-words whitespace-pre-wrap">
-                                                            {tweet.content}
-                                                        </p>
-
-                                                        {tweet.image && (
-                                                            <div className="mt-3">
-                                                                <img
-                                                                    src={
-                                                                        tweet.image
-                                                                    }
-                                                                    alt="Tweet media"
-                                                                    className="rounded-2xl border border-gray-700 w-full max-h-96 object-cover"
-                                                                    loading="lazy"
-                                                                />
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center justify-between text-gray-400 mt-3">
-                                                            <div className="flex items-center gap-4 md:gap-8">
-                                                                <button className="flex items-center gap-1 md:gap-2 hover:text-blue-400 transition-all text-sm md:text-base">
-                                                                    <ChatBubbleLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
-                                                                    <span>
-                                                                        {tweet.replies ||
-                                                                            0}
-                                                                    </span>
-                                                                </button>
-                                                                <button className="flex items-center gap-1 md:gap-2 hover:text-green-400 transition-all text-sm md:text-base">
-                                                                    <ArrowsRightLeftIcon className="w-4 h-4 md:w-5 md:h-5" />
-                                                                    <span>
-                                                                        {tweet.retweets ||
-                                                                            0}
-                                                                    </span>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        toggleLike(
-                                                                            tweet._id
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center gap-1 md:gap-2 hover:text-red-400 transition-all text-sm md:text-base"
-                                                                >
-                                                                    {likedTweets.has(
-                                                                        tweet._id
-                                                                    ) ? (
-                                                                        <HeartSolidIcon className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
-                                                                    ) : (
-                                                                        <HeartIcon className="w-4 h-4 md:w-5 md:h-5" />
-                                                                    )}
-                                                                    <span>
-                                                                        {(tweet.likes ||
-                                                                            0) +
-                                                                            (likedTweets.has(
-                                                                                tweet._id
-                                                                            )
-                                                                                ? 1
-                                                                                : 0)}
-                                                                    </span>
-                                                                </button>
-                                                            </div>
-                                                            <button className="hover:text-blue-400 transition-all">
-                                                                <ArrowUpTrayIcon className="w-4 h-4 md:w-5 md:h-5" />
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
+                                                    <button className="hover:text-blue-400 transition-all">
+                                                        <ArrowUpTrayIcon className="w-4 h-4 md:w-5 md:h-5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>

@@ -50,6 +50,7 @@ const videoSchema = new Schema(
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User",
+            required: true,
         },
         tags: {
             type: [String],
@@ -89,6 +90,7 @@ videoSchema.pre("save", async function (next) {
     }
     next();
 });
+
 videoSchema.virtual("ownerProfile", {
     ref: "User",
     localField: "owner",

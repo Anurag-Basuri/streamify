@@ -86,11 +86,28 @@ const deleteTweet = asynchandler(async (req, res) => {
 });
 
 const get_latest_tweets = asynchandler(async (req, res) => {
-    const tweets = await Tweet.find()
-        .sort({ createdAt: -1 }) // Sort tweets by newest first
-        .limit(50) // Limit to the latest 10 tweets
-        .select("content createdAt owner") // Select only necessary fields
-        .populate("owner", "username"); // Populate the owner field with username
+    const tweets = await Tweet.aggregate([
+        { $sort: { createdAt: -1 } },
+        { $limit: 50 },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+            },
+        },
+        { $unwind: "$ownerDetails" },
+        {
+            $project: {
+                content: 1,
+                createdAt: 1,
+                "ownerDetails.userName": 1,
+                "ownerDetails.avatar": 1,
+                "ownerDetails.fullName": 1,
+            },
+        },
+    ]);
 
     return res
         .status(200)

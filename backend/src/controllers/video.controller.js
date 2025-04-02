@@ -232,7 +232,7 @@ const togglePublishStatus = asynchandler(async (req, res) => {
 // Get random videos
 const getRandomVideos = asynchandler(async (req, res) => {
     const videos = await Video.aggregate([
-        { $match: { isPublished: true } }, // Add published filter
+        { $match: { isPublished: true } },
         { $sample: { size: 10 } },
         {
             $lookup: {
