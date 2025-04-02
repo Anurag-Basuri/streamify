@@ -11,7 +11,7 @@ const likeSchema = new Schema(
             type: Schema.Types.ObjectId,
             required: true,
         },
-        entiyType: {
+        entityType: {
             type: String,
             required: true,
             enum: ["Video", "Tweet", "Comment"], // Entity types
