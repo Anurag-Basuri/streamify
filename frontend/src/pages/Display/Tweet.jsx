@@ -11,6 +11,7 @@ import {
     ArrowUpTrayIcon,
     ChatBubbleLeftIcon,
     ShareIcon,
+    XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import EmojiPicker from "emoji-picker-react";
@@ -38,6 +39,15 @@ const Tweet = () => {
         try {
             const { data } = await axios.get("/api/v1/tweets");
             setTweets(data.data || []);
+
+            // Initialize liked tweets set
+            const liked = new Set();
+            data.data.forEach((tweet) => {
+                if (tweet.isLiked) {
+                    liked.add(tweet._id);
+                }
+            });
+            setLikedTweets(liked);
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to fetch latest tweets"
@@ -53,25 +63,28 @@ const Tweet = () => {
 
     const handleTweetSubmit = async (e) => {
         e.preventDefault();
-        if (!newTweet.trim()) return; // Ensure there's content to send
+        if (!newTweet.trim() && !selectedImage) return;
 
-        const payload = {
-            content: newTweet,
-        };
+        const formData = new FormData();
+        formData.append("content", newTweet);
+        if (selectedImage) {
+            formData.append("image", selectedImage);
+        }
 
         try {
             const { data } = await axios.post(
                 "/api/v1/tweets/create",
-                payload,
+                formData,
                 {
                     headers: {
-                        "Content-Type": "application/json", // Explicitly set JSON content type
+                        "Content-Type": "multipart/form-data",
                     },
                 }
             );
 
-            setTweets([data.data, ...tweets]); // Add the new tweet to the feed
-            setNewTweet(""); // Clear the input
+            setTweets([data.data, ...tweets]);
+            setNewTweet("");
+            setSelectedImage(null);
             toast.success("Tweet created!", {
                 icon: "🚀",
                 style: {
@@ -103,22 +116,28 @@ const Tweet = () => {
     const toggleLike = async (tweetId) => {
         try {
             const isLiked = likedTweets.has(tweetId);
-            const method = isLiked ? "delete" : "post";
 
-            await axios[method](`/api/v1/tweets/like/${tweetId}`);
+            const { data } = await axios[isLiked ? "delete" : "post"](
+                `/api/v1/likes/tweet/${tweetId}`
+            );
 
             setLikedTweets((prev) => {
                 const newSet = new Set(prev);
-                newSet[isLiked ? "delete" : "add"](tweetId);
+                if (isLiked) {
+                    newSet.delete(tweetId); // Remove if already liked
+                } else {
+                    newSet.add(tweetId); // Add if not liked
+                }
                 return newSet;
             });
 
-            setTweets(
-                tweets.map((tweet) =>
+            setTweets((prevTweets) =>
+                prevTweets.map((tweet) =>
                     tweet._id === tweetId
                         ? {
                               ...tweet,
                               likes: (tweet.likes || 0) + (isLiked ? -1 : 1),
+                              isLiked: !isLiked,
                           }
                         : tweet
                 )
@@ -369,6 +388,16 @@ const Tweet = () => {
                                                 <p className="text-gray-100 text-lg leading-relaxed whitespace-pre-wrap">
                                                     {tweet.content}
                                                 </p>
+
+                                                {tweet.image && (
+                                                    <div className="mt-3 rounded-xl overflow-hidden">
+                                                        <img
+                                                            src={tweet.image}
+                                                            alt="Tweet content"
+                                                            className="w-full h-auto max-h-96 object-contain rounded-xl"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {/* Tweet Actions */}
                                                 <div className="flex items-center justify-between pt-3">
