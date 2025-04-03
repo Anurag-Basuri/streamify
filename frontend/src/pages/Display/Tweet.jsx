@@ -114,35 +114,22 @@ const Tweet = () => {
     };
 
     const toggleLike = async (tweetId) => {
+        const isLiked = likedTweets.has(tweetId);
+    
+        // Optimistic update
+        setLikedTweets(prev => new Set(isLiked ? [...prev].filter(id => id !== tweetId) : new Set([...prev, tweetId]));
+        setTweets(prevTweets => prevTweets.map(tweet => 
+            tweet._id === tweetId ? { ...tweet, likes: tweet.likes + (isLiked ? -1 : 1), isLiked: !isLiked } : tweet
+        ));
+    
         try {
-            const isLiked = likedTweets.has(tweetId);
-
-            const { data } = await axios[isLiked ? "delete" : "post"](
-                `/api/v1/likes/tweet/${tweetId}`
-            );
-
-            setLikedTweets((prev) => {
-                const newSet = new Set(prev);
-                if (isLiked) {
-                    newSet.delete(tweetId); // Remove if already liked
-                } else {
-                    newSet.add(tweetId); // Add if not liked
-                }
-                return newSet;
-            });
-
-            setTweets((prevTweets) =>
-                prevTweets.map((tweet) =>
-                    tweet._id === tweetId
-                        ? {
-                              ...tweet,
-                              likes: (tweet.likes || 0) + (isLiked ? -1 : 1),
-                              isLiked: !isLiked,
-                          }
-                        : tweet
-                )
-            );
+            await axios.post(`/api/v1/likes/tweet/${tweetId}`); // Always POST
         } catch (err) {
+            // Revert on error
+            setLikedTweets(prev => new Set(isLiked ? [...prev, tweetId] : [...prev].filter(id => id !== tweetId)));
+            setTweets(prevTweets => prevTweets.map(tweet => 
+                tweet._id === tweetId ? { ...tweet, likes: tweet.likes - (isLiked ? -1 : 1), isLiked } : tweet
+            ));
             toast.error(err.response?.data?.message || "Failed to update like");
         }
     };

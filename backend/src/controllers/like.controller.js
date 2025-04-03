@@ -22,7 +22,7 @@ const toggleVideoLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: videoId,
-        entiyType: "video",
+        entityType: "video",
     });
     if (existLike) {
         await existLike.remove();
@@ -53,7 +53,7 @@ const toggleCommentLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: commentId,
-        entiyType: "comment",
+        entityType: "comment",
     });
     if (existLike) {
         await existLike.remove();
@@ -84,7 +84,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: tweetId,
-        entiyType: "tweet",
+        entityType: "tweet",
     });
     if (existLike) {
         await existLike.remove();
