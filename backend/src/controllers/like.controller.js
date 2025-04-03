@@ -22,7 +22,7 @@ const toggleVideoLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: videoId,
-        entityType: "video",
+        entityType: "Video",
     });
     if (existLike) {
         await existLike.remove();
@@ -32,7 +32,7 @@ const toggleVideoLike = asynchandler(async (req, res) => {
     const like = await Like.create({
         likedBy: req.user._id,
         likedEntity: videoId,
-        entiyType: "video",
+        entityType: "Video",
     });
 
     return res.status(201).json(new APIresponse(201, like, "Video liked"));
@@ -53,7 +53,7 @@ const toggleCommentLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: commentId,
-        entityType: "comment",
+        entityType: "Comment",
     });
     if (existLike) {
         await existLike.remove();
@@ -63,7 +63,7 @@ const toggleCommentLike = asynchandler(async (req, res) => {
     const like = await Like.create({
         likedBy: req.user._id,
         likedEntity: commentId,
-        entiyType: "comment",
+        entityType: "Comment",
     });
 
     return res.status(201).json(new APIresponse(201, like, "Comment liked"));
