@@ -117,7 +117,7 @@ const Tweet = () => {
         const isLiked = likedTweets.has(tweetId);
     
         // Optimistic update
-        setLikedTweets(prev => new Set(isLiked ? [...prev].filter(id => id !== tweetId) : new Set([...prev, tweetId]));
+        setLikedTweets(prev => new Set(isLiked ? [...prev].filter(id => id !== tweetId) : new Set([...prev, tweetId])));
         setTweets(prevTweets => prevTweets.map(tweet => 
             tweet._id === tweetId ? { ...tweet, likes: tweet.likes + (isLiked ? -1 : 1), isLiked: !isLiked } : tweet
         ));

@@ -70,6 +70,7 @@ const toggleCommentLike = asynchandler(async (req, res) => {
 });
 
 const toggleTweetLike = asynchandler(async (req, res) => {
+    console.log("Toggle tweet like called");
     const { tweetId } = req.params;
 
     if (!mongoose.isValidObjectId(tweetId)) {
@@ -84,7 +85,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     const existLike = await Like.findOne({
         likedBy: req.user._id,
         likedEntity: tweetId,
-        entityType: "tweet",
+        entityType: "Tweet",
     });
     if (existLike) {
         await existLike.remove();
@@ -94,7 +95,7 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     const like = await Like.create({
         likedBy: req.user._id,
         likedEntity: tweetId,
-        entiyType: "tweet",
+        entityType: "Tweet",
     });
 
     return res.status(201).json(new APIresponse(201, like, "Tweet liked"));
