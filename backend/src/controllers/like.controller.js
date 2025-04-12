@@ -11,11 +11,13 @@ const toggleVideoLike = asynchandler(async (req, res) => {
     const { videoId } = req.params;
 
     if (!mongoose.isValidObjectId(videoId)) {
+        console.error("Invalid video ID:", videoId);
         throw new APIerror(400, "Invalid video ID");
     }
 
     const video = await Video.findById(videoId);
     if (!video) {
+        console.error("Video not found:", videoId);
         throw new APIerror(400, "Video not found");
     }
 
@@ -24,29 +26,56 @@ const toggleVideoLike = asynchandler(async (req, res) => {
         likedEntity: videoId,
         entityType: "Video",
     });
+
     if (existLike) {
-        await existLike.remove();
-        res.status(200).json(new APIresponse(200, null, "Video unliked"));
+        console.log("Existing like found. Removing like for video:", videoId);
+        await Like.deleteOne({ _id: existLike._id });
+
+        // Decrement the like count on the video
+        video.likes = Math.max(0, (video.likes || 0) - 1);
+        await video.save();
+
+        console.log(
+            "Video unliked successfully. Updated likes count:",
+            video.likes
+        );
+        return res
+            .status(200)
+            .json(
+                new APIresponse(200, { likes: video.likes }, "Video unliked")
+            );
     }
 
-    const like = await Like.create({
+    console.log("No existing like found. Adding like for video:", videoId);
+
+    // Create a new like
+    await Like.create({
         likedBy: req.user._id,
         likedEntity: videoId,
         entityType: "Video",
     });
 
-    return res.status(201).json(new APIresponse(201, like, "Video liked"));
+    // Increment the like count on the video
+    video.likes = (video.likes || 0) + 1;
+    await video.save();
+
+    console.log("Video liked successfully. Updated likes count:", video.likes);
+    return res
+        .status(201)
+        .json(new APIresponse(201, { likes: video.likes }, "Video liked"));
 });
 
 const toggleCommentLike = asynchandler(async (req, res) => {
     const { commentId } = req.params;
 
     if (!mongoose.isValidObjectId(commentId)) {
+        console.error("Invalid comment ID:", commentId);
         throw new APIerror(400, "Invalid comment ID");
     }
 
     const comment = await Comment.findById(commentId);
     if (!comment) {
+        console.error("Comment not found:", commentId);
         throw new APIerror(400, "Comment not found");
     }
 
@@ -55,18 +84,53 @@ const toggleCommentLike = asynchandler(async (req, res) => {
         likedEntity: commentId,
         entityType: "Comment",
     });
+
     if (existLike) {
-        await existLike.remove();
-        res.status(200).json(new APIresponse(200, null, "Comment unliked"));
+        console.log(
+            "Existing like found. Removing like for comment:",
+            commentId
+        );
+        await Like.deleteOne({ _id: existLike._id });
+
+        // Decrement the like count on the comment
+        comment.likes = Math.max(0, (comment.likes || 0) - 1);
+        await comment.save();
+
+        console.log(
+            "Comment unliked successfully. Updated likes count:",
+            comment.likes
+        );
+        return res
+            .status(200)
+            .json(
+                new APIresponse(
+                    200,
+                    { likes: comment.likes },
+                    "Comment unliked"
+                )
+            );
     }
 
-    const like = await Like.create({
+    console.log("No existing like found. Adding like for comment:", commentId);
+
+    // Create a new like
+    await Like.create({
         likedBy: req.user._id,
         likedEntity: commentId,
         entityType: "Comment",
     });
 
-    return res.status(201).json(new APIresponse(201, like, "Comment liked"));
+    // Increment the like count on the comment
+    comment.likes = (comment.likes || 0) + 1;
+    await comment.save();
+
+    console.log(
+        "Comment liked successfully. Updated likes count:",
+        comment.likes
+    );
+    return res
+        .status(201)
+        .json(new APIresponse(201, { likes: comment.likes }, "Comment liked"));
 });
 
 const toggleTweetLike = asynchandler(async (req, res) => {
