@@ -158,18 +158,17 @@ const toggleTweetLike = asynchandler(async (req, res) => {
         console.log("Existing like found. Removing like for tweet:", tweetId);
         await Like.deleteOne({ _id: existLike._id });
 
-        // Decrement the like count on the tweet
-        tweet.likes = Math.max(0, (tweet.likes || 0) - 1);
-        await tweet.save();
+        // count the number of likes.
+        const likes = await Like.countDocuments({ likedEntity: tweetId, entityType: "Tweet" });
 
         console.log(
             "Tweet unliked successfully. Updated likes count:",
-            tweet.likes
+            likes
         );
         return res
             .status(200)
             .json(
-                new APIresponse(200, { likes: tweet.likes }, "Tweet unliked")
+                new APIresponse(200, { likes: likes, state:0 }, "Tweet unliked")
             );
     }
 
@@ -183,13 +182,12 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     });
 
     // Increment the like count on the tweet
-    tweet.likes = (tweet.likes || 0) + 1;
-    await tweet.save();
+    const likes = await Like.countDocuments({ likedEntity: tweetId, entityType: "Tweet" });
 
-    console.log("Tweet liked successfully. Updated likes count:", tweet.likes);
+    console.log("Tweet liked successfully. Updated likes count:", likes);
     return res
         .status(201)
-        .json(new APIresponse(201, { likes: tweet.likes }, "Tweet liked"));
+        .json(new APIresponse(201, { likes: likes,state: 1 }, "Tweet liked"));
 });
 
 const getLikedEntities = asynchandler(async (req, res) => {
