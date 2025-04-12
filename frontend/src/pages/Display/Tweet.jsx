@@ -23,6 +23,7 @@ const Tweet = () => {
     const [loading, setLoading] = useState(true);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [Comments, setComments] = useState([]);
 
     const tweetVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -121,6 +122,25 @@ const Tweet = () => {
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to like tweet");
         }
+    };
+
+    const fetchComments = useCallback((async(tweetId) => {
+        try {
+            const { data } = await axios.get(
+                `/api/v1/comments/Tweet/${tweetId}`
+            );
+            setComments(data.data.comments || []);
+        }   catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to fetch comments"
+            );
+        }
+    }), []);
+
+    const handleCommentSubmit = async (e) => {
+        e.preventDefault();
+        const { value } = e.target.elements.commentInput;
+        if (!value.trim()) return;
     };
 
     const shareTweet = (tweetId) => {
@@ -378,14 +398,17 @@ const Tweet = () => {
                                                 {/* Tweet Actions */}
                                                 <div className="flex items-center justify-between pt-3">
                                                     <div className="flex items-center gap-6 text-gray-400">
-
                                                         {/* Comment Action */}
-                                                        <button className="flex items-center gap-1 hover:text-blue-400 transition-all">
+                                                        <button
+                                                            onClick={() =>
+                                                                handleCommentSubmit(
+                                                                    tweet._id
+                                                                )
+                                                            }
+                                                            className="flex items-center gap-1 hover:text-blue-400 transition-all"
+                                                        >
                                                             <ChatBubbleLeftIcon className="w-5 h-5" />
-                                                            <span className="text-sm">
-                                                                {tweet.replies ||
-                                                                    0}
-                                                            </span>
+                                                            <span className="text-sm"></span>
                                                         </button>
 
                                                         {/* Retweet Action */}

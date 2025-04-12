@@ -50,7 +50,7 @@ const getEntityComments = asynchandler(async (req, res) => {
     const totalComments = await Comment.countDocuments(match);
 
     return res.status(200).json(
-        new ApiResponse(
+        new APIresponse(
             200,
             {
                 comments,
