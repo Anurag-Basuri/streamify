@@ -1,28 +1,30 @@
 import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
+import { Like } from "../models/like.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 
-// Get all comments for a video
+// Get all comments for an entity (Video or Tweet)
 const getEntityComments = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    // validate entity type
+    // Validate entity type
     if (!["Video", "Tweet"].includes(entityType)) {
-        throw new APIerror(400, "Entity type is wrong");
+        throw new APIerror(400, "Invalid entity type");
     }
 
+    // Validate entity ID
     if (!mongoose.isValidObjectId(entityId)) {
-        throw new ApiError(400, "Invalid Video ID");
+        throw new APIerror(400, "Invalid Entity ID");
     }
 
-    const match = { entity: entityId, entityType: entityType };
+    const match = { entity: entityId, entityType };
 
     const comments = await Comment.aggregate([
         { $match: match },
-        { $sort: { createdAt: -1 } }, // Sort by latest comments
+        { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: +limit },
         {
@@ -35,6 +37,14 @@ const getEntityComments = asynchandler(async (req, res) => {
         },
         { $unwind: "$ownerDetails" },
         {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "likedEntity",
+                as: "likes",
+            },
+        },
+        {
             $project: {
                 content: 1,
                 createdAt: 1,
@@ -42,6 +52,13 @@ const getEntityComments = asynchandler(async (req, res) => {
                     _id: "$ownerDetails._id",
                     userName: "$ownerDetails.userName",
                     avatar: "$ownerDetails.avatar",
+                },
+                likesCount: { $size: "$likes" },
+                isLiked: {
+                    $in: [
+                        mongoose.Types.ObjectId(req.user._id),
+                        "$likes.likedBy",
+                    ],
                 },
             },
         },
@@ -70,30 +87,30 @@ const addComment = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
     const { content } = req.body;
 
-    // Validate entityType
+    // Validate entity type
     if (!["Video", "Tweet"].includes(entityType)) {
-        throw new ApiError(400, "Invalid entity type");
+        throw new APIerror(400, "Invalid entity type");
     }
 
-    // Validate entityId
+    // Validate entity ID
     if (!mongoose.isValidObjectId(entityId)) {
-        throw new ApiError(400, "Invalid Entity ID");
+        throw new APIerror(400, "Invalid Entity ID");
     }
 
     if (!content || content.trim().length < 1) {
-        throw new ApiError(400, "Comment content is required");
+        throw new APIerror(400, "Comment content is required");
     }
 
     const comment = await Comment.create({
         content,
-        owner: req.user._id, // Assuming `req.user` contains the authenticated user info
+        owner: req.user._id,
         entity: entityId,
         entityType,
     });
 
     return res
         .status(201)
-        .json(new ApiResponse(201, comment, "Comment added successfully"));
+        .json(new APIresponse(201, comment, "Comment added successfully"));
 });
 
 // Update a comment
@@ -102,11 +119,11 @@ const updateComment = asynchandler(async (req, res) => {
     const { content } = req.body;
 
     if (!mongoose.isValidObjectId(commentId)) {
-        throw new ApiError(400, "Invalid Comment ID");
+        throw new APIerror(400, "Invalid Comment ID");
     }
 
     if (!content || content.trim().length < 1) {
-        throw new ApiError(400, "Updated content is required");
+        throw new APIerror(400, "Updated content is required");
     }
 
     const comment = await Comment.findOneAndUpdate(
@@ -116,7 +133,7 @@ const updateComment = asynchandler(async (req, res) => {
     );
 
     if (!comment) {
-        throw new ApiError(
+        throw new APIerror(
             404,
             "Comment not found or you do not own this comment"
         );
@@ -124,7 +141,7 @@ const updateComment = asynchandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, comment, "Comment updated successfully"));
+        .json(new APIresponse(200, comment, "Comment updated successfully"));
 });
 
 // Delete a comment
@@ -132,7 +149,7 @@ const deleteComment = asynchandler(async (req, res) => {
     const { commentId } = req.params;
 
     if (!mongoose.isValidObjectId(commentId)) {
-        throw new ApiError(400, "Invalid Comment ID");
+        throw new APIerror(400, "Invalid Comment ID");
     }
 
     const comment = await Comment.findOneAndDelete({
@@ -141,7 +158,7 @@ const deleteComment = asynchandler(async (req, res) => {
     });
 
     if (!comment) {
-        throw new ApiError(
+        throw new APIerror(
             404,
             "Comment not found or you do not own this comment"
         );
@@ -149,7 +166,73 @@ const deleteComment = asynchandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, null, "Comment deleted successfully"));
+        .json(new APIresponse(200, null, "Comment deleted successfully"));
 });
 
-export { getEntityComments, addComment, updateComment, deleteComment };
+// Toggle like for a comment
+const toggleCommentLike = asynchandler(async (req, res) => {
+    const { commentId } = req.params;
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new APIerror(400, "Invalid Comment ID");
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new APIerror(404, "Comment not found");
+    }
+
+    const existLike = await Like.findOne({
+        likedBy: req.user._id,
+        likedEntity: commentId,
+        entityType: "Comment",
+    });
+
+    if (existLike) {
+        await Like.deleteOne({ _id: existLike._id });
+
+        const likesCount = await Like.countDocuments({
+            likedEntity: commentId,
+            entityType: "Comment",
+        });
+
+        return res
+            .status(200)
+            .json(
+                new APIresponse(
+                    200,
+                    { likes: likesCount, isLiked: false },
+                    "Comment unliked"
+                )
+            );
+    }
+
+    await Like.create({
+        likedBy: req.user._id,
+        likedEntity: commentId,
+        entityType: "Comment",
+    });
+
+    const likesCount = await Like.countDocuments({
+        likedEntity: commentId,
+        entityType: "Comment",
+    });
+
+    return res
+        .status(201)
+        .json(
+            new APIresponse(
+                201,
+                { likes: likesCount, isLiked: true },
+                "Comment liked"
+            )
+        );
+});
+
+export {
+    getEntityComments,
+    addComment,
+    updateComment,
+    deleteComment,
+    toggleCommentLike,
+};

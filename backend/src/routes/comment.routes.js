@@ -7,30 +7,30 @@ import {
     deleteComment,
     getEntityComments,
     updateComment,
+    toggleCommentLike,
 } from "../controllers/comment.controller.js";
 
 const router = Router();
 
-// verify if user is login
+// Verify if user is logged in
 router.use(verifyAccessToken);
 
-// get a comment
+// Get comments for an entity
 router.get("/:entityType/:entityId", getEntityComments);
 
-// add a comment
-router
-    .route("/:entityType/:entityId")
-    .post(
-        body("content")
-            .isString()
-            .trim()
-            .notEmpty()
-            .withMessage("Comment is required"),
-        validateResult,
-        addComment
-    );
+// Add a comment
+router.post(
+    "/:entityType/:entityId",
+    body("content")
+        .isString()
+        .trim()
+        .notEmpty()
+        .withMessage("Comment is required"),
+    validateResult,
+    addComment
+);
 
-// update a comment
+// Update a comment
 router.put(
     "/:commentId",
     body("content")
@@ -42,7 +42,10 @@ router.put(
     updateComment
 );
 
-// delete a comment
+// Delete a comment
 router.delete("/:commentId", deleteComment);
+
+// Toggle like for a comment
+router.post("/like/:commentId", toggleCommentLike);
 
 export default router;
