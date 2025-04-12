@@ -23,7 +23,6 @@ const Tweet = () => {
     const [loading, setLoading] = useState(true);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
-    const [likedTweets, setLikedTweets] = useState(new Set());
 
     const tweetVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -39,15 +38,6 @@ const Tweet = () => {
         try {
             const { data } = await axios.get("/api/v1/tweets");
             setTweets(data.data || []);
-
-            // Initialize liked tweets set
-            const liked = new Set();
-            data.data.forEach((tweet) => {
-                if (tweet.isLiked) {
-                    liked.add(tweet._id);
-                }
-            });
-            setLikedTweets(liked);
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to fetch latest tweets"
@@ -114,23 +104,22 @@ const Tweet = () => {
     };
 
     const toggleLike = async (tweetId) => {
-        const isLiked = likedTweets.has(tweetId);
-    
-        // Optimistic update
-        setLikedTweets(prev => new Set(isLiked ? [...prev].filter(id => id !== tweetId) : new Set([...prev, tweetId])));
-        setTweets(prevTweets => prevTweets.map(tweet => 
-            tweet._id === tweetId ? { ...tweet, likes: tweet.likes + (isLiked ? -1 : 1), isLiked: !isLiked } : tweet
-        ));
-    
         try {
-            await axios.post(`/api/v1/likes/tweet/${tweetId}`); // Always POST
+            const { data } = await axios.post(`/api/v1/likes/tweet/${tweetId}`);
+            setTweets((prevTweets) =>
+                prevTweets.map((tweet) =>
+                    tweet._id === tweetId
+                        ? {
+                              ...tweet,
+                              likes: data.data.likes,
+                              isLiked: data.data.state === 1,
+                          }
+                        : tweet
+                )
+            );
+            toast.success(data.message);
         } catch (err) {
-            // Revert on error
-            setLikedTweets(prev => new Set(isLiked ? [...prev, tweetId] : [...prev].filter(id => id !== tweetId)));
-            setTweets(prevTweets => prevTweets.map(tweet => 
-                tweet._id === tweetId ? { ...tweet, likes: tweet.likes - (isLiked ? -1 : 1), isLiked } : tweet
-            ));
-            toast.error(err.response?.data?.message || "Failed to update like");
+            toast.error(err.response?.data?.message || "Failed to like tweet");
         }
     };
 
@@ -413,9 +402,7 @@ const Tweet = () => {
                                                             }
                                                             className="flex items-center gap-1 hover:text-red-400 transition-all"
                                                         >
-                                                            {likedTweets.has(
-                                                                tweet._id
-                                                            ) ? (
+                                                            {tweet.isLiked ? (
                                                                 <HeartSolidIcon className="w-5 h-5 text-red-500" />
                                                             ) : (
                                                                 <HeartIcon className="w-5 h-5" />
