@@ -74,11 +74,13 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     const { tweetId } = req.params;
 
     if (!mongoose.isValidObjectId(tweetId)) {
+        console.error("Invalid tweet ID:", tweetId);
         throw new APIerror(400, "Invalid tweet ID");
     }
 
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
+        console.error("Tweet not found:", tweetId);
         throw new APIerror(400, "Tweet not found");
     }
 
@@ -87,18 +89,43 @@ const toggleTweetLike = asynchandler(async (req, res) => {
         likedEntity: tweetId,
         entityType: "Tweet",
     });
+
     if (existLike) {
-        await existLike.remove();
-        res.status(200).json(new APIresponse(200, null, "Tweet unliked"));
+        console.log("Existing like found. Removing like for tweet:", tweetId);
+        await Like.deleteOne({ _id: existLike._id });
+
+        // Decrement the like count on the tweet
+        tweet.likes = Math.max(0, (tweet.likes || 0) - 1);
+        await tweet.save();
+
+        console.log(
+            "Tweet unliked successfully. Updated likes count:",
+            tweet.likes
+        );
+        return res
+            .status(200)
+            .json(
+                new APIresponse(200, { likes: tweet.likes }, "Tweet unliked")
+            );
     }
 
-    const like = await Like.create({
+    console.log("No existing like found. Adding like for tweet:", tweetId);
+
+    // Create a new like
+    await Like.create({
         likedBy: req.user._id,
         likedEntity: tweetId,
         entityType: "Tweet",
     });
 
-    return res.status(201).json(new APIresponse(201, like, "Tweet liked"));
+    // Increment the like count on the tweet
+    tweet.likes = (tweet.likes || 0) + 1;
+    await tweet.save();
+
+    console.log("Tweet liked successfully. Updated likes count:", tweet.likes);
+    return res
+        .status(201)
+        .json(new APIresponse(201, { likes: tweet.likes }, "Tweet liked"));
 });
 
 const getLikedEntities = asynchandler(async (req, res) => {
