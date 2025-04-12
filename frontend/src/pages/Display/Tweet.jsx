@@ -378,6 +378,8 @@ const Tweet = () => {
                                                 {/* Tweet Actions */}
                                                 <div className="flex items-center justify-between pt-3">
                                                     <div className="flex items-center gap-6 text-gray-400">
+
+                                                        {/* Comment Action */}
                                                         <button className="flex items-center gap-1 hover:text-blue-400 transition-all">
                                                             <ChatBubbleLeftIcon className="w-5 h-5" />
                                                             <span className="text-sm">
@@ -386,6 +388,7 @@ const Tweet = () => {
                                                             </span>
                                                         </button>
 
+                                                        {/* Retweet Action */}
                                                         <button className="flex items-center gap-1 hover:text-green-400 transition-all">
                                                             <ArrowsRightLeftIcon className="w-5 h-5" />
                                                             <span className="text-sm">
@@ -394,6 +397,7 @@ const Tweet = () => {
                                                             </span>
                                                         </button>
 
+                                                        {/* Like Action */}
                                                         <button
                                                             onClick={() =>
                                                                 toggleLike(
