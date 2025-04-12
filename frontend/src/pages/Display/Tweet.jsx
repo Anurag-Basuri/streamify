@@ -401,16 +401,49 @@ const Tweet = () => {
                                                         {/* Comment Action */}
                                                         <button
                                                             onClick={() =>
-                                                                handleCommentSubmit(
+                                                                fetchComments(
                                                                     tweet._id
                                                                 )
                                                             }
                                                             className="flex items-center gap-1 hover:text-blue-400 transition-all"
                                                         >
                                                             <ChatBubbleLeftIcon className="w-5 h-5" />
-                                                            <span className="text-sm"></span>
+                                                            <span className="text-sm">
+                                                                {
+                                                                    Comments.length
+                                                                }
+                                                            </span>
                                                         </button>
-
+                                                        {Comments.length >
+                                                            0 && (
+                                                            <div className="mt-4 space-y-2">
+                                                                {Comments.map(
+                                                                    (
+                                                                        comment
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                comment._id
+                                                                            }
+                                                                            className="bg-gray-700/50 p-3 rounded-lg"
+                                                                        >
+                                                                            <p className="text-sm text-gray-300">
+                                                                                {
+                                                                                    comment.content
+                                                                                }
+                                                                            </p>
+                                                                            <span className="text-xs text-gray-500">
+                                                                                <TimeAgo
+                                                                                    datetime={
+                                                                                        comment.createdAt
+                                                                                    }
+                                                                                />
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        )}
                                                         {/* Retweet Action */}
                                                         <button className="flex items-center gap-1 hover:text-green-400 transition-all">
                                                             <ArrowsRightLeftIcon className="w-5 h-5" />
@@ -419,7 +452,6 @@ const Tweet = () => {
                                                                     0}
                                                             </span>
                                                         </button>
-
                                                         {/* Like Action */}
                                                         <button
                                                             onClick={() =>
