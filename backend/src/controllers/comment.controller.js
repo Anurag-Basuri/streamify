@@ -23,7 +23,12 @@ const getEntityComments = asynchandler(async (req, res) => {
     const match = { entity: entityId, entityType };
 
     const comments = await Comment.aggregate([
-        { $match: match },
+        {
+            $match: {
+                entity: new mongoose.Types.ObjectId(entityId),
+                entityType,
+            },
+        },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: +limit },
@@ -35,7 +40,12 @@ const getEntityComments = asynchandler(async (req, res) => {
                 as: "ownerDetails",
             },
         },
-        { $unwind: "$ownerDetails" },
+        {
+            $unwind: {
+                path: "$ownerDetails",
+                preserveNullAndEmptyArrays: true,
+            },
+        },
         {
             $lookup: {
                 from: "likes",
@@ -55,7 +65,10 @@ const getEntityComments = asynchandler(async (req, res) => {
                 },
                 likesCount: { $size: "$likes" },
                 isLiked: {
-                    $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
+                    $in: [
+                        new mongoose.Types.ObjectId(req.user._id),
+                        "$likes.likedBy",
+                    ],
                 },
             },
         },
