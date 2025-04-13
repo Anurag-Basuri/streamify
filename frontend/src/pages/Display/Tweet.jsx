@@ -53,24 +53,35 @@ const Tweet = () => {
         }
     }, []);
 
-    useEffect(() => { fetchTweets(); }, [fetchTweets]);
+    useEffect(() => {
+        fetchTweets();
+    }, [fetchTweets]);
 
     const fetchComments = useCallback(async (tweetId) => {
         try {
-            const { data } = await axios.get(`/api/v1/comments/Tweet/${tweetId}`);
-            setComments(prev => ({ ...prev, [tweetId]: data.data.comments || [] }));
+            const { data } = await axios.get(
+                `/api/v1/comments/Tweet/${tweetId}`
+            );
+            setComments((prev) => ({
+                ...prev,
+                [tweetId]: data.data.comments || [],
+            }));
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to fetch comments");
+            toast.error(
+                err.response?.data?.message || "Failed to fetch comments"
+            );
         }
     }, []);
 
     const handleTweetSubmit = async (e) => {
         e.preventDefault();
         if (!newTweet.trim()) return;
-        
+
         setIsPosting(true);
         try {
-            const { data } = await axios.post("/api/v1/tweets/create", { content: newTweet });
+            const { data } = await axios.post("/api/v1/tweets/create", {
+                content: newTweet,
+            });
             setTweets([data.data, ...tweets]);
             setNewTweet("");
             toast.success("Spark ignited! 🔥");
@@ -84,9 +95,17 @@ const Tweet = () => {
     const toggleLike = async (tweetId) => {
         try {
             const { data } = await axios.post(`/api/v1/likes/tweet/${tweetId}`);
-            setTweets(prev => prev.map(t => 
-                t._id === tweetId ? { ...t, likes: data.data.likes, isLiked: data.data.state === 1 } : t
-            ));
+            setTweets((prev) =>
+                prev.map((t) =>
+                    t._id === tweetId
+                        ? {
+                              ...t,
+                              likes: data.data.likes,
+                              isLiked: data.data.state === 1,
+                          }
+                        : t
+                )
+            );
         } catch (err) {
             toast.error(err.response?.data?.message || "Like action failed");
         }
@@ -94,12 +113,15 @@ const Tweet = () => {
 
     const handleCommentSubmit = async (tweetId) => {
         if (!newComment.trim()) return;
-        
+
         try {
-            const { data } = await axios.post(`/api/v1/comments/Tweet/${tweetId}`, { content: newComment });
-            setComments(prev => ({
+            const { data } = await axios.post(
+                `/api/v1/comments/Tweet/${tweetId}`,
+                { content: newComment }
+            );
+            setComments((prev) => ({
                 ...prev,
-                [tweetId]: [data.data, ...(prev[tweetId] || [])]
+                [tweetId]: [data.data, ...(prev[tweetId] || [])],
             }));
             setNewComment("");
             toast.success("Comment added! 💬");
@@ -109,7 +131,7 @@ const Tweet = () => {
     };
 
     const toggleCommentSection = (tweetId) => {
-        setActiveTweet(prev => prev === tweetId ? null : tweetId);
+        setActiveTweet((prev) => (prev === tweetId ? null : tweetId));
         if (!comments[tweetId]) fetchComments(tweetId);
     };
 
@@ -137,7 +159,9 @@ const Tweet = () => {
                             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
                                 SparkHub
                             </h1>
-                            <p className="text-gray-200 mt-1">Ignite conversations</p>
+                            <p className="text-gray-200 mt-1">
+                                Ignite conversations
+                            </p>
                         </div>
                     </div>
                 </motion.div>
@@ -168,18 +192,28 @@ const Tweet = () => {
 
                             <div className="flex justify-between items-center">
                                 <div className="flex gap-2">
+                                    <button type="button" className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors">
+                                        <PhotoIcon className="w-6 h-6 text-blue-400 hover:text-blue-300" />
+                                    </button>
+
                                     <button
                                         type="button"
-                                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                        onClick={() =>
+                                            setShowEmojiPicker(!showEmojiPicker)
+                                        }
                                         className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors"
                                     >
                                         <FaceSmileIcon className="w-6 h-6" />
                                     </button>
-                                    
+
                                     {showEmojiPicker && (
                                         <div className="absolute z-10 -translate-y-2">
                                             <EmojiPicker
-                                                onEmojiClick={(e) => setNewTweet(prev => prev + e.emoji)}
+                                                onEmojiClick={(e) =>
+                                                    setNewTweet(
+                                                        (prev) => prev + e.emoji
+                                                    )
+                                                }
                                                 theme="dark"
                                                 width={300}
                                                 height={400}
@@ -190,7 +224,9 @@ const Tweet = () => {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <span className={`text-sm ${charCountColor}`}>
+                                    <span
+                                        className={`text-sm ${charCountColor}`}
+                                    >
                                         {280 - newTweet.length}
                                     </span>
                                     <button
@@ -251,7 +287,8 @@ const Tweet = () => {
                                                 />
                                             ) : (
                                                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                    {tweet.owner?.fullName?.[0] || "U"}
+                                                    {tweet.owner
+                                                        ?.fullName?.[0] || "U"}
                                                 </div>
                                             )}
                                         </div>
@@ -262,19 +299,30 @@ const Tweet = () => {
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-semibold">
-                                                            {tweet.owner?.fullName || "Anonymous"}
+                                                            {tweet.owner
+                                                                ?.fullName ||
+                                                                "Anonymous"}
                                                         </span>
                                                         <span className="text-sm text-gray-400">
-                                                            @{tweet.owner?.userName || "unknown"}
+                                                            @
+                                                            {tweet.owner
+                                                                ?.userName ||
+                                                                "unknown"}
                                                         </span>
                                                     </div>
                                                     <TimeAgo
-                                                        datetime={tweet.createdAt}
+                                                        datetime={
+                                                            tweet.createdAt
+                                                        }
                                                         className="text-xs text-gray-500"
                                                     />
                                                 </div>
                                                 <button
-                                                    onClick={() => navigator.clipboard.writeText(`${window.location.origin}/tweet/${tweet._id}`)}
+                                                    onClick={() =>
+                                                        navigator.clipboard.writeText(
+                                                            `${window.location.origin}/tweet/${tweet._id}`
+                                                        )
+                                                    }
                                                     className="text-gray-400 hover:text-blue-400 p-1 rounded-full transition-colors"
                                                 >
                                                     <ShareIcon className="w-5 h-5" />
@@ -289,17 +337,24 @@ const Tweet = () => {
                                             {/* Tweet Actions */}
                                             <div className="flex items-center gap-6 text-gray-400 pt-2">
                                                 <button
-                                                    onClick={() => toggleCommentSection(tweet._id)}
+                                                    onClick={() =>
+                                                        toggleCommentSection(
+                                                            tweet._id
+                                                        )
+                                                    }
                                                     className="flex items-center gap-1 hover:text-blue-400 transition-colors"
                                                 >
                                                     <ChatBubbleLeftIcon className="w-5 h-5" />
                                                     <span className="text-sm">
-                                                        {comments[tweet._id]?.length || 0}
+                                                        {comments[tweet._id]
+                                                            ?.length || 0}
                                                     </span>
                                                 </button>
 
                                                 <button
-                                                    onClick={() => toggleLike(tweet._id)}
+                                                    onClick={() =>
+                                                        toggleLike(tweet._id)
+                                                    }
                                                     className="flex items-center gap-1 hover:text-red-400 transition-colors"
                                                 >
                                                     {tweet.isLiked ? (
@@ -323,12 +378,21 @@ const Tweet = () => {
                                                     <div className="flex gap-2">
                                                         <input
                                                             value={newComment}
-                                                            onChange={(e) => setNewComment(e.target.value)}
+                                                            onChange={(e) =>
+                                                                setNewComment(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            }
                                                             placeholder="Add your spark..."
                                                             className="flex-1 bg-gray-700/50 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                                         />
                                                         <button
-                                                            onClick={() => handleCommentSubmit(tweet._id)}
+                                                            onClick={() =>
+                                                                handleCommentSubmit(
+                                                                    tweet._id
+                                                                )
+                                                            }
                                                             className="bg-purple-500/50 hover:bg-purple-500/70 px-4 rounded-full text-sm transition-colors"
                                                         >
                                                             Post
@@ -336,29 +400,45 @@ const Tweet = () => {
                                                     </div>
 
                                                     <AnimatePresence>
-                                                        {comments[tweet._id]?.map((comment) => (
+                                                        {comments[
+                                                            tweet._id
+                                                        ]?.map((comment) => (
                                                             <motion.div
-                                                                key={comment._id}
-                                                                variants={commentVariants}
+                                                                key={
+                                                                    comment._id
+                                                                }
+                                                                variants={
+                                                                    commentVariants
+                                                                }
                                                                 className="bg-gray-700/30 p-3 rounded-lg"
                                                             >
                                                                 <div className="flex items-center gap-2 text-sm">
                                                                     <span className="font-medium text-purple-400">
-                                                                        {comment.owner.userName}
+                                                                        {
+                                                                            comment
+                                                                                .owner
+                                                                                .userName
+                                                                        }
                                                                     </span>
                                                                     <TimeAgo
-                                                                        datetime={comment.createdAt}
+                                                                        datetime={
+                                                                            comment.createdAt
+                                                                        }
                                                                         className="text-xs text-gray-400"
                                                                     />
                                                                 </div>
-                                                                <p className="mt-1 text-gray-100">{comment.content}</p>
-                                                                <button
-                                        
-
-                                                                    className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-red-400"
-                                                                >
+                                                                <p className="mt-1 text-gray-100">
+                                                                    {
+                                                                        comment.content
+                                                                    }
+                                                                </p>
+                                                                <button className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-red-400">
                                                                     <HeartIcon className="w-4 h-4" />
-                                                                    <span>{comment.likes}</span>
+                                                                    <span>
+                                                                        {
+                                                                            comment.likes
+                                                                        }
+                                                                    </span>
                                                                 </button>
                                                             </motion.div>
                                                         ))}
