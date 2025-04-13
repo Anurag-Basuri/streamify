@@ -79,24 +79,24 @@ const Tweet = () => {
 
     const handleTweetSubmit = async (e) => {
         e.preventDefault();
-        if (!newTweet.trim() && !selectedImage) return;
+        if (!newTweet.trim()) return; // Ensure the tweet content is not empty
 
-        const formData = new FormData();
-        formData.append("content", newTweet);
-        if (selectedImage) formData.append("image", selectedImage);
+        const payload = {
+            content: newTweet,
+        };
 
         try {
             const { data } = await axios.post(
                 "/api/v1/tweets/create",
-                formData,
+                payload,
                 {
-                    headers: { "Content-Type": "multipart/form-data" },
+                    headers: {
+                        "Content-Type": "application/json", // Set the content type to JSON
+                    },
                 }
             );
-
-            setTweets([data.data, ...tweets]);
-            setNewTweet("");
-            setSelectedImage(null);
+            setTweets([data.data, ...tweets]); // Add the new tweet to the list
+            setNewTweet(""); // Clear the input field
             toast.success("Tweet created! 🚀");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to post tweet");

@@ -7,6 +7,7 @@ import {
     updateTweet,
     get_latest_tweets,
 } from "../controllers/tweet.controller.js";
+import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.get("/", get_latest_tweets);
 router.use(verifyAccessToken);
 
 // Create a new tweet
-router.post("/create", createTweet);
+router.post("/create", validateResult, createTweet);
 
 // Get tweets of a specific user
 router.get("/:userId", get_user_tweet);
