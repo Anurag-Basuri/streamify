@@ -55,10 +55,7 @@ const getEntityComments = asynchandler(async (req, res) => {
                 },
                 likesCount: { $size: "$likes" },
                 isLiked: {
-                    $in: [
-                        mongoose.Types.ObjectId(req.user._id),
-                        "$likes.likedBy",
-                    ],
+                    $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
                 },
             },
         },

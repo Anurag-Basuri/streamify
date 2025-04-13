@@ -69,6 +69,7 @@ const Tweet = () => {
                 ...prev,
                 [tweetId]: data.data.comments || [],
             }));
+            console.log(data.data);
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to fetch comments"
@@ -127,9 +128,8 @@ const Tweet = () => {
             const { data } = await axios.post(
                 `/api/v1/comments/like/${commentId}`
             );
-            setComments((prev) => ({
-                ...prev,
-                [tweetId]: prev[tweetId].map((comment) =>
+            setComments((prev) => {
+                const updatedComments = prev[tweetId]?.map((comment) =>
                     comment._id === commentId
                         ? {
                               ...comment,
@@ -137,13 +137,21 @@ const Tweet = () => {
                               isLiked: data.data.state === 1,
                           }
                         : comment
-                ),
-            }));
+                );
+                return {
+                    ...prev,
+                    [tweetId]: updatedComments || [],
+                };
+            });
             toast.success(data.message);
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to like comment"
             );
+        }
+        if (!newComment.trim()) {
+            toast.error("Comment cannot be empty!");
+            return;
         }
     };
 
@@ -152,10 +160,16 @@ const Tweet = () => {
 
         try {
             const { data } = await axios.post(
-                `/api/v1/comments/Tweet/${tweetId}`,
-                {
-                    content: newComment,
-                }
+                setComments((prev) => {
+                    const updatedComments = prev[tweetId]
+                        ? [...prev[tweetId]]
+                        : [];
+                    updatedComments.unshift(data.data);
+                    return {
+                        ...prev,
+                        [tweetId]: updatedComments,
+                    };
+                })
             );
 
             setComments((prev) => ({
@@ -163,7 +177,9 @@ const Tweet = () => {
                 [tweetId]: [data.data, ...(prev[tweetId] || [])],
             }));
             setNewComment("");
-            toast.success("Comment added! 💬");
+            if (!comments[tweetId] || comments[tweetId].length === 0) {
+                fetchComments(tweetId);
+            }
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to post comment"
@@ -173,6 +189,7 @@ const Tweet = () => {
 
     const toggleCommentSection = (tweetId) => {
         setActiveTweet((prev) => (prev === tweetId ? null : tweetId));
+        console.log(!comments[tweetId]);
         if (!comments[tweetId]) fetchComments(tweetId);
     };
 
