@@ -185,6 +185,11 @@ const Tweet = () => {
         if (!comments[tweetId]) fetchComments(tweetId);
     };
 
+    const handleEmojiClick = (emojiData) => {
+        setNewTweet((prev) => prev + emojiData.emoji); // Append the selected emoji to the tweet
+        setShowEmojiPicker(false); // Close the emoji picker after selection (optional)
+    };
+
     const charCountColor = useMemo(() => {
         if (newTweet.length > 250) return "text-red-400";
         if (newTweet.length > 200) return "text-yellow-400";
@@ -225,7 +230,7 @@ const Tweet = () => {
                     <div className="flex gap-4">
                         <div className="flex-shrink-0">
                             <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg md:text-xl">
-                                JD
+                                XY
                             </div>
                         </div>
 
@@ -275,24 +280,28 @@ const Tweet = () => {
                                     >
                                         <FaceSmileIcon className="w-6 h-6" />
                                     </button>
+
+                                    {showEmojiPicker && (
+                                        <div className="absolute z-20 -left-16 md:left-0 bottom-full mb-2">
+                                            <EmojiPicker
+                                                onEmojiClick={handleEmojiClick}
+                                                theme="dark"
+                                                width={300}
+                                                height={400}
+                                                searchDisabled
+                                                skinTonesDisabled
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`text-sm ${charCountColor}`}
-                                    >
-                                        {280 - newTweet.length}
-                                    </span>
-                                    <button
-                                        type="submit"
-                                        disabled={
-                                            !newTweet.trim() && !selectedImage
-                                        }
-                                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 py-3 rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        Spark
-                                    </button>
-                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={!newTweet.trim()}
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 py-3 rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    Spark
+                                </button>
                             </div>
                         </div>
                     </div>
