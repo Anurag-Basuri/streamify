@@ -160,16 +160,8 @@ const Tweet = () => {
 
         try {
             const { data } = await axios.post(
-                setComments((prev) => {
-                    const updatedComments = prev[tweetId]
-                        ? [...prev[tweetId]]
-                        : [];
-                    updatedComments.unshift(data.data);
-                    return {
-                        ...prev,
-                        [tweetId]: updatedComments,
-                    };
-                })
+                `/api/v1/comments/Tweet/${tweetId}`,
+                { content: newComment }
             );
 
             setComments((prev) => ({
