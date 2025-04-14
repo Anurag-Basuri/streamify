@@ -6,11 +6,9 @@ import {
     SparklesIcon,
     PhotoIcon,
     FaceSmileIcon,
-    ArrowsRightLeftIcon,
     HeartIcon,
     ChatBubbleLeftIcon,
     ShareIcon,
-    XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import EmojiPicker from "emoji-picker-react";
@@ -28,10 +26,10 @@ const Tweet = () => {
 
     const tweetVariants = {
         hidden: { opacity: 0, y: 20 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             y: 0,
-            transition: { type: "spring", stiffness: 120, damping: 20 }
+            transition: { type: "spring", stiffness: 120, damping: 20 },
         },
         exit: { opacity: 0, x: -50 },
     };
@@ -47,7 +45,9 @@ const Tweet = () => {
             const { data } = await axios.get("/api/v1/tweets");
             setTweets(data.data || []);
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to fetch tweets");
+            toast.error(
+                err.response?.data?.message || "Failed to fetch tweets"
+            );
         } finally {
             setLoading(false);
         }
@@ -108,6 +108,29 @@ const Tweet = () => {
             );
         } catch (err) {
             toast.error(err.response?.data?.message || "Like action failed");
+        }
+    };
+
+    const `getLikedTweets` = async (tweetId) => {
+        try {
+            const { data } = await axios.get("/api/v1/likes/filter", {
+                params: { entityType: "Tweet" },
+            });
+            const likedTweets = data.data.map((like) => like.likedEntity);
+            setTweets((prev) =>
+                prev.map((tweet) =>
+                    tweet._id === tweetId
+                        ? {
+                              ...tweet,
+                              isLiked: likedTweets.includes(tweet._id),
+                          }
+                        : tweet
+                )
+            );
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to fetch liked tweets"
+            );
         }
     };
 
@@ -192,7 +215,10 @@ const Tweet = () => {
 
                             <div className="flex justify-between items-center">
                                 <div className="flex gap-2">
-                                    <button type="button" className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors">
+                                    <button
+                                        type="button"
+                                        className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors"
+                                    >
                                         <PhotoIcon className="w-6 h-6 text-blue-400 hover:text-blue-300" />
                                     </button>
 

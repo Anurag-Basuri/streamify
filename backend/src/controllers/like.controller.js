@@ -201,9 +201,9 @@ const getLikedEntities = asynchandler(async (req, res) => {
 
     const likes = await Like.find({
         likedBy: req.user._id,
-        entityType, // Use the dynamic entity type
+        entityType,
     })
-        .populate("likedEntity", populateFields) // Dynamically populate relevant fields
+        .populate("likedEntity", populateFields)
         .sort({ createdAt: -1 });
 
     return res
