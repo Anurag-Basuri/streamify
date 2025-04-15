@@ -60,6 +60,7 @@ const Playlist = () => {
         }
     }, [error]);
 
+    // Handle form submission for creating playlists
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();
 
@@ -105,6 +106,7 @@ const Playlist = () => {
         }
     };
 
+    // Handle form submission for updating playlists
     const handleUpdatePlaylist = async (e) => {
         e.preventDefault();
 
@@ -154,11 +156,13 @@ const Playlist = () => {
         }
     };
 
+    // Handle delete confirmation
     const confirmDelete = (playlist) => {
         setPlaylistToDelete(playlist);
         setShowDeleteModal(true);
     };
 
+    // Handle playlist deletion
     const handleDeletePlaylist = async () => {
         try {
             await axios.delete(
@@ -180,6 +184,8 @@ const Playlist = () => {
             handleError(err, "Failed to delete playlist");
         }
     };
+
+    //
 
     const ThumbnailGrid = ({ videos = [] }) => {
         if (!videos.length)
