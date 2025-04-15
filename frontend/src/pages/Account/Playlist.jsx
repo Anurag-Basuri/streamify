@@ -185,7 +185,45 @@ const Playlist = () => {
         }
     };
 
-    //
+    // Handle remove video from playlist
+    const handleRemoveVideo = async (playlistId, videoId) => {
+        try {
+            // Show a loading toast while the request is being processed
+            const loadingToastId = toast.loading("Removing video...");
+    
+            // Make the API request to remove the video from the playlist
+            const { data } = await axios.delete(
+                `/api/v1/playlists/remove/${playlistId}/videos/${videoId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+    
+            // Update the playlists state with the updated playlist
+            setPlaylists(
+                playlists.map((playlist) =>
+                    playlist._id === playlistId ? data.data : playlist
+                )
+            );
+    
+            // Show a success toast
+            toast.success("Video removed from playlist successfully 🎉", {
+                id: loadingToastId,
+            });
+        } catch (err) {
+            // Handle errors and show an error toast
+            const errorMessage =
+                err.response?.data?.message || "Failed to remove video.";
+            toast.error(errorMessage);
+        }
+    };
+
+    // Get playlist by ID
+    const
 
     const ThumbnailGrid = ({ videos = [] }) => {
         if (!videos.length)

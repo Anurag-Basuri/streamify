@@ -29,7 +29,7 @@ router.get("/:playlistId", getPlaylistById);
 router.post("/:playlistId/videos/:videoId", addVideoToPlaylist);
 
 // Remove a video from a playlist
-router.delete("/:playlistId/videos/:videoId", removeVideoFromPlaylist);
+router.delete("/remove/:playlistId/videos/:videoId", removeVideoFromPlaylist);
 
 // Delete a playlist
 router.delete("/delete/:playlistId", deletePlaylist);
