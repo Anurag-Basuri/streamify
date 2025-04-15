@@ -18,6 +18,7 @@ const Playlist = () => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
+    // Fetch playlists on component mount
     useEffect(() => {
         const fetchPlaylists = async () => {
             try {
@@ -44,6 +45,7 @@ const Playlist = () => {
         toast.error(message);
     };
 
+    // Clear error message after 5 seconds
     useEffect(() => {
         if (error) {
             const timeout = setTimeout(() => setError(""), 5000);
