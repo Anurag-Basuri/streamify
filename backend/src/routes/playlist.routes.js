@@ -32,7 +32,7 @@ router.post("/:playlistId/videos/:videoId", addVideoToPlaylist);
 router.delete("/:playlistId/videos/:videoId", removeVideoFromPlaylist);
 
 // Delete a playlist
-router.delete("/:playlistId", deletePlaylist);
+router.delete("/delete/:playlistId", deletePlaylist);
 
 // Update a playlist's name or description
 router.put("/update/:playlistId", updatePlaylist);

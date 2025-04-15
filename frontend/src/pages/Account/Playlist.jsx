@@ -162,7 +162,7 @@ const Playlist = () => {
     const handleDeletePlaylist = async () => {
         try {
             await axios.delete(
-                `/api/v1/playlists/update/${playlistToDelete._id}`,
+                `/api/v1/playlists/delete/${playlistToDelete._id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
