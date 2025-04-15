@@ -161,13 +161,16 @@ const Playlist = () => {
 
     const handleDeletePlaylist = async () => {
         try {
-            await axios.delete(`/api/v1/playlists/${playlistToDelete._id}`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
+            await axios.delete(
+                `/api/v1/playlists/update/${playlistToDelete._id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
             setPlaylists(
                 playlists.filter((p) => p._id !== playlistToDelete._id)
             );

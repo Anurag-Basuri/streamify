@@ -35,6 +35,6 @@ router.delete("/:playlistId/videos/:videoId", removeVideoFromPlaylist);
 router.delete("/:playlistId", deletePlaylist);
 
 // Update a playlist's name or description
-router.put("/:playlistId", updatePlaylist);
+router.put("/update/:playlistId", updatePlaylist);
 
 export default router;
