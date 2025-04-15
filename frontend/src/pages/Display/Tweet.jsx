@@ -246,7 +246,7 @@ const Tweet = () => {
                                                 }
                                                 theme="dark"
                                                 width={300}
-                                                height={400}
+                                                height={300}
                                                 searchDisabled
                                             />
                                         </div>
