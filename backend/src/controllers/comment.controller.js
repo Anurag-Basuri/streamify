@@ -239,6 +239,8 @@ const toggleCommentLike = asynchandler(async (req, res) => {
         );
 });
 
+// Number of comments 
+
 export {
     getEntityComments,
     addComment,
