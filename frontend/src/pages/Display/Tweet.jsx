@@ -111,28 +111,30 @@ const Tweet = () => {
         }
     };
 
-    const `getLikedTweets` = async (tweetId) => {
+    const getLikedTweets = useCallback(async () => {
         try {
             const { data } = await axios.get("/api/v1/likes/filter", {
                 params: { entityType: "Tweet" },
             });
             const likedTweets = data.data.map((like) => like.likedEntity);
             setTweets((prev) =>
-                prev.map((tweet) =>
-                    tweet._id === tweetId
-                        ? {
-                              ...tweet,
-                              isLiked: likedTweets.includes(tweet._id),
-                          }
-                        : tweet
-                )
+                prev.map((tweet) => ({
+                    ...tweet,
+                    isLiked: likedTweets.includes(tweet._id),
+                }))
             );
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to fetch liked tweets"
             );
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (tweets.length > 0) {
+            getLikedTweets();
+        }
+    }, [tweets, getLikedTweets]);
 
     const handleCommentSubmit = async (tweetId) => {
         if (!newComment.trim()) return;
