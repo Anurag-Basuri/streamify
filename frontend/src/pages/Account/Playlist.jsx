@@ -223,7 +223,76 @@ const Playlist = () => {
     };
 
     // Get playlist by ID
-    const
+    const getPlaylistById = async (playlistId) => {
+        try {
+            // Show a loading toast while the request is being processed
+            const loadingToastId = toast.loading("Fetching playlist...");
+
+            // Make the API request to fetch the playlist
+            const { data } = await axios.get(
+                `/api/v1/playlists/${playlistId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+
+            // Set the selected playlist state
+            setSelectedPlaylist(data.data);
+
+            // Show a success toast
+            toast.success("Playlist fetched successfully 🎉", {
+                id: loadingToastId,
+            });
+        } catch (err) {
+            // Handle errors and show an error toast
+            const errorMessage =
+                err.response?.data?.message || "Failed to fetch playlist.";
+            toast.error(errorMessage);
+        }
+    };
+
+    // Add video to the playlist
+    const addVideoToPlaylist = async (playlistId, videoId) => {
+        try {
+            // Show a loading toast while the request is being processed
+            const loadingToastId = toast.loading("Adding video to playlist...");
+
+            // Make the API request to add the video to the playlist
+            const { data } = await axios.post(
+                `/api/v1/playlists/${playlistId}/videos/${videoId}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+
+            // Update the playlists state with the updated playlist
+            setPlaylists(
+                playlists.map((playlist) =>
+                    playlist._id === playlistId ? data.data : playlist
+                )
+            );
+
+            // Show a success toast
+            toast.success("Video added to playlist successfully 🎉", {
+                id: loadingToastId,
+            });
+        } catch (err) {
+            // Handle errors and show an error toast
+            const errorMessage =
+                err.response?.data?.message ||
+                "Failed to add video to playlist.";
+            toast.error(errorMessage);
+        }
+    };
 
     const ThumbnailGrid = ({ videos = [] }) => {
         if (!videos.length)
