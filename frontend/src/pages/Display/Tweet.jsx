@@ -23,6 +23,7 @@ const Tweet = () => {
     const [activeTweet, setActiveTweet] = useState(null);
     const [newComment, setNewComment] = useState("");
     const [isPosting, setIsPosting] = useState(false);
+    const [initialLikesLoaded, setInitialLikesLoaded] = useState(false);
 
     const tweetVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -82,7 +83,7 @@ const Tweet = () => {
             const { data } = await axios.post("/api/v1/tweets/create", {
                 content: newTweet,
             });
-            setTweets([data.data, ...tweets]);
+            etTweets([{ ...data.data, isLiked: false }, ...tweets]);
             setNewTweet("");
             toast.success("Spark ignited! 🔥");
         } catch (err) {
@@ -131,10 +132,11 @@ const Tweet = () => {
     }, []);
 
     useEffect(() => {
-        if (tweets.length > 0) {
+        if (tweets.length > 0 && !initialLikesLoaded) {
             getLikedTweets();
+            setInitialLikesLoaded(true);
         }
-    }, [tweets, getLikedTweets]);
+    }, [tweets, getLikedTweets, initialLikesLoaded]);
 
     const handleCommentSubmit = async (tweetId) => {
         if (!newComment.trim()) return;
@@ -196,7 +198,7 @@ const Tweet = () => {
                     onSubmit={handleTweetSubmit}
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-700/50"
+                    className="relative bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-700/50"
                 >
                     <div className="flex gap-4">
                         <div className="flex-shrink-0">
@@ -216,7 +218,7 @@ const Tweet = () => {
                             />
 
                             <div className="flex justify-between items-center">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 relative">
                                     <button
                                         type="button"
                                         className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors"
@@ -235,7 +237,7 @@ const Tweet = () => {
                                     </button>
 
                                     {showEmojiPicker && (
-                                        <div className="absolute z-10 -translate-y-2">
+                                        <div className="absolute z-50 bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg p-2">
                                             <EmojiPicker
                                                 onEmojiClick={(e) =>
                                                     setNewTweet(
