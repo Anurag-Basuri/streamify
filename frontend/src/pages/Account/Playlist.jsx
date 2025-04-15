@@ -62,7 +62,18 @@ const Playlist = () => {
 
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();
+
+        // Validate form data
+        if (!formData.name.trim()) {
+            toast.error("Playlist name is required.");
+            return;
+        }
+
         try {
+            // Show a loading toast while the request is being processed
+            const loadingToastId = toast.loading("Creating playlist...");
+
+            // Make the API request to create a playlist
             const { data } = await axios.post(
                 "/api/v1/playlists/create",
                 formData,
@@ -74,18 +85,40 @@ const Playlist = () => {
                     },
                 }
             );
+
+            // Update the playlists state with the newly created playlist
             setPlaylists([data.data.playlist, ...playlists]);
+
+            // Reset the form and close the modal
             setShowCreateModal(false);
             setFormData({ name: "", description: "" });
-            toast.success("Playlist created successfully 🎉");
+
+            // Show a success toast
+            toast.success("Playlist created successfully 🎉", {
+                id: loadingToastId,
+            });
         } catch (err) {
-            handleError(err, "Failed to create playlist");
+            // Handle errors and show an error toast
+            const errorMessage =
+                err.response?.data?.message || "Failed to create playlist.";
+            toast.error(errorMessage);
         }
     };
 
     const handleUpdatePlaylist = async (e) => {
         e.preventDefault();
+
+        // Validate form data
+        if (!formData.name.trim()) {
+            toast.error("Playlist name is required.");
+            return;
+        }
+
         try {
+            // Show a loading toast while the request is being processed
+            const loadingToastId = toast.loading("Updating playlist...");
+
+            // Make the API request to update the playlist
             const { data } = await axios.patch(
                 `/api/v1/playlists/${selectedPlaylist._id}`,
                 formData,
@@ -97,15 +130,27 @@ const Playlist = () => {
                     },
                 }
             );
+
+            // Update the playlists state with the updated playlist
             setPlaylists(
                 playlists.map((p) =>
                     p._id === data.data.playlist._id ? data.data.playlist : p
                 )
             );
+
+            // Reset the form and close the modal
             setShowEditModal(false);
-            toast.success("Playlist updated successfully ✨");
+            setFormData({ name: "", description: "" });
+
+            // Show a success toast
+            toast.success("Playlist updated successfully ✨", {
+                id: loadingToastId,
+            });
         } catch (err) {
-            handleError(err, "Failed to update playlist");
+            // Handle errors and show an error toast
+            const errorMessage =
+                err.response?.data?.message || "Failed to update playlist.";
+            toast.error(errorMessage);
         }
     };
 
