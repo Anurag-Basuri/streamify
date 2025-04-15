@@ -63,13 +63,17 @@ const Playlist = () => {
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await axios.post("/api/v1/playlists", formData, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
+            const { data } = await axios.post(
+                "/api/v1/playlists/create",
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
             setPlaylists([data.data.playlist, ...playlists]);
             setShowCreateModal(false);
             setFormData({ name: "", description: "" });
