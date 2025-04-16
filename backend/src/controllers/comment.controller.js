@@ -239,7 +239,29 @@ const toggleCommentLike = asynchandler(async (req, res) => {
         );
 });
 
-// Number of comments 
+// Number of comments on an entity
+const countComments = asynchandler(async (req, res) => {
+    const { entityId, entityType } = req.params;
+
+    // Validate entity type
+    if (!["Video", "Tweet"].includes(entityType)) {
+        throw new APIerror(400, "Invalid entity type");
+    }
+
+    // Validate entity ID
+    if (!mongoose.isValidObjectId(entityId)) {
+        throw new APIerror(400, "Invalid Entity ID");
+    }
+
+    const count = await Comment.countDocuments({
+        entity: entityId,
+        entityType,
+    });
+
+    return res.status(200).json(
+        new APIresponse(200, { count }, "Comments count fetched successfully")
+    );
+})
 
 export {
     getEntityComments,
@@ -247,4 +269,5 @@ export {
     updateComment,
     deleteComment,
     toggleCommentLike,
+    countComments,
 };
