@@ -1,38 +1,115 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaPlay, FaEye, FaClock,FaUser } from "react-icons/fa";
+import { FaPlay, FaEye, FaClock, FaUser } from "react-icons/fa";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";
+import { toast } from "react-toastify";
 
 const Home = () => {
     const [videos, setVideos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+    const [newComment, setNewComment] = useState("");
+    const [comments, setComments] = useState({});
 
     // Fetch random videos from the backend
-    useEffect(() => {
-        const fetchRandomVideos = async () => {
-            try {
-                const response = await axios.get("/api/v1/videos/");
-                if (!response.data.success) {
-                    throw new Error("Failed to fetch videos");
-                }
-                setVideos(response.data.data.videos);
-            } catch (err) {
-                setError(err.message);
-                console.error("Fetch error:", err);
-            } finally {
-                setIsLoading(false);
+    const fetchRandomVideos = useCallback(async () => {
+        try {
+            const { data } = await axios.get("/api/v1/videos/");
+            if (!data.success) {
+                throw new Error("Failed to fetch videos");
             }
-        };
+            setVideos(data.data.videos);
+        } catch (err) {
+            setError(err.message);
+            console.error("Fetch error:", err);
+        } finally {
+            setIsLoading(false);
+        }
 
+        // Fetch comments count for each video
+    }, []);
+
+    useEffect(() => {
         fetchRandomVideos();
     }, []);
+
+    // handle like video
+    const toggleVideoLike = async (videoId) => {
+        setVideos((prev) =>
+            prev.map((v) =>
+                v._id === videoId
+                    ? {
+                          ...v,
+                          likes: v.isLiked ? v.likes - 1 : v.likes + 1,
+                          isLiked: !v.isLiked,
+                      }
+                    : v
+            )
+        );
+
+        try {
+            await axios.post(
+                `/api/v1/likes/video/${videoId}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+        } catch (err) {
+            // Revert changes if the API call fails
+            setVideos((prev) =>
+                prev.map((v) =>
+                    v._id === videoId
+                        ? {
+                              ...v,
+                              likes: v.isLiked ? v.likes - 1 : v.likes + 1,
+                              isLiked: !v.isLiked,
+                          }
+                        : v
+                )
+            );
+            console.error("Error toggling video like:", err);
+            toast.error(err.response?.data?.message || "Like action failed");
+        }
+    };
+
+    // handle video comment
+    const handleCommentSubmit = async (tweetId) => {
+        if (!newComment.trim()) return;
+
+        try {
+            const { data } = await axios.post(
+                `/api/v1/comments/Tweet/${tweetId}`,
+                { content: newComment }
+            );
+            setComments((prev) => ({
+                ...prev,
+                [tweetId]: [data.data, ...(prev[tweetId] || [])],
+            }));
+            // Update the tweet's commentsCount
+            setTweets((prevTweets) =>
+                prevTweets.map((t) =>
+                    t._id === tweetId
+                        ? { ...t, commentsCount: t.commentsCount + 1 }
+                        : t
+                )
+            );
+            setNewComment("");
+            toast.success("Comment added! 💬");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Comment failed");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 pt-20">
