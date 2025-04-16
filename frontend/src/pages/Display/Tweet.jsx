@@ -19,7 +19,7 @@ const Tweet = () => {
     const [newTweet, setNewTweet] = useState("");
     const [loading, setLoading] = useState(true);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [comments, setComments] = useState({});
+    const [comments, setComments] = useState([]);
     const [activeTweet, setActiveTweet] = useState(null);
     const [newComment, setNewComment] = useState("");
     const [isPosting, setIsPosting] = useState(false);
@@ -137,6 +137,30 @@ const Tweet = () => {
             setInitialLikesLoaded(true);
         }
     }, [tweets, getLikedTweets, initialLikesLoaded]);
+
+    const countTweetComments = async (tweetId) => {
+        try {
+            const { data } = await axios.get(
+                `/api/v1/comments/count/Tweet/${tweetId}`
+            );
+            setComments((prev) =>
+                prev.map((tweet) => ({
+                    ...tweet,
+                    commentsCount: data.data.count || 0,
+                }))
+            );
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to count comments"
+            );
+        }
+    };
+
+    useEffect(() => {
+        tweets.forEach((tweet) => {
+            if (!comments[tweet._id]) countTweetComments(tweet._id);
+        });
+    }, [tweets, comments]);
 
     const handleCommentSubmit = async (tweetId) => {
         if (!newComment.trim()) return;
