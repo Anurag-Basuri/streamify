@@ -25,7 +25,7 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 import "./config/passport.js";
 
 const app = express();
- 
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,

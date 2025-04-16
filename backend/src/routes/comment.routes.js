@@ -8,7 +8,7 @@ import {
     getEntityComments,
     updateComment,
     toggleCommentLike,
-    countComments
+    countComments,
 } from "../controllers/comment.controller.js";
 
 const router = Router();
@@ -16,17 +16,18 @@ const router = Router();
 // Verify if user is logged in
 router.use(verifyAccessToken);
 
+// Handle base route for comments
+router.get("/", (req, res) => {
+    res.status(400).json({ success: false, message: "Please specify an entityType and entityId" });
+});
+
 // Get comments for an entity
 router.get("/:entityType/:entityId", getEntityComments);
 
 // Add a comment
 router.post(
     "/:entityType/:entityId",
-    body("content")
-        .isString()
-        .trim()
-        .notEmpty()
-        .withMessage("Comment is required"),
+    body("content").isString().trim().notEmpty().withMessage("Comment is required"),
     validateResult,
     addComment
 );
@@ -34,11 +35,7 @@ router.post(
 // Update a comment
 router.put(
     "/:commentId",
-    body("content")
-        .isString()
-        .trim()
-        .notEmpty()
-        .withMessage("Comment is required"),
+    body("content").isString().trim().notEmpty().withMessage("Comment is required"),
     validateResult,
     updateComment
 );
@@ -49,7 +46,7 @@ router.delete("/:commentId", deleteComment);
 // Toggle like for a comment
 router.post("/like/:commentId", toggleCommentLike);
 
-// count comments for an entity
+// Count comments for an entity
 router.get("/count/:entityType/:entityId", countComments);
 
 export default router;
