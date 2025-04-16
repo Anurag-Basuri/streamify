@@ -19,7 +19,7 @@ const Tweet = () => {
     const [newTweet, setNewTweet] = useState("");
     const [loading, setLoading] = useState(true);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [comments, setComments] = useState([]);
+    const [comments, setComments] = useState({});
     const [activeTweet, setActiveTweet] = useState(null);
     const [newComment, setNewComment] = useState("");
     const [isPosting, setIsPosting] = useState(false);
@@ -44,7 +44,30 @@ const Tweet = () => {
     const fetchTweets = useCallback(async () => {
         try {
             const { data } = await axios.get("/api/v1/tweets");
-            setTweets(data.data || []);
+            const tweetsData = data.data || [];
+
+            // Fetch comment counts for each tweet
+            const tweetsWithCounts = await Promise.all(
+                tweetsData.map(async (tweet) => {
+                    try {
+                        const countRes = await axios.get(
+                            `/api/v1/comments/count/Tweet/${tweet._id}`
+                        );
+                        return {
+                            ...tweet,
+                            commentsCount: countRes.data.data.count || 0,
+                        };
+                    } catch (err) {
+                        console.error(
+                            "Failed to fetch comment count for tweet",
+                            tweet._id,
+                            err
+                        );
+                        return { ...tweet, commentsCount: 0 };
+                    }
+                })
+            );
+            setTweets(tweetsWithCounts);
         } catch (err) {
             toast.error(
                 err.response?.data?.message || "Failed to fetch tweets"
@@ -83,7 +106,10 @@ const Tweet = () => {
             const { data } = await axios.post("/api/v1/tweets/create", {
                 content: newTweet,
             });
-            etTweets([{ ...data.data, isLiked: false }, ...tweets]);
+            setTweets([
+                { ...data.data, isLiked: false, commentsCount: 0 },
+                ...tweets,
+            ]);
             setNewTweet("");
             toast.success("Spark ignited! 🔥");
         } catch (err) {
@@ -138,30 +164,6 @@ const Tweet = () => {
         }
     }, [tweets, getLikedTweets, initialLikesLoaded]);
 
-    const countTweetComments = async (tweetId) => {
-        try {
-            const { data } = await axios.get(
-                `/api/v1/comments/count/Tweet/${tweetId}`
-            );
-            setComments((prev) =>
-                prev.map((tweet) => ({
-                    ...tweet,
-                    commentsCount: data.data.count || 0,
-                }))
-            );
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to count comments"
-            );
-        }
-    };
-
-    useEffect(() => {
-        tweets.forEach((tweet) => {
-            if (!comments[tweet._id]) countTweetComments(tweet._id);
-        });
-    }, [tweets, comments]);
-
     const handleCommentSubmit = async (tweetId) => {
         if (!newComment.trim()) return;
 
@@ -174,6 +176,14 @@ const Tweet = () => {
                 ...prev,
                 [tweetId]: [data.data, ...(prev[tweetId] || [])],
             }));
+            // Update the tweet's commentsCount
+            setTweets((prevTweets) =>
+                prevTweets.map((t) =>
+                    t._id === tweetId
+                        ? { ...t, commentsCount: t.commentsCount + 1 }
+                        : t
+                )
+            );
             setNewComment("");
             toast.success("Comment added! 💬");
         } catch (err) {
@@ -400,8 +410,7 @@ const Tweet = () => {
                                                 >
                                                     <ChatBubbleLeftIcon className="w-5 h-5" />
                                                     <span className="text-sm">
-                                                        {comments[tweet._id]
-                                                            ?.length || 0}
+                                                        {tweet.commentsCount}
                                                     </span>
                                                 </button>
 
