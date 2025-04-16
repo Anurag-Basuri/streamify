@@ -1,113 +1,171 @@
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaPlay, FaEye, FaClock, FaUser } from "react-icons/fa";
+import {
+    FaPlay,
+    FaEye,
+    FaClock,
+    FaUser,
+    FaHeart,
+    FaComment,
+    FaDownload,
+    FaPlus,
+    FaList,
+    FaTrash,
+    FaRegFolder,
+} from "react-icons/fa";
+import { FiChevronRight, FiMoreVertical } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";
-import { toast } from "react-toastify";
 
 const Home = () => {
     const [videos, setVideos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
-    const [newComment, setNewComment] = useState("");
-    const [comments, setComments] = useState({});
+    const [selectedVideo, setSelectedVideo] = useState(null);
+    const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+    const [playlists, setPlaylists] = useState([]);
+    const [newPlaylistName, setNewPlaylistName] = useState("");
 
-    // Fetch random videos from the backend
-    const fetchRandomVideos = useCallback(async () => {
+    // Fetch random videos and playlists
+    const fetchData = useCallback(async () => {
         try {
-            const { data } = await axios.get("/api/v1/videos/");
-            if (!data.success) {
-                throw new Error("Failed to fetch videos");
-            }
-            setVideos(data.data.videos);
-        } catch (err) {
-            setError(err.message);
-            console.error("Fetch error:", err);
-        } finally {
-            setIsLoading(false);
-        }
-
-        // Fetch comments count for each video
-    }, []);
-
-    useEffect(() => {
-        fetchRandomVideos();
-    }, []);
-
-    // handle like video
-    const toggleVideoLike = async (videoId) => {
-        setVideos((prev) =>
-            prev.map((v) =>
-                v._id === videoId
-                    ? {
-                          ...v,
-                          likes: v.isLiked ? v.likes - 1 : v.likes + 1,
-                          isLiked: !v.isLiked,
-                      }
-                    : v
-            )
-        );
-
-        try {
-            await axios.post(
-                `/api/v1/likes/video/${videoId}`,
-                {},
-                {
+            const [videosRes, playlistsRes] = await Promise.all([
+                axios.get("/api/v1/videos/"),
+                axios.get("/api/v1/playlists", {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
                             "accessToken"
                         )}`,
                     },
-                }
+                }),
+            ]);
+
+            setVideos(
+                videosRes.data.data.videos.map((video) => ({
+                    ...video,
+                    isLiked: video.likes?.includes?.(user._id) || false,
+                }))
             );
+
+            setPlaylists(playlistsRes.data.data.playlists);
         } catch (err) {
-            // Revert changes if the API call fails
-            setVideos((prev) =>
-                prev.map((v) =>
-                    v._id === videoId
-                        ? {
-                              ...v,
-                              likes: v.isLiked ? v.likes - 1 : v.likes + 1,
-                              isLiked: !v.isLiked,
-                          }
-                        : v
-                )
-            );
-            console.error("Error toggling video like:", err);
-            toast.error(err.response?.data?.message || "Like action failed");
+            setError(err.message);
+            toast.error("Failed to load content");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Video actions
+    const handleVideoAction = async (action, videoId) => {
+        try {
+            switch (action) {
+                case "like":
+                    await axios.post(
+                        `/api/v1/likes/video/${videoId}`,
+                        {},
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem(
+                                    "accessToken"
+                                )}`,
+                            },
+                        }
+                    );
+                    setVideos((prev) =>
+                        prev.map((v) =>
+                            v._id === videoId
+                                ? {
+                                      ...v,
+                                      isLiked: !v.isLiked,
+                                      likes: v.isLiked
+                                          ? v.likes - 1
+                                          : v.likes + 1,
+                                  }
+                                : v
+                        )
+                    );
+                    break;
+
+                case "download": {
+                    const { data } = await axios.get(
+                        `/api/v1/videos/download/${videoId}`
+                    );
+                    window.open(data.url, "_blank");
+                    break;
+                }
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Action failed");
         }
     };
 
-    // handle video comment
-    const handleCommentSubmit = async (tweetId) => {
-        if (!newComment.trim()) return;
-
+    // Playlist actions
+    const handlePlaylistAction = async (action, playlistId) => {
         try {
-            const { data } = await axios.post(
-                `/api/v1/comments/Tweet/${tweetId}`,
-                { content: newComment }
-            );
-            setComments((prev) => ({
-                ...prev,
-                [tweetId]: [data.data, ...(prev[tweetId] || [])],
-            }));
-            // Update the tweet's commentsCount
-            setTweets((prevTweets) =>
-                prevTweets.map((t) =>
-                    t._id === tweetId
-                        ? { ...t, commentsCount: t.commentsCount + 1 }
-                        : t
-                )
-            );
-            setNewComment("");
-            toast.success("Comment added! 💬");
+            switch (action) {
+                case "add":
+                    await axios.post(
+                        `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
+                        {},
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem(
+                                    "accessToken"
+                                )}`,
+                            },
+                        }
+                    );
+                    toast.success("Added to playlist!");
+                    break;
+
+                case "create":
+                    const { data } = await axios.post(
+                        "/api/v1/playlists/create",
+                        { name: newPlaylistName },
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem(
+                                    "accessToken"
+                                )}`,
+                            },
+                        }
+                    );
+                    setPlaylists((prev) => [data.data, ...prev]);
+                    setNewPlaylistName("");
+                    toast.success("Playlist created!");
+                    break;
+
+                case "delete":
+                    await axios.delete(
+                        `/api/v1/playlists/delete/${playlistId}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem(
+                                    "accessToken"
+                                )}`,
+                            },
+                        }
+                    );
+                    setPlaylists((prev) =>
+                        prev.filter((p) => p._id !== playlistId)
+                    );
+                    toast.success("Playlist deleted!");
+                    break;
+            }
+            setShowPlaylistModal(false);
         } catch (err) {
-            toast.error(err.response?.data?.message || "Comment failed");
+            toast.error(err.response?.data?.message || "Action failed");
         }
     };
 
@@ -118,47 +176,31 @@ const Home = () => {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-12 rounded-2xl overflow-hidden border border-gray-700/50 bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm"
+                    className="mb-12 rounded-2xl overflow-hidden border-2 border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg"
                 >
                     <Swiper
                         modules={[Autoplay, Navigation]}
                         autoplay={{ delay: 5000, disableOnInteraction: false }}
-                        navigation={{
-                            nextEl: ".swiper-button-next",
-                            prevEl: ".swiper-button-prev",
-                        }}
+                        navigation
                         loop
                         className="relative group"
                     >
                         {[...Array(3)].map((_, i) => (
                             <SwiperSlide key={i}>
-                                <div className="relative h-[50vh] md:h-[70vh]">
+                                <div className="relative h-[50vh] md:h-[70vh] flex items-center justify-center">
                                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-transparent to-transparent" />
-                                    <div className="absolute inset-0 flex items-end justify-center text-center p-8 pb-16">
-                                        <div className="space-y-4 max-w-2xl">
-                                            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                                                Welcome to Streamify
-                                            </h1>
-                                            <p className="text-lg md:text-xl text-gray-300 font-light">
-                                                Dive into a world of stunning
-                                                video content from creative
-                                                minds worldwide
-                                            </p>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                className="px-8 py-3 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium flex items-center gap-2 mx-auto mt-4 shadow-lg hover:shadow-xl transition-shadow"
-                                            >
-                                                <FaPlay /> Start Exploring
-                                            </motion.button>
-                                        </div>
+                                    <div className="relative z-10 text-center space-y-6">
+                                        <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                                            StreamFlow
+                                        </h1>
+                                        <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto">
+                                            Your gateway to endless video
+                                            experiences
+                                        </p>
                                     </div>
                                 </div>
                             </SwiperSlide>
                         ))}
-
-                        {/* Custom Navigation Arrows */}
-                        <div className="swiper-button-next !text-white !w-12 !h-12 !rounded-full !bg-gray-800/50 hover:!bg-gray-800/80 transition-colors" />
-                        <div className="swiper-button-prev !text-white !w-12 !h-12 !rounded-full !bg-gray-800/50 hover:!bg-gray-800/80 transition-colors" />
                     </Swiper>
                 </motion.div>
 
@@ -169,42 +211,123 @@ const Home = () => {
                     className="space-y-8"
                 >
                     <div className="flex items-center justify-between">
-                        <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                            Trending Now
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                            Trending Videos
                         </h2>
                     </div>
-
-                    {error && (
-                        <motion.div
-                            initial={{ scale: 0.9 }}
-                            animate={{ scale: 1 }}
-                            className="bg-red-500/20 border border-red-500/40 p-4 rounded-xl backdrop-blur-sm"
-                        >
-                            <p className="text-red-300">{error}</p>
-                        </motion.div>
-                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {isLoading
                             ? [...Array(8)].map((_, i) => (
-                                  <VideoCardSkeleton key={i} index={i} />
+                                  <VideoCardSkeleton key={i} />
                               ))
-                            : videos.map((video, index) => (
+                            : videos.map((video) => (
                                   <VideoCard
                                       key={video._id}
                                       video={video}
-                                      index={index}
+                                      onAction={(action) => {
+                                          setSelectedVideo(video);
+                                          action === "playlist"
+                                              ? setShowPlaylistModal(true)
+                                              : handleVideoAction(
+                                                    action,
+                                                    video._id
+                                                );
+                                      }}
                                   />
                               ))}
                     </div>
                 </motion.div>
+
+                {/* Playlist Modal */}
+                <AnimatePresence>
+                    {showPlaylistModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                            onClick={() => setShowPlaylistModal(false)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95 }}
+                                animate={{ scale: 1 }}
+                                className="bg-gray-800 rounded-2xl p-6 w-full max-w-md"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                    <FaRegFolder className="text-purple-400" />
+                                    Add to Playlist
+                                </h3>
+
+                                {/* Create New Playlist */}
+                                <div className="flex gap-2 mb-6">
+                                    <input
+                                        type="text"
+                                        placeholder="New playlist name"
+                                        className="flex-1 bg-gray-700 rounded-lg p-3"
+                                        value={newPlaylistName}
+                                        onChange={(e) =>
+                                            setNewPlaylistName(e.target.value)
+                                        }
+                                    />
+                                    <button
+                                        onClick={() =>
+                                            handlePlaylistAction("create")
+                                        }
+                                        className="bg-purple-600 hover:bg-purple-700 px-4 rounded-lg"
+                                    >
+                                        <FaPlus />
+                                    </button>
+                                </div>
+
+                                {/* Existing Playlists */}
+                                <div className="space-y-4 max-h-96 overflow-y-auto">
+                                    {playlists.map((playlist) => (
+                                        <div
+                                            key={playlist._id}
+                                            className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+                                        >
+                                            <span className="truncate">
+                                                {playlist.name}
+                                            </span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() =>
+                                                        handlePlaylistAction(
+                                                            "add",
+                                                            playlist._id
+                                                        )
+                                                    }
+                                                    className="text-purple-400 hover:text-purple-300"
+                                                >
+                                                    <FaPlus />
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handlePlaylistAction(
+                                                            "delete",
+                                                            playlist._id
+                                                        )
+                                                    }
+                                                    className="text-red-400 hover:text-red-300"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
 };
 
-// This component displays individual video cards with thumbnail, title, and stats.
-const VideoCard = ({ video, index }) => {
+const VideoCard = ({ video, onAction }) => {
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -215,107 +338,110 @@ const VideoCard = ({ video, index }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="group relative"
+            className="group relative bg-gray-800 rounded-xl overflow-hidden hover:shadow-2xl transition-all"
         >
-            <Link
-                to={`/video/${video._id}`}
-                className="block rounded-xl overflow-hidden bg-gray-800 hover:bg-gray-700/50 transition-all duration-300 shadow-2xl hover:shadow-3xl"
-            >
-                {/* Thumbnail Container */}
-                <div className="relative aspect-video">
-                    <img
-                        src={video.thumbnail?.url || "/default-thumbnail.jpg"}
-                        alt={video.title}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
+            {/* Thumbnail Section */}
+            <div className="relative aspect-video">
+                <img
+                    src={video.thumbnail?.url || "/default-thumbnail.jpg"}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
+                {/* Overlay Controls */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent p-4 flex flex-col justify-between">
+                    {/* Top Bar */}
+                    <div className="flex justify-end">
+                        <button
+                            className="p-2 hover:bg-gray-800/50 rounded-full"
+                            onClick={() => onAction("playlist")}
+                        >
+                            <FiMoreVertical className="text-xl" />
+                        </button>
+                    </div>
 
-                    {/* Duration Badge */}
-                    <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm text-sm flex items-center gap-1.5">
-                        <FaPlay className="text-purple-400" />
-                        <span className="font-medium">
+                    {/* Bottom Bar */}
+                    <div className="flex justify-between items-end">
+                        <div className="bg-gray-900/80 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
                             {formatDuration(video.duration)}
-                        </span>
+                        </div>
+                        <button
+                            className="bg-gray-900/80 p-2 rounded-full backdrop-blur-sm hover:bg-purple-600 transition-colors"
+                            onClick={() => onAction("download")}
+                        >
+                            <FaDownload className="text-lg" />
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Video Info */}
-                <div className="p-4 space-y-3">
-                    <h3 className="font-semibold text-lg line-clamp-2">
+            {/* Video Info */}
+            <div className="p-4 space-y-3">
+                <Link to={`/video/${video._id}`} className="block">
+                    <h3 className="font-semibold text-lg line-clamp-2 hover:text-purple-400 transition-colors">
                         {video.title}
                     </h3>
+                </Link>
 
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-gray-400 text-sm">
-                        <div className="flex items-center gap-2">
-                            <FaEye />
-                            <span>{video.views.toLocaleString()} views</span>
+                {/* Stats */}
+                <div className="flex items-center justify-between text-sm text-gray-400">
+                    <div className="flex items-center gap-4">
+                        <button
+                            className={`flex items-center gap-1 ${
+                                video.isLiked
+                                    ? "text-red-500"
+                                    : "hover:text-white"
+                            }`}
+                            onClick={() => onAction("like")}
+                        >
+                            <FaHeart /> {video.likes}
+                        </button>
+                        <div className="flex items-center gap-1">
+                            <FaComment /> {video.commentsCount}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <FaClock />
-                            <span>
-                                {new Date(video.createdAt).toLocaleDateString()}
-                            </span>
+                        <div className="flex items-center gap-1">
+                            <FaEye /> {video.views?.toLocaleString()}
                         </div>
                     </div>
-
-                    {/* Creator Info */}
-                    <div className="flex items-center gap-3 pt-2 border-t border-gray-700/50">
-                        <div className="shrink-0">
-                            {video.owner?.avatar ? (
-                                <img
-                                    src={video.owner.avatar}
-                                    alt={video.owner.userName}
-                                    className="w-8 h-8 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                                    <FaUser className="text-gray-400" />
-                                </div>
-                            )}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                                {video.owner?.userName || "Unknown Creator"}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">
-                                Content Creator
-                            </p>
-                        </div>
+                    <div className="flex items-center gap-1">
+                        <FaClock />
+                        {new Date(video.createdAt).toLocaleDateString()}
                     </div>
                 </div>
-            </Link>
+
+                {/* Creator Info */}
+                <div className="flex items-center gap-3 pt-3 border-t border-gray-700/50">
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                        {video.owner?.avatar ? (
+                            <img
+                                src={video.owner.avatar}
+                                alt="Creator"
+                                className="rounded-full"
+                            />
+                        ) : (
+                            <FaUser className="text-gray-400" />
+                        )}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-sm truncate">
+                            {video.owner?.username || "Unknown Creator"}
+                        </p>
+                    </div>
+                </div>
+            </div>
         </motion.div>
     );
 };
 
-// This component shows a placeholder while the video data is being fetched.
-const VideoCardSkeleton = ({ index }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
-        className="rounded-xl overflow-hidden bg-gray-800/50 backdrop-blur-sm"
-    >
-        <div className="aspect-video bg-gradient-to-r from-gray-800 to-gray-700/50 animate-pulse" />
+const VideoCardSkeleton = () => (
+    <div className="bg-gray-800 rounded-xl overflow-hidden animate-pulse">
+        <div className="aspect-video bg-gray-700" />
         <div className="p-4 space-y-3">
-            <div className="h-6 bg-gray-700 rounded w-4/5 animate-pulse" />
-            <div className="flex justify-between">
-                <div className="h-4 bg-gray-700 rounded w-20 animate-pulse" />
-                <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
-                <div className="space-y-1 flex-1">
-                    <div className="h-4 bg-gray-700 rounded w-3/4 animate-pulse" />
-                    <div className="h-3 bg-gray-700 rounded w-1/2 animate-pulse" />
-                </div>
-            </div>
+            <div className="h-6 bg-gray-700 rounded w-4/5" />
+            <div className="h-4 bg-gray-700 rounded w-full" />
+            <div className="h-4 bg-gray-700 rounded w-2/3" />
         </div>
-    </motion.div>
+    </div>
 );
 
 export default Home;
