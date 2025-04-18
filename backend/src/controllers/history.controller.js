@@ -83,3 +83,30 @@ const removeVideoFromHistory = asynchandler(async (req, res) => {
 }
 );
 
+// Clear user's history
+const clearUserHistory = asynchandler(async (req, res) => {
+    const userId = req.user._id;
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new APIerror(404, "User not found");
+    }
+    // Find the user's history
+    const history = await History.findOne({ user: userId });
+    if (!history) {
+        throw new APIerror(404, "History not found");
+    }
+    // Clear the user's history
+    history.videos = [];
+    await history.save();
+    res.status(200).json(new APIresponse(200, history, "History cleared successfully"));
+}
+);
+// Export the controller functions
+export {
+    addVideoToHistory,
+    getUserHistory,
+    removeVideoFromHistory,
+    clearUserHistory,
+};  
