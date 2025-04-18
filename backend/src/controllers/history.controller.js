@@ -57,3 +57,29 @@ const getUserHistory = asynchandler(async (req, res) => {
     res.status(200).json(new APIresponse(200, history, "History retrieved successfully"));
 }
 );
+
+// Remove video from history
+const removeVideoFromHistory = asynchandler(async (req, res) => {
+    const { videoId } = req.body;
+    const userId = req.user._id;
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new APIerror(404, "User not found");
+    }
+
+    // Find the user's history
+    const history = await History.findOne({ user: userId });
+    if (!history) {
+        throw new APIerror(404, "History not found");
+    }
+
+    // Remove the video from the user's history
+    history.videos = history.videos.filter((video) => !video.equals(videoId));
+    await history.save();
+
+    res.status(200).json(new APIresponse(200, history, "Video removed from history successfully"));
+}
+);
+
