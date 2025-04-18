@@ -38,3 +38,22 @@ const addVideoToHistory = asynchandler(async (req, res) => {
 
     res.status(200).json(new APIresponse(200, history));
 });
+
+// Get user's history
+const getUserHistory = asynchandler(async (req, res) => {
+    const userId = req.user._id;
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if(!user) {
+        throw new APIerror(404, "User not found");
+    }
+
+    // Find the user's history
+    const history = await History.findOne({ user: userId }).populate("videos");
+    if (!history) {
+        throw new APIerror(404, "History not found");
+    }
+    res.status(200).json(new APIresponse(200, history, "History retrieved successfully"));
+}
+);
