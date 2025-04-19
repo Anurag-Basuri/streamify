@@ -295,7 +295,6 @@ const Playlist = () => {
             e.preventDefault();
             setFormData(localFormData);
             handleCreatePlaylist(e);
-            console.log("Form submitted:", formData);
         };
 
         return (

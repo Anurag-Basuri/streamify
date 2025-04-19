@@ -9,18 +9,21 @@ import { asynchandler } from "../utils/asynchandler.js";
 const createPlaylist = asynchandler(async (req, res) => {
     const { name, description } = req.body;
     const { videoId } = req.params;
-
+    
     if (!name || name.trim().length < 1) {
         throw new APIerror(400, "Name is required");
     }
 
-    if (!mongoose.isValidObjectId(videoId)) {
-        throw new APIerror(400, "Invalid video ID");
-    }
+    if (videoId) {
+        console.log(videoId);
+        if (!mongoose.isValidObjectId(videoId)) {
+            throw new APIerror(400, "Invalid video ID");
+        }
 
-    const video = await Video.findById(videoId);
-    if (!video) {
-        throw new APIerror(404, "Video not found");
+        const video = await Video.findById(videoId);
+        if (!video) {
+            throw new APIerror(404, "Video not found");
+        }
     }
 
     const playlist = await Playlist.create({
