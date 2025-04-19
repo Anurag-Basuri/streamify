@@ -20,6 +20,7 @@ import playlistRouter from "./routes/playlist.routes.js";
 import watchLaterRouter from "./routes/watchlater.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
+import historyRouter from "./routes/history.routes.js";
 
 // Initialize Passport Config
 import "./config/passport.js";
@@ -83,6 +84,7 @@ app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/watchlater", watchLaterRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/history", historyRouter);
 
 // Health Check Endpoint
 app.get("/health", (req, res) => {
