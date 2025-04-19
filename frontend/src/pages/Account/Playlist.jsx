@@ -295,9 +295,6 @@ const Playlist = () => {
         >
             <form onSubmit={handleCreatePlaylist} className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Playlist Name *
-                    </label>
                     <input
                         required
                         minLength={3}
@@ -310,13 +307,10 @@ const Playlist = () => {
                                 name: e.target.value,
                             })
                         }
-                        placeholder="My Awesome Playlist"
+                        placeholder="Title - My Awesome Playlist"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Description
-                    </label>
                     <textarea
                         maxLength={200}
                         className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
@@ -327,7 +321,7 @@ const Playlist = () => {
                                 description: e.target.value,
                             })
                         }
-                        placeholder="What's this playlist about?"
+                        placeholder="Description - What's this playlist about?"
                     />
                 </div>
                 <div className="flex gap-4 justify-end pt-2">
