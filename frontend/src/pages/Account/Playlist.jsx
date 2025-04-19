@@ -324,7 +324,7 @@ const Playlist = () => {
                         <textarea
                             maxLength={200}
                             className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
-                            value={formData.description}
+                            value={localFormData.description}
                             onChange={(e) =>
                                 setLocalFormData((prev) => ({
                                     ...prev,
@@ -386,7 +386,7 @@ const Playlist = () => {
                             minLength={3}
                             maxLength={50}
                             className="w-full bg-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
-                            value={formData.name}
+                            value={localFormData.name}
                             onChange={(e) =>
                                 setLocalFormData((prev) => ({
                                     ...prev,
@@ -402,7 +402,7 @@ const Playlist = () => {
                         <textarea
                             maxLength={200}
                             className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
-                            value={formData.description}
+                            value={localFormData.description}
                             onChange={(e) =>
                                 setLocalFormData((prev) => ({
                                     ...prev,
