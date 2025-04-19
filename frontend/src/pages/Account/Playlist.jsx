@@ -288,7 +288,7 @@ const Playlist = () => {
         </motion.div>
     );
 
-    const PlalistForm = () => (
+    const PlaylistForm = () => (
         <Modal
             title="Create New Playlist"
             onClose={() => setShowCreateModal(false)}
@@ -306,6 +306,7 @@ const Playlist = () => {
                         value={formData.name}
                         onChange={(e) =>
                             setFormData({
+                                ...formData,
                                 name: e.target.value,
                             })
                         }
@@ -542,7 +543,7 @@ const Playlist = () => {
 
                 {/* Modals */}
                 <AnimatePresence>
-                    {showCreateModal && <PlalistForm />}
+                    {showCreateModal && <PlaylistForm />}
 
                     {showEditModal && selectedPlaylist && <EditForm />}
 
