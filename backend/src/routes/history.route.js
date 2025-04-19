@@ -19,13 +19,13 @@ router.get('/', getHistory);
 router.get('/:historyId', getHistoryById);
 
 // Add a new history entry
-router.post('/', addHistory);
+router.post("/add", addHistory);
 
 // Update an existing history entry
-router.put('/:historyId', updateHistory);
+router.put("/update/:historyId", updateHistory);
 
 // Delete a history entry
-router.delete('/:historyId', deleteHistory);
+router.delete("/delete/:historyId", deleteHistory);
 
 // Export the router
 export default router;
