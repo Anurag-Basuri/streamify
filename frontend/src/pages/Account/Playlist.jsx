@@ -10,7 +10,9 @@ import {
     FaFilm,
     FaListUl,
     FaRegSadTear,
-    FaCheckCircle,
+    FaExclamationTriangle,
+    FaTimes,
+    FaSpinner,
 } from "react-icons/fa";
 import { FiChevronRight } from "react-icons/fi";
 
@@ -22,9 +24,10 @@ const Playlist = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [formData, setFormData] = useState({ name: "", description: "" });
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
 
-    // Fetch playlists
+    // Fetch playlists with error handling
     useEffect(() => {
         const fetchPlaylists = async () => {
             try {
@@ -35,21 +38,29 @@ const Playlist = () => {
                         )}`,
                     },
                 });
-                setPlaylists(data.data);
-                setLoading(false);
+                setPlaylists(data.data || []);
             } catch (error) {
+                console.error("Error fetching playlists:", error);
                 toast.error(
                     error.response?.data?.message || "Failed to fetch playlists"
                 );
+            } finally {
                 setLoading(false);
             }
         };
         fetchPlaylists();
     }, []);
 
-    // Create playlist
+    // Reset form when modals close
+    useEffect(() => {
+        if (!showCreateModal && !showEditModal) {
+            setFormData({ name: "", description: "" });
+        }
+    }, [showCreateModal, showEditModal]);
+
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();
+        setProcessing(true);
         try {
             const { data } = await axios.post(
                 "/api/v1/playlists/create",
@@ -65,17 +76,20 @@ const Playlist = () => {
             setPlaylists([data.data, ...playlists]);
             setShowCreateModal(false);
             toast.success("Playlist created successfully");
-            setFormData({ name: "", description: "" });
         } catch (error) {
+            console.error("Error creating playlist:", error);
             toast.error(
                 error.response?.data?.message || "Failed to create playlist"
             );
+        } finally {
+            setProcessing(false);
         }
     };
 
-    // Update playlist
     const handleUpdatePlaylist = async (e) => {
         e.preventDefault();
+        if (!selectedPlaylist) return;
+        setProcessing(true);
         try {
             const { data } = await axios.put(
                 `/api/v1/playlists/update/${selectedPlaylist._id}`,
@@ -94,14 +108,18 @@ const Playlist = () => {
             setShowEditModal(false);
             toast.success("Playlist updated successfully");
         } catch (error) {
+            console.error("Error updating playlist:", error);
             toast.error(
                 error.response?.data?.message || "Failed to update playlist"
             );
+        } finally {
+            setProcessing(false);
         }
     };
 
-    // Delete playlist
     const handleDeletePlaylist = async () => {
+        if (!selectedPlaylist) return;
+        setProcessing(true);
         try {
             await axios.delete(
                 `/api/v1/playlists/delete/${selectedPlaylist._id}`,
@@ -119,133 +137,182 @@ const Playlist = () => {
             setShowDeleteModal(false);
             toast.success("Playlist deleted successfully");
         } catch (error) {
+            console.error("Error deleting playlist:", error);
             toast.error(
                 error.response?.data?.message || "Failed to delete playlist"
             );
+        } finally {
+            setProcessing(false);
         }
     };
 
-    // Thumbnail grid component
     const ThumbnailGrid = ({ videos }) => {
-        if (!videos?.length)
-            return (
-                <div className="w-full h-48 bg-gray-800 rounded-xl flex items-center justify-center">
-                    <FaFilm className="text-4xl text-gray-600" />
-                </div>
-            );
+        const handleImageError = (e) => {
+            e.target.src = "/fallback-thumbnail.jpg";
+            e.target.onerror = null;
+        };
 
         return (
-            <div className="grid grid-cols-2 gap-2 h-48 rounded-xl overflow-hidden">
-                {videos.slice(0, 4).map((video, index) => (
-                    <div key={index} className="relative aspect-video">
-                        <img
-                            src={video.thumbnail}
-                            alt="Thumbnail"
-                            className="w-full h-full object-cover"
-                        />
-                        {index === 3 && videos.length > 4 && (
-                            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-xl">
-                                +{videos.length - 4}
+            <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
+                {videos?.length ? (
+                    <div className="grid grid-cols-2 gap-2 h-full">
+                        {videos.slice(0, 4).map((video, index) => (
+                            <div
+                                key={`${video._id}-${index}`}
+                                className="relative aspect-video"
+                            >
+                                <img
+                                    src={video.thumbnail}
+                                    alt={`Thumbnail for ${video.title}`}
+                                    className="w-full h-full object-cover"
+                                    onError={handleImageError}
+                                    loading="lazy"
+                                />
+                                {index === 3 && videos.length > 4 && (
+                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-xl font-medium">
+                                        +{videos.length - 4}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        ))}
                     </div>
-                ))}
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-500">
+                        <FaFilm className="text-4xl" />
+                        <span className="text-sm">No videos yet</span>
+                    </div>
+                )}
+                <div className="absolute bottom-2 right-2 bg-gray-900/80 px-3 py-1 rounded-full text-sm font-medium">
+                    {videos?.length || 0}{" "}
+                    {videos?.length === 1 ? "video" : "videos"}
+                </div>
             </div>
         );
     };
 
-    // Playlist card component
     const PlaylistCard = ({ playlist }) => (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-colors"
+            transition={{ duration: 0.3 }}
+            className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-colors duration-300 group shadow-lg hover:shadow-xl"
         >
-            <div className="mb-4 relative">
+            <div
+                className="mb-4 cursor-pointer"
+                onClick={() => navigate(`/playlist/${playlist._id}`)}
+                aria-label={`View ${playlist.name} playlist`}
+            >
                 <ThumbnailGrid videos={playlist.videos} />
-                <div className="absolute bottom-2 right-2 bg-gray-900/80 px-3 py-1 rounded-full text-sm">
-                    {playlist.videos?.length || 0} videos
-                </div>
             </div>
 
-            <h3 className="text-xl font-semibold mb-2 truncate">
-                {playlist.name}
-            </h3>
-            <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                {playlist.description || "No description"}
-            </p>
-
-            <div className="flex justify-between items-center">
-                <button
-                    onClick={() => navigate(`/playlist/${playlist._id}`)}
-                    className="flex items-center gap-2 text-purple-400 hover:text-purple-300"
+            <div className="flex flex-col gap-3">
+                <h3
+                    className="text-xl font-semibold truncate"
+                    title={playlist.name}
                 >
-                    View Playlist
-                    <FiChevronRight className="mt-1" />
-                </button>
-                <div className="flex gap-3">
+                    {playlist.name}
+                </h3>
+                <p
+                    className="text-gray-400 text-sm line-clamp-2 min-h-[3.5rem]"
+                    title={playlist.description || "No description"}
+                >
+                    {playlist.description || "No description provided"}
+                </p>
+
+                <div className="flex justify-between items-center mt-2">
                     <button
-                        onClick={() => {
-                            setSelectedPlaylist(playlist);
-                            setFormData({
-                                name: playlist.name,
-                                description: playlist.description,
-                            });
-                            setShowEditModal(true);
-                        }}
-                        className="text-gray-400 hover:text-purple-400"
+                        onClick={() => navigate(`/playlist/${playlist._id}`)}
+                        className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                        aria-label={`View ${playlist.name} playlist`}
                     >
-                        <FaEdit />
+                        View Playlist
+                        <FiChevronRight className="mt-1" />
                     </button>
-                    <button
-                        onClick={() => {
-                            setSelectedPlaylist(playlist);
-                            setShowDeleteModal(true);
-                        }}
-                        className="text-gray-400 hover:text-red-400"
-                    >
-                        <FaTrash />
-                    </button>
+                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlaylist(playlist);
+                                setFormData({
+                                    name: playlist.name,
+                                    description: playlist.description,
+                                });
+                                setShowEditModal(true);
+                            }}
+                            className="text-gray-400 hover:text-purple-400 transition-colors duration-200 p-2"
+                            aria-label={`Edit ${playlist.name} playlist`}
+                        >
+                            <FaEdit />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlaylist(playlist);
+                                setShowDeleteModal(true);
+                            }}
+                            className="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2"
+                            aria-label={`Delete ${playlist.name} playlist`}
+                        >
+                            <FaTrash />
+                        </button>
+                    </div>
                 </div>
             </div>
         </motion.div>
     );
 
-    // Modal component
     const Modal = ({ title, children, onClose }) => (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        >
             <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                className="bg-gray-800 rounded-xl p-6 w-full max-w-md"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-gray-800 rounded-xl p-6 w-full max-w-md relative shadow-2xl"
             >
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-semibold">{title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-white"
-                    >
-                        &times;
-                    </button>
-                </div>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors duration-200"
+                    aria-label="Close modal"
+                >
+                    <FaTimes className="text-xl" />
+                </button>
+                <h2 className="text-2xl font-bold mb-6">{title}</h2>
                 {children}
             </motion.div>
-        </div>
+        </motion.div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-12">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 sm:mb-12">
                     <div className="flex items-center gap-4">
-                        <FaListUl className="text-4xl text-purple-400" />
-                        <h1 className="text-3xl font-bold">Your Playlists</h1>
+                        <div className="p-3 bg-purple-600/20 rounded-lg">
+                            <FaListUl className="text-3xl text-purple-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold">
+                                Your Playlists
+                            </h1>
+                            <p className="text-gray-400 text-sm">
+                                {playlists.length}{" "}
+                                {playlists.length === 1
+                                    ? "playlist"
+                                    : "playlists"}
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg flex items-center gap-2"
+                        className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg flex items-center gap-2 transition-colors duration-200 w-full sm:w-auto justify-center font-medium"
+                        aria-label="Create new playlist"
                     >
                         <FaPlus /> New Playlist
                     </button>
@@ -254,9 +321,9 @@ const Playlist = () => {
                 {/* Content */}
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[...Array(3)].map((_, i) => (
+                        {[...Array(6)].map((_, i) => (
                             <div
-                                key={i}
+                                key={`skeleton-${i}`}
                                 className="bg-gray-800 rounded-xl p-6 animate-pulse"
                             >
                                 <div className="h-48 bg-gray-700 rounded-xl mb-4" />
@@ -267,12 +334,21 @@ const Playlist = () => {
                         ))}
                     </div>
                 ) : playlists.length === 0 ? (
-                    <div className="text-center py-20">
-                        <FaRegSadTear className="text-6xl mx-auto mb-4 text-gray-600" />
-                        <h2 className="text-2xl mb-2">No Playlists Found</h2>
-                        <p className="text-gray-400">
-                            Create your first playlist to get started
+                    <div className="text-center py-16 sm:py-20 border-2 border-dashed border-gray-700 rounded-xl">
+                        <FaRegSadTear className="text-5xl sm:text-6xl mx-auto mb-4 text-gray-600" />
+                        <h2 className="text-xl sm:text-2xl mb-2 font-semibold">
+                            No Playlists Found
+                        </h2>
+                        <p className="text-gray-400 max-w-md mx-auto mb-6">
+                            Organize your favorite content by creating custom
+                            playlists.
                         </p>
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg inline-flex items-center gap-2 transition-colors duration-200"
+                        >
+                            <FaPlus /> Create Your First Playlist
+                        </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -287,22 +363,26 @@ const Playlist = () => {
                     </div>
                 )}
 
-                {/* Create Modal */}
+                {/* Modals */}
                 <AnimatePresence>
                     {showCreateModal && (
                         <Modal
-                            title="Create Playlist"
+                            title="Create New Playlist"
                             onClose={() => setShowCreateModal(false)}
                         >
                             <form
                                 onSubmit={handleCreatePlaylist}
-                                className="space-y-4"
+                                className="space-y-6"
                             >
                                 <div>
-                                    <label className="block mb-2">Name</label>
+                                    <label className="block text-sm font-medium mb-2">
+                                        Playlist Name *
+                                    </label>
                                     <input
                                         required
-                                        className="w-full bg-gray-700 rounded-lg p-3"
+                                        minLength={3}
+                                        maxLength={50}
+                                        className="w-full bg-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
                                         value={formData.name}
                                         onChange={(e) =>
                                             setFormData({
@@ -310,14 +390,16 @@ const Playlist = () => {
                                                 name: e.target.value,
                                             })
                                         }
+                                        placeholder="My Awesome Playlist"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block mb-2">
+                                    <label className="block text-sm font-medium mb-2">
                                         Description
                                     </label>
                                     <textarea
-                                        className="w-full bg-gray-700 rounded-lg p-3 h-32"
+                                        maxLength={200}
+                                        className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
                                         value={formData.description}
                                         onChange={(e) =>
                                             setFormData({
@@ -325,37 +407,56 @@ const Playlist = () => {
                                                 description: e.target.value,
                                             })
                                         }
+                                        placeholder="What's this playlist about?"
                                     />
                                 </div>
-                                <div className="flex gap-4 justify-end">
+                                <div className="flex gap-4 justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowCreateModal(false)
+                                        }
+                                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 font-medium"
+                                    >
+                                        Cancel
+                                    </button>
                                     <button
                                         type="submit"
-                                        className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg"
+                                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2"
+                                        disabled={processing}
                                     >
-                                        Create Playlist
+                                        {processing ? (
+                                            <>
+                                                <FaSpinner className="animate-spin" />
+                                                Creating...
+                                            </>
+                                        ) : (
+                                            "Create Playlist"
+                                        )}
                                     </button>
                                 </div>
                             </form>
                         </Modal>
                     )}
-                </AnimatePresence>
 
-                {/* Edit Modal */}
-                <AnimatePresence>
-                    {showEditModal && (
+                    {showEditModal && selectedPlaylist && (
                         <Modal
                             title="Edit Playlist"
                             onClose={() => setShowEditModal(false)}
                         >
                             <form
                                 onSubmit={handleUpdatePlaylist}
-                                className="space-y-4"
+                                className="space-y-6"
                             >
                                 <div>
-                                    <label className="block mb-2">Name</label>
+                                    <label className="block text-sm font-medium mb-2">
+                                        Playlist Name *
+                                    </label>
                                     <input
                                         required
-                                        className="w-full bg-gray-700 rounded-lg p-3"
+                                        minLength={3}
+                                        maxLength={50}
+                                        className="w-full bg-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
                                         value={formData.name}
                                         onChange={(e) =>
                                             setFormData({
@@ -366,11 +467,12 @@ const Playlist = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block mb-2">
+                                    <label className="block text-sm font-medium mb-2">
                                         Description
                                     </label>
                                     <textarea
-                                        className="w-full bg-gray-700 rounded-lg p-3 h-32"
+                                        maxLength={200}
+                                        className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
                                         value={formData.description}
                                         onChange={(e) =>
                                             setFormData({
@@ -380,46 +482,76 @@ const Playlist = () => {
                                         }
                                     />
                                 </div>
-                                <div className="flex gap-4 justify-end">
+                                <div className="flex gap-4 justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditModal(false)}
+                                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 font-medium"
+                                    >
+                                        Cancel
+                                    </button>
                                     <button
                                         type="submit"
-                                        className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg"
+                                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2"
+                                        disabled={processing}
                                     >
-                                        Save Changes
+                                        {processing ? (
+                                            <>
+                                                <FaSpinner className="animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            "Save Changes"
+                                        )}
                                     </button>
                                 </div>
                             </form>
                         </Modal>
                     )}
-                </AnimatePresence>
 
-                {/* Delete Modal */}
-                <AnimatePresence>
-                    {showDeleteModal && (
+                    {showDeleteModal && selectedPlaylist && (
                         <Modal
-                            title="Delete Playlist"
+                            title="Confirm Deletion"
                             onClose={() => setShowDeleteModal(false)}
                         >
                             <div className="text-center">
-                                <FaCheckCircle className="text-4xl text-red-400 mx-auto mb-4" />
-                                <p className="mb-6">
-                                    Are you sure you want to delete this
-                                    playlist?
+                                <div className="mx-auto mb-4 w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                                    <FaExclamationTriangle className="text-2xl text-red-400" />
+                                </div>
+                                <h3 className="text-xl font-semibold mb-2">
+                                    Delete Playlist
+                                </h3>
+                                <p className="text-gray-400 mb-6">
+                                    Are you sure you want to permanently delete{" "}
+                                    <span className="font-medium text-white">
+                                        {selectedPlaylist.name}
+                                    </span>
+                                    ?
+                                    <br />
+                                    This action cannot be undone.
                                 </p>
                                 <div className="flex gap-4 justify-center">
                                     <button
                                         onClick={() =>
                                             setShowDeleteModal(false)
                                         }
-                                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 font-medium flex-1 sm:flex-none"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={handleDeletePlaylist}
-                                        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg"
+                                        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-200 font-medium flex-1 sm:flex-none flex items-center justify-center gap-2"
+                                        disabled={processing}
                                     >
-                                        Delete
+                                        {processing ? (
+                                            <>
+                                                <FaSpinner className="animate-spin" />
+                                                Deleting...
+                                            </>
+                                        ) : (
+                                            "Delete Playlist"
+                                        )}
                                     </button>
                                 </div>
                             </div>
