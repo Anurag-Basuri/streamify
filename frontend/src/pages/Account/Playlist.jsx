@@ -288,68 +288,79 @@ const Playlist = () => {
         </motion.div>
     );
 
-    const PlaylistForm = () => (
-        <Modal
-            title="Create New Playlist"
-            onClose={() => setShowCreateModal(false)}
-        >
-            <form onSubmit={handleCreatePlaylist} className="space-y-6">
-                <div>
-                    <input
-                        required
-                        minLength={3}
-                        maxLength={50}
-                        className="w-full bg-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
-                        value={formData.name}
-                        onChange={(e) =>
-                            setFormData({
-                                ...formData,
-                                name: e.target.value,
-                            })
-                        }
-                        placeholder="Title - My Awesome Playlist"
-                    />
-                </div>
-                <div>
-                    <textarea
-                        maxLength={200}
-                        className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
-                        value={formData.description}
-                        onChange={(e) =>
-                            setFormData({
-                                ...formData,
-                                description: e.target.value,
-                            })
-                        }
-                        placeholder="Description - What's this playlist about?"
-                    />
-                </div>
-                <div className="flex gap-4 justify-end pt-2">
-                    <button
-                        type="button"
-                        onClick={() => setShowCreateModal(false)}
-                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 font-medium"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2"
-                        disabled={processing}
-                    >
-                        {processing ? (
-                            <>
-                                <FaSpinner className="animate-spin" />
-                                Creating...
-                            </>
-                        ) : (
-                            "Create Playlist"
-                        )}
-                    </button>
-                </div>
-            </form>
-        </Modal>
-    );
+    const PlaylistForm = () => {
+        const [localFormData, setLocalFormData] = useState(formData);
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            setFormData(localFormData);
+            handleCreatePlaylist(e);
+            console.log("Form submitted:", formData);
+        };
+
+        return (
+            <Modal
+                title="Create New Playlist"
+                onClose={() => setShowCreateModal(false)}
+            >
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <input
+                            required
+                            minLength={3}
+                            maxLength={50}
+                            className="w-full bg-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
+                            value={localFormData.name}
+                            onChange={(e) =>
+                                setLocalFormData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
+                            }
+                            placeholder="Title - My Awesome Playlist"
+                        />
+                    </div>
+                    <div>
+                        <textarea
+                            maxLength={200}
+                            className="w-full bg-gray-700 rounded-lg p-3 h-32 focus:ring-2 focus:ring-purple-500 outline-none border border-gray-600 focus:border-transparent"
+                            value={formData.description}
+                            onChange={(e) =>
+                                setLocalFormData((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                }))
+                            }
+                            placeholder="Description - What's this playlist about?"
+                        />
+                    </div>
+                    <div className="flex gap-4 justify-end pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateModal(false)}
+                            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2"
+                            disabled={processing}
+                        >
+                            {processing ? (
+                                <>
+                                    <FaSpinner className="animate-spin" />
+                                    Creating...
+                                </>
+                            ) : (
+                                "Create Playlist"
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+        );
+    };
 
     const EditForm = () => (
         <Modal title="Edit Playlist" onClose={() => setShowEditModal(false)}>
