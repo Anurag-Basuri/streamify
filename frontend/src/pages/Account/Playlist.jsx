@@ -158,12 +158,17 @@ const Playlist = () => {
                     <div className="grid grid-cols-2 gap-2 h-full">
                         {videos.slice(0, 4).map((video, index) => (
                             <div
-                                key={`${video._id}-${index}`}
+                                key={`${video?._id || index}-${index}`}
                                 className="relative aspect-video"
                             >
                                 <img
-                                    src={video?.thumbnail}
-                                    alt={`Thumbnail for ${video.title}`}
+                                    src={
+                                        video?.thumbnail ||
+                                        "/fallback-thumbnail.jpg"
+                                    }
+                                    alt={`Thumbnail for ${
+                                        video?.title || "video"
+                                    }`}
                                     className="w-full h-full object-cover"
                                     onError={handleImageError}
                                     loading="lazy"
