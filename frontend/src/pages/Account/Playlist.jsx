@@ -156,33 +156,30 @@ const Playlist = () => {
             e.target.src = "/fallback-thumbnail.jpg";
             e.target.onerror = null;
         };
-
-        const videoCount = videos?.length || 0;
-
+    
+        // Filter out any null/undefined videos and calculate count
+        const validVideos = videos.filter(v => v?._id);
+        const videoCount = validVideos.length;
+    
         return (
             <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
                 {videoCount > 0 ? (
                     <div className="grid grid-cols-2 gap-2 h-full">
-                        {videos.slice(0, 4).map((video, index) => (
+                        {validVideos.slice(0, 4).map((video, index) => (
                             <div
-                                key={`${video?._id || index}-${index}`}
+                                key={`${video._id}-${index}`}
                                 className="relative aspect-video"
                             >
                                 <img
-                                    src={
-                                        video?.thumbnail ||
-                                        "/fallback-thumbnail.jpg"
-                                    }
-                                    alt={`Thumbnail for ${
-                                        video?.title || "video"
-                                    }`}
+                                    src={video.thumbnail || "/fallback-thumbnail.jpg"}
+                                    alt={`Thumbnail for ${video.title}`}
                                     className="w-full h-full object-cover"
                                     onError={handleImageError}
                                     loading="lazy"
                                 />
-                                {index === 3 && videos.length > 4 && (
+                                {index === 3 && videoCount > 4 && (
                                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-xl font-medium">
-                                        +{videos.length - 4}
+                                        +{videoCount - 4}
                                     </div>
                                 )}
                             </div>
@@ -191,6 +188,7 @@ const Playlist = () => {
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-gray-400">
                         <div className="relative w-20 h-20">
+                            {/* Animated gradient circles */}
                             <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-pulse" />
                             <div
                                 className="absolute inset-2 bg-purple-500/30 rounded-full animate-pulse"
@@ -203,12 +201,8 @@ const Playlist = () => {
                             <FaFilm className="absolute inset-0 m-auto text-4xl text-purple-400" />
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-medium">
-                                Empty Playlist
-                            </p>
-                            <p className="text-xs opacity-75">
-                                Add some videos to get started
-                            </p>
+                            <p className="text-sm font-medium">Empty Playlist</p>
+                            <p className="text-xs opacity-75">Add some videos to get started</p>
                         </div>
                     </div>
                 )}
@@ -218,12 +212,12 @@ const Playlist = () => {
             </div>
         );
     };
-
-    // ThumbnailGrid.propTypes
+    
+    // Thumbnail.propTypes
     ThumbnailGrid.propTypes = {
         videos: PropTypes.arrayOf(
             PropTypes.shape({
-                _id: PropTypes.string,
+                _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
                 thumbnail: PropTypes.string,
                 title: PropTypes.string,
             })
