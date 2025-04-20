@@ -46,11 +46,6 @@ const Home = () => {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 }),
-                axios.get("/api/v1/playlists", {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }),
             ]);
 
             setVideos(
