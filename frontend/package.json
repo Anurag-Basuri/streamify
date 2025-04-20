@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "axios": "^1.7.9",
+    "date-fns": "^4.1.0",
     "emoji-picker-react": "^4.12.2",
     "framer-motion": "^12.6.2",
     "heroicons": "^2.2.0",

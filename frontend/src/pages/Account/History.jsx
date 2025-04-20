@@ -3,7 +3,7 @@ import { AuthContext } from "../../services/AuthContext.jsx";
 import { Link } from "react-router-dom";
 import { FaClock, FaTrash, FaPlayCircle } from "react-icons/fa";
 import { GiHourglass } from "react-icons/gi";
-import emptyStateIllustration from "../../assets/empty-history.svg";
+import emptyStateIllustration from "../../assets/watch-later-empty.svg";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
