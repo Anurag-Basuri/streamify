@@ -3,7 +3,7 @@ import { AuthContext } from "../../services/AuthContext.jsx";
 import { Link } from "react-router-dom";
 import { ClockIcon, TrashIcon, PlayIcon } from "@heroicons/react/24/outline";
 import { PlayCircleIcon, DocumentMagnifyingGlassIcon } from "@heroicons/react/24/solid";
-import emptyStateIllustration from "../../assets/empty-state.svg";
+import emptyStateIllustration from "../../assets/watch-later-empty.svg";
 
 const Watchlater = () => {
     const [videos, setVideos] = useState([]);
