@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -15,6 +15,7 @@ import {
     FaSpinner,
 } from "react-icons/fa";
 import { FiChevronRight } from "react-icons/fi";
+import PropTypes from "prop-types";
 
 const Playlist = () => {
     const [playlists, setPlaylists] = useState([]);
@@ -195,6 +196,17 @@ const Playlist = () => {
         );
     };
 
+    // ThumbnailGrid.propTypes
+    ThumbnailGrid.propTypes = {
+        videos: PropTypes.arrayOf(
+            PropTypes.shape({
+                _id: PropTypes.string,
+                thumbnail: PropTypes.string,
+                title: PropTypes.string,
+            })
+        ),
+    };
+
     const PlaylistCard = ({ playlist }) => {
         console.log(playlist);
 
@@ -271,6 +283,22 @@ const Playlist = () => {
         )
     };
 
+    // PlaylistCard.propTypes
+    PlaylistCard.propTypes = {
+        playlist: PropTypes.shape({
+            _id: PropTypes.string.isRequired,
+            name: PropTypes.string.isRequired,
+            description: PropTypes.string,
+            videos: PropTypes.arrayOf(
+                PropTypes.shape({
+                    _id: PropTypes.string,
+                    thumbnail: PropTypes.string,
+                    title: PropTypes.string,
+                })
+            )
+        }).isRequired
+    };
+
     const Modal = ({ title, children, onClose }) => (
         <motion.div
             initial={{ opacity: 0 }}
@@ -296,6 +324,13 @@ const Playlist = () => {
             </motion.div>
         </motion.div>
     );
+
+    // Modal.propTypes
+    Modal.propTypes = {
+        title: PropTypes.string.isRequired,
+        children: PropTypes.node.isRequired,
+        onClose: PropTypes.func.isRequired,
+    };
 
     const PlaylistForm = () => {
         const [localFormData, setLocalFormData] = useState(formData);
