@@ -41,13 +41,12 @@ const Home = () => {
     const fetchData = useCallback(async () => {
         try {
             const [videosRes, playlistsRes, historyRes] = await Promise.all([
-                axios.get("/api/v1/videos/"),
-                axios.get("/api/v1/playlists", {
+                axios.get("/api/v1/videos/", {
                     headers: {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 }),
-                axios.get("/api/v1/history", {
+                axios.get("/api/v1/playlists", {
                     headers: {
                         Authorization: `Bearer ${user?.token}`,
                     },
