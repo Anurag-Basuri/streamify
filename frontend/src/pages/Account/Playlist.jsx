@@ -59,6 +59,7 @@ const Playlist = () => {
         }
     }, [showCreateModal, showEditModal]);
 
+    // Create Playlist
     const handleCreatePlaylist = async (e) => {
         e.preventDefault();
         setProcessing(true);
@@ -87,6 +88,7 @@ const Playlist = () => {
         }
     };
 
+    // Update Playlist
     const handleUpdatePlaylist = async (e) => {
         e.preventDefault();
         if (!selectedPlaylist) return;
@@ -118,6 +120,7 @@ const Playlist = () => {
         }
     };
 
+    // Delete Playlist
     const handleDeletePlaylist = async () => {
         if (!selectedPlaylist) return;
         setProcessing(true);
@@ -147,6 +150,7 @@ const Playlist = () => {
         }
     };
 
+    // Thumbnail Grid
     const ThumbnailGrid = ({ videos }) => {
         const handleImageError = (e) => {
             e.target.src = "/fallback-thumbnail.jpg";
@@ -207,6 +211,7 @@ const Playlist = () => {
         ),
     };
 
+    // Playlist Card
     const PlaylistCard = ({ playlist }) => {
         console.log(playlist);
 
@@ -299,6 +304,7 @@ const Playlist = () => {
         }).isRequired
     };
 
+    // Modal
     const Modal = ({ title, children, onClose }) => (
         <motion.div
             initial={{ opacity: 0 }}
@@ -332,6 +338,7 @@ const Playlist = () => {
         onClose: PropTypes.func.isRequired,
     };
 
+    // Playlist Form
     const PlaylistForm = () => {
         const [localFormData, setLocalFormData] = useState(formData);
 
@@ -405,6 +412,7 @@ const Playlist = () => {
         );
     };
 
+    // Edit Form
     const EditForm = () => {
         const [localFormData, setLocalFormData] = useState(formData);
 
@@ -482,6 +490,7 @@ const Playlist = () => {
         );
     };
 
+    // Delete Modal
     const DeleteModal = () => (
         <Modal
             title="Confirm Deletion"
