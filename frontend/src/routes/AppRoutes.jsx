@@ -14,8 +14,8 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import VideoPlayer from "../components/VideoPlayer.jsx";
 import { Navigate } from "react-router-dom";
 import EditVodeo from "../pages/Account/EditVideos.jsx";
+import PlaylistDetail from "../components/PlaylistDetail.jsx";
 
-// Import other pages
 const AppRoutes = () => {
     return (
         <Routes>
@@ -77,7 +77,7 @@ const AppRoutes = () => {
                 path="/playlist/:playlistID"
                 element={
                     <ProtectedRoute>
-                        <Playlist />
+                        <PlaylistDetail />
                     </ProtectedRoute>
                 }
             />
