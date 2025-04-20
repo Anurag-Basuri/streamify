@@ -82,9 +82,8 @@ const PlaylistDetail = () => {
     // Add video to playlist
     const handleAddVideo = async (videoId) => {
         try {
-            const { data } = await axios.put(
-                `/api/v1/playlists/${playlistID}/add-video`,
-                { videoId },
+            const { data } = await axios.post(
+                `/api/v1/playlists/${playlistID}/videos/${videoId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
