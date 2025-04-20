@@ -14,9 +14,6 @@ router.use(verifyAccessToken);
 // Get all history for the authenticated user
 router.get('/', getUserHistory);
 
-// Get a specific history by ID
-// router.get('/:historyId', getHistoryById);
-
 // Add a new history entry
 router.post("/add", addVideoToHistory);
 
