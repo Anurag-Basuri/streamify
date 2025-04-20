@@ -59,6 +59,7 @@ const getUserPlaylists = asynchandler(async (req, res) => {
 // Get a playlist by ID
 const getPlaylistById = asynchandler(async (req, res) => {
     const { playlistId } = req.params;
+    console.log(playlistId);
 
     if (!mongoose.isValidObjectId(playlistId)) {
         throw new APIerror(400, "Invalid playlist ID");

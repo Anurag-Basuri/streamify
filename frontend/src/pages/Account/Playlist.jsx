@@ -195,12 +195,14 @@ const Playlist = () => {
         );
     };
 
-    const PlaylistCard = ({ playlist }) => (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+    const PlaylistCard = ({ playlist }) => {
+        console.log(playlist);
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
             className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-colors duration-300 group shadow-lg hover:shadow-xl"
         >
             <div
