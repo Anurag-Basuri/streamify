@@ -23,7 +23,7 @@ const Playlist = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [formData, setFormData] = useState({ name: "", description: "" });
+    const [formData, setformData] = useState({ name: "", description: "" });
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
@@ -55,7 +55,7 @@ const Playlist = () => {
     // Reset form when modals close
     useEffect(() => {
         if (!showCreateModal && !showEditModal) {
-            setFormData({ name: "", description: "" });
+            setformData({ name: "", description: "" });
         }
     }, [showCreateModal, showEditModal]);
 
@@ -94,6 +94,8 @@ const Playlist = () => {
         if (!selectedPlaylist) return;
         setProcessing(true);
         try {
+            console.log(formData);
+
             const { data } = await axios.put(
                 `/api/v1/playlists/update/${selectedPlaylist._id}`,
                 formData,
@@ -274,7 +276,7 @@ const Playlist = () => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedPlaylist(playlist);
-                                    setFormData({
+                                    setformData({
                                         name: playlist.name,
                                         description: playlist.description || "",
                                     });
@@ -359,7 +361,7 @@ const Playlist = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            setFormData(localFormData);
+            setformData(localFormData);
             handleCreatePlaylist(e);
         };
 
@@ -433,7 +435,7 @@ const Playlist = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            setFormData(localFormData);
+            setformData(localFormData);
             handleUpdatePlaylist(e);
         };
 
