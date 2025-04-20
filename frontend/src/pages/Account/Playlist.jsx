@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +24,7 @@ const Playlist = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [formData, setformData] = useState({ name: "", description: "" });
+    const [formData, setFormData] = useState({ name: "", description: "" });
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
@@ -55,7 +56,7 @@ const Playlist = () => {
     // Reset form when modals close
     useEffect(() => {
         if (!showCreateModal && !showEditModal) {
-            setformData({ name: "", description: "" });
+            setFormData({ name: "", description: "" });
         }
     }, [showCreateModal, showEditModal]);
 
@@ -94,8 +95,6 @@ const Playlist = () => {
         if (!selectedPlaylist) return;
         setProcessing(true);
         try {
-            console.log(formData);
-
             const { data } = await axios.put(
                 `/api/v1/playlists/update/${selectedPlaylist._id}`,
                 formData,
@@ -158,11 +157,11 @@ const Playlist = () => {
             e.target.src = "/fallback-thumbnail.jpg";
             e.target.onerror = null;
         };
-    
+
         // Filter out any null/undefined videos and calculate count
-        const validVideos = videos.filter(v => v?._id);
+        const validVideos = videos.filter((v) => v?._id);
         const videoCount = validVideos.length;
-    
+
         return (
             <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
                 {videoCount > 0 ? (
@@ -173,7 +172,10 @@ const Playlist = () => {
                                 className="relative aspect-video"
                             >
                                 <img
-                                    src={video.thumbnail || "/fallback-thumbnail.jpg"}
+                                    src={
+                                        video.thumbnail ||
+                                        "/fallback-thumbnail.jpg"
+                                    }
                                     alt={`Thumbnail for ${video.title}`}
                                     className="w-full h-full object-cover"
                                     onError={handleImageError}
@@ -203,8 +205,12 @@ const Playlist = () => {
                             <FaFilm className="absolute inset-0 m-auto text-4xl text-purple-400" />
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-medium">Empty Playlist</p>
-                            <p className="text-xs opacity-75">Add some videos to get started</p>
+                            <p className="text-sm font-medium">
+                                Empty Playlist
+                            </p>
+                            <p className="text-xs opacity-75">
+                                Add some videos to get started
+                            </p>
                         </div>
                     </div>
                 )}
@@ -214,7 +220,7 @@ const Playlist = () => {
             </div>
         );
     };
-    
+
     // Thumbnail.propTypes
     ThumbnailGrid.propTypes = {
         videos: PropTypes.arrayOf(
@@ -276,7 +282,7 @@ const Playlist = () => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedPlaylist(playlist);
-                                    setformData({
+                                    setFormData({
                                         name: playlist.name,
                                         description: playlist.description || "",
                                     });
@@ -361,7 +367,7 @@ const Playlist = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            setformData(localFormData);
+            setFormData(localFormData);
             handleCreatePlaylist(e);
         };
 
@@ -433,9 +439,18 @@ const Playlist = () => {
     const EditForm = () => {
         const [localFormData, setLocalFormData] = useState(formData);
 
+        useEffect(() => {
+            if (selectedPlaylist) {
+                setLocalFormData({
+                    name: selectedPlaylist.name,
+                    description: selectedPlaylist.description || "",
+                });
+            }
+        }, [selectedPlaylist]);
+
         const handleSubmit = (e) => {
             e.preventDefault();
-            setformData(localFormData);
+            setFormData(localFormData);
             handleUpdatePlaylist(e);
         };
 
