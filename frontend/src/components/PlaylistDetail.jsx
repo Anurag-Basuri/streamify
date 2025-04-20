@@ -84,7 +84,6 @@ const PlaylistDetail = () => {
         try {
             const { data } = await axios.post(
                 `/api/v1/playlists/${playlistID}/videos/${videoId}`,
-                {},
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -110,7 +109,7 @@ const PlaylistDetail = () => {
     const handleRemoveVideo = async (videoId) => {
         try {
             await axios.delete(
-                `/api/v1/playlists/${playlistID}/videos/${videoId}`,
+                `/api/v1/playlists/remove/${playlistID}/videos/${videoId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
