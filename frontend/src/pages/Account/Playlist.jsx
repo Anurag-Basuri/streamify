@@ -197,77 +197,79 @@ const Playlist = () => {
 
     const PlaylistCard = ({ playlist }) => {
         console.log(playlist);
+
         return (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-            className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-colors duration-300 group shadow-lg hover:shadow-xl"
-        >
-            <div
-                className="mb-4 cursor-pointer"
-                onClick={() => navigate(`/playlist/${playlist._id}`)}
-                aria-label={`View ${playlist.name} playlist`}
+                className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-colors duration-300 group shadow-lg hover:shadow-xl"
             >
-                <ThumbnailGrid videos={playlist.videos} />
-            </div>
-
-            <div className="flex flex-col gap-3">
-                <h3
-                    className="text-xl font-semibold truncate"
-                    title={playlist.name}
+                <div
+                    className="mb-4 cursor-pointer"
+                    onClick={() => navigate(`/playlist/${playlist._id}`)}
+                    aria-label={`View ${playlist.name} playlist`}
                 >
-                    {playlist.name}
-                </h3>
-                <p
-                    className="text-gray-400 text-sm line-clamp-2 min-h-[3.5rem]"
-                    title={playlist.description || "No description"}
-                >
-                    {playlist.description || "No description provided"}
-                </p>
+                    <ThumbnailGrid videos={playlist.videos} />
+                </div>
 
-                <div className="flex justify-between items-center mt-2">
-                    <button
-                        onClick={() => navigate(`/playlist/${playlist._id}`)}
-                        className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors duration-200"
-                        aria-label={`View ${playlist.name} playlist`}
+                <div className="flex flex-col gap-3">
+                    <h3
+                        className="text-xl font-semibold truncate"
+                        title={playlist.name}
                     >
-                        View Playlist
-                        <FiChevronRight className="mt-1" />
-                    </button>
-                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {playlist.name}
+                    </h3>
+                    <p
+                        className="text-gray-400 text-sm line-clamp-2 min-h-[3.5rem]"
+                        title={playlist.description || "No description"}
+                    >
+                        {playlist.description || "No description provided"}
+                    </p>
+
+                    <div className="flex justify-between items-center mt-2">
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPlaylist(playlist);
-                                setFormData({
-                                    name: playlist.name,
-                                    description: playlist.description,
-                                });
-                                setShowEditModal(true);
-                            }}
-                            className="text-gray-400 hover:text-purple-400 transition-colors duration-200 p-2"
-                            aria-label={`Edit ${playlist.name} playlist`}
+                            onClick={() => navigate(`/playlist/${playlist._id}`)}
+                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                            aria-label={`View ${playlist.name} playlist`}
                         >
-                            <FaEdit />
+                            View Playlist
+                            <FiChevronRight className="mt-1" />
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPlaylist(playlist);
-                                setShowDeleteModal(true);
-                            }}
-                            className="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2"
-                            aria-label={`Delete ${playlist.name} playlist`}
-                        >
-                            <FaTrash />
-                        </button>
+                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPlaylist(playlist);
+                                    setFormData({
+                                        name: playlist.name,
+                                        description: playlist.description,
+                                    });
+                                    setShowEditModal(true);
+                                }}
+                                className="text-gray-400 hover:text-purple-400 transition-colors duration-200 p-2"
+                                aria-label={`Edit ${playlist.name} playlist`}
+                            >
+                                <FaEdit />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPlaylist(playlist);
+                                    setShowDeleteModal(true);
+                                }}
+                                className="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2"
+                                aria-label={`Delete ${playlist.name} playlist`}
+                            >
+                                <FaTrash />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </motion.div>
-    );
+            </motion.div>
+        )
+    };
 
     const Modal = ({ title, children, onClose }) => (
         <motion.div
