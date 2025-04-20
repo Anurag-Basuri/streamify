@@ -56,8 +56,7 @@ const VideoPlayer = () => {
                 // Add to history if user is logged in
                 if (user?.token) {
                     await axios.post(
-                        "/api/v1/history/add",
-                        { videoId: videoID },
+                        `/api/v1/history/add/${videoID}`,
                         {
                             headers: {
                                 Authorization: `Bearer ${user.token}`,
