@@ -105,6 +105,108 @@ const History = () => {
         </div>
     );
 
+    if (history.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-8"
+            >
+                <div className="max-w-2xl text-center">
+                    <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 100 }}
+                        className="relative mb-12 mx-auto w-72 h-72"
+                    >
+                        {/* Animated timeline illustration */}
+                        <div className="absolute inset-0">
+                            {/* Main timeline line */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-1 h-full bg-purple-200 rounded-full" />
+
+                            {/* Floating time markers */}
+                            {[...Array(5)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ y: 0, opacity: 0 }}
+                                    animate={{
+                                        y: [0, -20, 0],
+                                        opacity: [0, 1, 0],
+                                    }}
+                                    transition={{
+                                        duration: 3,
+                                        repeat: Infinity,
+                                        delay: i * 0.5,
+                                    }}
+                                    className="absolute left-1/2 -translate-x-1/2"
+                                    style={{ top: `${20 + i * 15}%` }}
+                                >
+                                    <div
+                                        className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center 
+                                    border-2 border-purple-300 shadow-sm"
+                                    >
+                                        <FaClock className="text-purple-500 w-4 h-4" />
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {/* Floating video card */}
+                            <motion.div
+                                initial={{ y: 0, scale: 0 }}
+                                animate={{
+                                    y: [-20, 20, -20],
+                                    scale: 1,
+                                    rotate: [0, 5, -5, 0],
+                                }}
+                                transition={{
+                                    duration: 8,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                                className="absolute left-1/2 -translate-x-1/2 top-1/2"
+                            >
+                                <div className="bg-white p-3 rounded-lg shadow-lg transform rotate-3">
+                                    <div className="w-32 h-20 bg-purple-100 rounded-md mb-2" />
+                                    <div className="h-2 bg-purple-100 rounded-full mb-1 w-3/4" />
+                                    <div className="h-2 bg-purple-100 rounded-full w-1/2" />
+                                </div>
+                            </motion.div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                            Your Time Machine is Empty
+                        </h2>
+                        <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+                            Every video you watch becomes part of your personal
+                            timeline. Start exploring and let's build your
+                            viewing history together!
+                        </p>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Link
+                                to="/videos"
+                                className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-blue-500 
+                                text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all 
+                                duration-300 text-lg font-medium"
+                            >
+                                <FaPlayCircle className="w-6 h-6" />
+                                Begin Your Journey
+                            </Link>
+                        </motion.div>
+                    </motion.div>
+                </div>
+            </motion.div>
+        );
+    }
+
     ConfirmModal.propTypes = {
         title: PropTypes.string.isRequired,
         message: PropTypes.string.isRequired,
