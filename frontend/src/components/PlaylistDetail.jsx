@@ -8,8 +8,9 @@ import {
     FaPlus,
     FaTrash,
     FaPlay,
+    FaTimes,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
 
@@ -23,7 +24,7 @@ const PlaylistDetail = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [currentUser] = useState(JSON.parse(localStorage.getItem("user")));
-    const [isDragging, setIsDragging] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
 
     // Fetch playlist details
     useEffect(() => {
@@ -52,11 +53,13 @@ const PlaylistDetail = () => {
     const searchVideos = debounce(async (query) => {
         if (!query.trim()) {
             setSearchResults([]);
+            setShowSearchResults(false);
             return;
         }
 
         try {
             setIsSearching(true);
+            setShowSearchResults(true);
             const { data } = await axios.get(`/api/v1/videos/search`, {
                 params: { query },
             });
@@ -64,6 +67,7 @@ const PlaylistDetail = () => {
         } catch (err) {
             toast.error("Failed to search videos");
             console.error("Search error:", err);
+            setSearchResults([]);
         } finally {
             setIsSearching(false);
         }
@@ -94,6 +98,8 @@ const PlaylistDetail = () => {
                 videos: [...prev.videos, data.data],
             }));
             toast.success("Video added to playlist");
+            setSearchQuery("");
+            setShowSearchResults(false);
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to add video");
         }
@@ -208,7 +214,7 @@ const PlaylistDetail = () => {
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        placeholder="Search videos..."
+                                        placeholder="Search videos by title, description, or tags..."
                                         className="w-full bg-gray-700 rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-500 outline-none"
                                         value={searchQuery}
                                         onChange={(e) =>
@@ -216,14 +222,25 @@ const PlaylistDetail = () => {
                                         }
                                     />
                                     <FaSearch className="absolute left-4 top-4 text-gray-400" />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchQuery("");
+                                                setShowSearchResults(false);
+                                            }}
+                                            className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <FaTimes />
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Search Results */}
-                                {searchQuery && (
+                                {showSearchResults && (
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-gray-700 rounded-lg p-4 space-y-4"
+                                        className="bg-gray-700 rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto"
                                     >
                                         {isSearching ? (
                                             <div className="flex justify-center py-4">
@@ -251,9 +268,16 @@ const PlaylistDetail = () => {
                                                             alt={video.title}
                                                             className="w-16 h-12 object-cover rounded"
                                                         />
-                                                        <span className="font-medium">
-                                                            {video.title}
-                                                        </span>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">
+                                                                {video.title}
+                                                            </span>
+                                                            <span className="text-sm text-gray-400 line-clamp-1">
+                                                                {
+                                                                    video.description
+                                                                }
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                     <button
                                                         onClick={() =>
