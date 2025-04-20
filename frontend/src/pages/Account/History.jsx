@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { FaClock, FaTrash, FaPlayCircle } from "react-icons/fa";
 import { GiHourglass } from "react-icons/gi";
 import emptyStateIllustration from "../../assets/empty-history.svg";
-import { ConfirmModal } from "../../components/ConfirmModal.jsx";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
