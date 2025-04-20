@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -14,17 +14,18 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
+import { AuthContext } from "../../services/AuthContext.jsx";
 
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
     const [playlist, setPlaylist] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
     const [showSearchResults, setShowSearchResults] = useState(false);
 
     // Fetch playlist details
@@ -32,7 +33,12 @@ const PlaylistDetail = () => {
         const fetchPlaylist = async () => {
             try {
                 const { data } = await axios.get(
-                    `/api/v1/playlists/${playlistID}`
+                    `/api/v1/playlists/${playlistID}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${user?.token}`,
+                        },
+                    }
                 );
                 setPlaylist(data.data);
                 setError("");
@@ -47,8 +53,8 @@ const PlaylistDetail = () => {
                 setLoading(false);
             }
         };
-        fetchPlaylist();
-    }, [playlistID]);
+        if (user) fetchPlaylist();
+    }, [playlistID, user]);
 
     // Debounced video search
     const searchVideos = debounce(async (query) => {
@@ -63,6 +69,9 @@ const PlaylistDetail = () => {
             setShowSearchResults(true);
             const { data } = await axios.get(`/api/v1/videos/search`, {
                 params: { query },
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
             });
             setSearchResults(data.data);
         } catch (err) {
@@ -84,11 +93,10 @@ const PlaylistDetail = () => {
         try {
             const { data } = await axios.post(
                 `/api/v1/playlists/${playlistID}/videos/${videoId}`,
+                {},
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
+                        Authorization: `Bearer ${user?.token}`,
                     },
                 }
             );
@@ -112,9 +120,7 @@ const PlaylistDetail = () => {
                 `/api/v1/playlists/remove/${playlistID}/videos/${videoId}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
+                        Authorization: `Bearer ${user?.token}`,
                     },
                 }
             );
@@ -132,8 +138,7 @@ const PlaylistDetail = () => {
     };
 
     // Check if user is playlist owner
-    const isOwner = currentUser?._id === playlist?.owner?._id;
-    console.log(currentUser, playlist?.owner?._id);
+    const isOwner = user?._id === playlist?.owner?._id;
 
     if (loading) {
         return (
