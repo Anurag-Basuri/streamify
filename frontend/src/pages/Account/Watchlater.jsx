@@ -6,7 +6,7 @@ import {
     PlayCircleIcon,
     DocumentMagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-import emptyStateIllustration from "../../assets/empty-state.svg";
+import emptyStateIllustration from "../../assets/watch-later-empty.svg";
 
 const Watchlater = () => {
     const [videos, setVideos] = useState([]);
@@ -128,7 +128,7 @@ const Watchlater = () => {
                             Your Time Capsule Awaits
                         </h2>
                         <p className="text-gray-500 max-w-md mx-auto mb-8">
-                            Save videos you want to watch later and they'll
+                            Save videos you want to watch later and they&apos;ll
                             appear here. Curate your perfect viewing experience!
                         </p>
                         <Link
