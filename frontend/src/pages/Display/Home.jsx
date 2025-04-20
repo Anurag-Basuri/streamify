@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../../services/AuthContext.jsx";
 import {
     FaPlay,
     FaEye,
@@ -16,6 +17,7 @@ import {
     FaList,
     FaTrash,
     FaRegFolder,
+    FaHistory,
 } from "react-icons/fa";
 import { FiChevronRight, FiMoreVertical } from "react-icons/fi";
 import { toast } from "react-hot-toast";
@@ -24,7 +26,9 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 
 const Home = () => {
+    const { user } = useContext(AuthContext);
     const [videos, setVideos] = useState([]);
+    const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [selectedVideo, setSelectedVideo] = useState(null);
@@ -32,16 +36,19 @@ const Home = () => {
     const [playlists, setPlaylists] = useState([]);
     const [newPlaylistName, setNewPlaylistName] = useState("");
 
-    // Fetch random videos and playlists
+    // Fetch random videos, playlists, and history
     const fetchData = useCallback(async () => {
         try {
-            const [videosRes, playlistsRes] = await Promise.all([
+            const [videosRes, playlistsRes, historyRes] = await Promise.all([
                 axios.get("/api/v1/videos/"),
                 axios.get("/api/v1/playlists", {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                }),
+                axios.get("/api/v1/history", {
+                    headers: {
+                        Authorization: `Bearer ${user?.token}`,
                     },
                 }),
             ]);
@@ -49,18 +56,19 @@ const Home = () => {
             setVideos(
                 videosRes.data.data.videos.map((video) => ({
                     ...video,
-                    isLiked: video.likes?.includes?.(user._id) || false,
+                    isLiked: video.likes?.includes?.(user?._id) || false,
                 }))
             );
 
             setPlaylists(playlistsRes.data.data.playlists);
+            setHistory(historyRes.data.data?.videos || []);
         } catch (err) {
             setError(err.message);
             toast.error("Failed to load content");
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         fetchData();
@@ -203,6 +211,42 @@ const Home = () => {
                         ))}
                     </Swiper>
                 </motion.div>
+
+                {/* History Section */}
+                {user && history.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-12"
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-purple-600 rounded-lg">
+                                <FaHistory className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-2xl font-bold">
+                                Continue Watching
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {history.map((video) => (
+                                <VideoCard
+                                    key={video._id}
+                                    video={video}
+                                    onAction={(action) => {
+                                        setSelectedVideo(video);
+                                        action === "playlist"
+                                            ? setShowPlaylistModal(true)
+                                            : handleVideoAction(
+                                                  action,
+                                                  video._id
+                                              );
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Video Grid */}
                 <motion.div
