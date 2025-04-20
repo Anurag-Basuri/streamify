@@ -18,7 +18,6 @@ const PlaylistDetail = () => {
                     `/api/v1/playlists/${playlistID}`
                 );
                 setPlaylist(data.data);
-                console.log(data.data);
                 setError("");
             } catch (err) {
                 setError(
@@ -85,7 +84,7 @@ const PlaylistDetail = () => {
                             <div className="flex items-center gap-3 text-gray-400">
                                 <span>Created by:</span>
                                 <span className="text-purple-400">
-                                    {playlist.owner.username}
+                                    {playlist.owner.userName}
                                 </span>
                             </div>
                         </div>
