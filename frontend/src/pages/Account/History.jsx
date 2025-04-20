@@ -7,6 +7,7 @@ import emptyStateIllustration from "../../assets/empty-history.svg";
 import { ConfirmModal } from "../../components/ConfirmModal.jsx";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 
 const History = () => {
     const { user } = useContext(AuthContext);
@@ -105,6 +106,15 @@ const History = () => {
             </div>
         </div>
     );
+
+    ConfirmModal.propTypes = {
+        title: PropTypes.string.isRequired,
+        message: PropTypes.string.isRequired,
+        onCancel: PropTypes.func.isRequired,
+        onConfirm: PropTypes.func.isRequired,
+        confirmText: PropTypes.string,
+        danger: PropTypes.bool,
+    };
 
     if (loading) {
         return (
