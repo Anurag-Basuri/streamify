@@ -8,7 +8,7 @@ import { asynchandler } from "../utils/asynchandler.js";
 
 // Add video to history
 const addVideoToHistory = asynchandler(async (req, res) => {
-    const { videoId } = req.body;
+    const { videoId } = req.params;
     const userId = req.user._id;
 
     // Check if the video exists

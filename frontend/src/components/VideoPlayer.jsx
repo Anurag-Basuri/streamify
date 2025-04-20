@@ -43,7 +43,7 @@ const VideoPlayer = () => {
             try {
                 // Increment view count
                 await fetch(
-                    `http://localhost:8000/api/v1/videos/${videoID}/views`,
+                    `api/v1/videos/${videoID}/views`,
                     {
                         method: "POST",
                         headers: {
@@ -56,7 +56,7 @@ const VideoPlayer = () => {
                 // Add to history if user is logged in
                 if (user?.token) {
                     await axios.post(
-                        "http://localhost:8000/api/v1/history/add",
+                        "/api/v1/history/add",
                         { videoId: videoID },
                         {
                             headers: {

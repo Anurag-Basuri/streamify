@@ -12,10 +12,10 @@ const router = express.Router();
 router.use(verifyAccessToken);
 
 // Get all history for the authenticated user
-router.get('/', getUserHistory);
+router.get("/", getUserHistory);
 
 // Add a new history entry
-router.post("/add", addVideoToHistory);
+router.post("/add/:videoId", addVideoToHistory);
 
 // Update an existing history entry
 router.put("/update/:historyId", removeVideoFromHistory);
