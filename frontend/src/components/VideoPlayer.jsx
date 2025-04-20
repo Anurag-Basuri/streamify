@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import ReactPlayer from "react-player";
 import { FaSpinner } from "react-icons/fa";
+import { AuthContext } from "../services/AuthContext.jsx";
 
 const VideoPlayer = () => {
+    const { user } = useContext(AuthContext);
     console.log(useParams()); // Debug log
     const [videoID, setVideoID] = useState(useParams().videoID);
     const [video, setVideo] = useState(null);
@@ -34,32 +36,38 @@ const VideoPlayer = () => {
         fetchVideo();
     }, [videoID]);
 
-    // Handle video play event to increment view count
-    const handlePlay = () => {
+    // Handle video play event to increment view count and add to history
+    const handlePlay = async () => {
         const viewedKey = `viewed_${videoID}`;
         if (!localStorage.getItem(viewedKey)) {
-            fetch(`http://localhost:8000/api/v1/videos/${videoID}/views`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            })
-                .then((response) => {
-                    if (response.ok) {
-                        console.log("View count incremented successfully");
-                        localStorage.setItem(viewedKey, true);
-                    } else {
-                        console.error(
-                            "Failed to increment view count:",
-                            response.statusText
-                        );
+            try {
+                // Increment view count
+                await fetch(
+                    `http://localhost:8000/api/v1/videos/${videoID}/views`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
                     }
-                })
-                .catch((error) => {
-                    console.error("Error incrementing view count:", error);
-                });
-        }else {
-            console.log("View already counted for this video");
+                );
+                localStorage.setItem(viewedKey, true);
+
+                // Add to history if user is logged in
+                if (user?.token) {
+                    await axios.post(
+                        "http://localhost:8000/api/v1/history/add",
+                        { videoId: videoID },
+                        {
+                            headers: {
+                                Authorization: `Bearer ${user.token}`,
+                            },
+                        }
+                    );
+                }
+            } catch (err) {
+                console.error("Error updating video stats:", err);
+            }
         }
     };
 

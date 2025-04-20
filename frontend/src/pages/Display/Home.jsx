@@ -37,7 +37,7 @@ const Home = () => {
     const [playlists, setPlaylists] = useState([]);
     const [newPlaylistName, setNewPlaylistName] = useState("");
 
-    // Fetch random videos, playlists, and history
+    // Fetch random videos
     const fetchData = useCallback(async () => {
         try {
             const [videosRes, playlistsRes, historyRes] = await Promise.all([
@@ -54,9 +54,6 @@ const Home = () => {
                     isLiked: video.likes?.includes?.(user?._id) || false,
                 }))
             );
-
-            setPlaylists(playlistsRes.data.data.playlists);
-            setHistory(historyRes.data.data?.videos || []);
         } catch (err) {
             setError(err.message);
             toast.error("Failed to load content");
