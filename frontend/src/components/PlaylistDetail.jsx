@@ -14,7 +14,7 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
-import { AuthContext } from "../../services/AuthContext.jsx";
+import { AuthContext } from "../services/AuthContext.jsx";
 
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
