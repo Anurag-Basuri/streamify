@@ -162,7 +162,7 @@ const Playlist = () => {
                                 className="relative aspect-video"
                             >
                                 <img
-                                    src={video.thumbnail}
+                                    src={video?.thumbnail}
                                     alt={`Thumbnail for ${video.title}`}
                                     className="w-full h-full object-cover"
                                     onError={handleImageError}
