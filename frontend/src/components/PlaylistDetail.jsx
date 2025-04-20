@@ -4,6 +4,8 @@ import axios from "axios";
 import { FaArrowLeft, FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+
+
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
     const navigate = useNavigate();

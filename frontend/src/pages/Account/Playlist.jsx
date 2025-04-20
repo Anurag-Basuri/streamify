@@ -157,9 +157,11 @@ const Playlist = () => {
             e.target.onerror = null;
         };
 
+        const videoCount = videos?.length || 0;
+
         return (
             <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
-                {videos && videos.length > 0 ? (
+                {videoCount > 0 ? (
                     <div className="grid grid-cols-2 gap-2 h-full">
                         {videos.slice(0, 4).map((video, index) => (
                             <div
@@ -187,14 +189,31 @@ const Playlist = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-500">
-                        <FaFilm className="text-4xl" />
-                        <span className="text-sm">No videos yet</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-gray-400">
+                        <div className="relative w-20 h-20">
+                            <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-pulse" />
+                            <div
+                                className="absolute inset-2 bg-purple-500/30 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.2s" }}
+                            />
+                            <div
+                                className="absolute inset-4 bg-purple-500/40 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.4s" }}
+                            />
+                            <FaFilm className="absolute inset-0 m-auto text-4xl text-purple-400" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-medium">
+                                Empty Playlist
+                            </p>
+                            <p className="text-xs opacity-75">
+                                Add some videos to get started
+                            </p>
+                        </div>
                     </div>
                 )}
                 <div className="absolute bottom-2 right-2 bg-gray-900/80 px-3 py-1 rounded-full text-sm font-medium">
-                    {videos?.length || 0}{" "}
-                    {videos?.length === 1 ? "video" : "videos"}
+                    {videoCount} {videoCount === 1 ? "video" : "videos"}
                 </div>
             </div>
         );
