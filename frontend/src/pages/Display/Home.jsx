@@ -24,6 +24,7 @@ import { toast } from "react-hot-toast";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";
+import PropTypes from "prop-types";
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -475,6 +476,27 @@ const VideoCard = ({ video, onAction }) => {
             </div>
         </motion.div>
     );
+};
+
+VideoCard.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        thumbnail: PropTypes.shape({
+            url: PropTypes.string,
+        }),
+        duration: PropTypes.number.isRequired,
+        isLiked: PropTypes.bool,
+        likes: PropTypes.number,
+        commentsCount: PropTypes.number,
+        views: PropTypes.number,
+        createdAt: PropTypes.string.isRequired,
+        owner: PropTypes.shape({
+            avatar: PropTypes.string,
+            username: PropTypes.string,
+        }),
+    }).isRequired,
+    onAction: PropTypes.func.isRequired,
 };
 
 const VideoCardSkeleton = () => (
