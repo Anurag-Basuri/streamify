@@ -15,9 +15,10 @@ const PlaylistDetail = () => {
         const fetchPlaylist = async () => {
             try {
                 const { data } = await axios.get(
-                    `/api/playlists/${playlistID}`
+                    `/api/v1/playlists/${playlistID}`
                 );
                 setPlaylist(data.data);
+                console.log(data.data);
                 setError("");
             } catch (err) {
                 setError(

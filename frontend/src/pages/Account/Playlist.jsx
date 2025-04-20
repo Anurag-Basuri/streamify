@@ -151,7 +151,7 @@ const Playlist = () => {
     };
 
     // Thumbnail Grid
-    const ThumbnailGrid = ({ videos }) => {
+    const ThumbnailGrid = ({ videos = [] }) => {
         const handleImageError = (e) => {
             e.target.src = "/fallback-thumbnail.jpg";
             e.target.onerror = null;
@@ -159,7 +159,7 @@ const Playlist = () => {
 
         return (
             <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
-                {videos?.length ? (
+                {videos && videos.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 h-full">
                         {videos.slice(0, 4).map((video, index) => (
                             <div
@@ -213,7 +213,7 @@ const Playlist = () => {
 
     // Playlist Card
     const PlaylistCard = ({ playlist }) => {
-        console.log(playlist);
+        if (!playlist) return null;
 
         return (
             <motion.div
@@ -228,7 +228,7 @@ const Playlist = () => {
                     onClick={() => navigate(`/playlist/${playlist._id}`)}
                     aria-label={`View ${playlist.name} playlist`}
                 >
-                    <ThumbnailGrid videos={playlist.videos} />
+                    <ThumbnailGrid videos={playlist.videos || []} />
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -247,7 +247,9 @@ const Playlist = () => {
 
                     <div className="flex justify-between items-center mt-2">
                         <button
-                            onClick={() => navigate(`/playlist/${playlist._id}`)}
+                            onClick={() =>
+                                navigate(`/playlist/${playlist._id}`)
+                            }
                             className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors duration-200"
                             aria-label={`View ${playlist.name} playlist`}
                         >
@@ -261,7 +263,7 @@ const Playlist = () => {
                                     setSelectedPlaylist(playlist);
                                     setFormData({
                                         name: playlist.name,
-                                        description: playlist.description,
+                                        description: playlist.description || "",
                                     });
                                     setShowEditModal(true);
                                 }}
@@ -285,7 +287,7 @@ const Playlist = () => {
                     </div>
                 </div>
             </motion.div>
-        )
+        );
     };
 
     // PlaylistCard.propTypes
@@ -300,8 +302,8 @@ const Playlist = () => {
                     thumbnail: PropTypes.string,
                     title: PropTypes.string,
                 })
-            )
-        }).isRequired
+            ),
+        }).isRequired,
     };
 
     // Modal
