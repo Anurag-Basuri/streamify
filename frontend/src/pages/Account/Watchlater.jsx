@@ -97,8 +97,12 @@ const Watchlater = () => {
                         <ClockIcon className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-4xl font-bold text-gray-900">Watch Later</h1>
-                        <p className="text-gray-500 mt-1">{videos.length} saved videos</p>
+                        <h1 className="text-4xl font-bold text-gray-900">
+                            Watch Later
+                        </h1>
+                        <p className="text-gray-500 mt-1">
+                            {videos.length} saved videos
+                        </p>
                     </div>
                 </div>
 
@@ -109,10 +113,12 @@ const Watchlater = () => {
                             alt="Empty watch later"
                             className="w-64 mx-auto mb-8"
                         />
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Time Capsule Awaits</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                            Your Time Capsule Awaits
+                        </h2>
                         <p className="text-gray-500 max-w-md mx-auto mb-8">
-                            Save videos you want to watch later and they'll appear here. Curate your perfect
-                            viewing experience!
+                            Save videos you want to watch later and they&apos;ll
+                            appear here. Curate your perfect viewing experience!
                         </p>
                         <Link
                             to="/videos"
@@ -143,8 +149,10 @@ const Watchlater = () => {
                                             {video.duration}
                                         </div>
                                     </div>
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 
-                                    group-hover:opacity-100 transition-opacity">
+                                    <div
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 
+                                    group-hover:opacity-100 transition-opacity"
+                                    >
                                         <PlayIcon className="w-16 h-16 text-white drop-shadow-lg" />
                                     </div>
                                 </div>
@@ -159,7 +167,9 @@ const Watchlater = () => {
                                             {video.title}
                                         </Link>
                                         <button
-                                            onClick={() => setRemovingVideo(video._id)}
+                                            onClick={() =>
+                                                setRemovingVideo(video._id)
+                                            }
                                             className="text-gray-400 hover:text-red-600 p-1 -mt-1 -mr-1 
                                             transition-colors"
                                             aria-label="Remove from watch later"
@@ -188,27 +198,36 @@ const Watchlater = () => {
                                                 {video.owner?.userName}
                                             </Link>
                                             <p className="text-sm text-gray-500 truncate">
-                                                {video.views} views • {video.createdAt}
+                                                {video.views} views •{" "}
+                                                {video.createdAt}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {removingVideo === video._id && (
-                                    <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center 
-                                    justify-center p-4 backdrop-blur-sm">
+                                    <div
+                                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center 
+                                    justify-center p-4 backdrop-blur-sm"
+                                    >
                                         <div className="bg-white p-6 rounded-lg text-center">
-                                            <h3 className="font-bold text-lg mb-4">Remove from Watch Later?</h3>
+                                            <h3 className="font-bold text-lg mb-4">
+                                                Remove from Watch Later?
+                                            </h3>
                                             <div className="flex gap-4 justify-center">
                                                 <button
-                                                    onClick={() => setRemovingVideo(null)}
+                                                    onClick={() =>
+                                                        setRemovingVideo(null)
+                                                    }
                                                     className="px-4 py-2 text-gray-600 hover:text-gray-800 
                                                     transition-colors"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
-                                                    onClick={() => handleRemove(video._id)}
+                                                    onClick={() =>
+                                                        handleRemove(video._id)
+                                                    }
                                                     className="px-4 py-2 bg-red-600 text-white rounded-lg 
                                                     hover:bg-red-700 transition-colors"
                                                 >
