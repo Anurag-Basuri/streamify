@@ -24,7 +24,7 @@ const PlaylistDetail = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [currentUser] = useState(JSON.parse(localStorage.getItem("user")));
+    const [currentUser, setCurrentUser] = useState(null);
     const [showSearchResults, setShowSearchResults] = useState(false);
 
     // Fetch playlist details
@@ -133,6 +133,7 @@ const PlaylistDetail = () => {
 
     // Check if user is playlist owner
     const isOwner = currentUser?._id === playlist?.owner?._id;
+    console.log(currentUser, playlist?.owner?._id);
 
     if (loading) {
         return (
