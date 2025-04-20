@@ -192,12 +192,23 @@ const History = () => {
                 </div>
 
                 {history.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
-                        <img
-                            src={emptyStateIllustration}
-                            alt="Empty history"
-                            className="w-64 mx-auto mb-8"
-                        />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-12 bg-white rounded-2xl shadow-sm"
+                    >
+                        <div className="w-64 h-64 mx-auto mb-8 relative">
+                            <div className="absolute inset-0 bg-purple-100 rounded-full animate-pulse" />
+                            <div
+                                className="absolute inset-4 bg-purple-200 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.2s" }}
+                            />
+                            <div
+                                className="absolute inset-8 bg-purple-300 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.4s" }}
+                            />
+                            <FaClock className="absolute inset-0 m-auto text-6xl text-purple-600" />
+                        </div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">
                             Your History is Empty
                         </h2>
@@ -213,7 +224,7 @@ const History = () => {
                             <FaPlayCircle className="w-5 h-5" />
                             Start Watching
                         </Link>
-                    </div>
+                    </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {history.map((video) => (
