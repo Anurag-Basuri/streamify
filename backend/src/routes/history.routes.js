@@ -11,17 +11,17 @@ const router = express.Router();
 
 router.use(verifyAccessToken);
 
-// Get all history for the authenticated user
+// Get user's history
 router.get("/", getUserHistory);
 
-// Add a new history entry
+// Add video to history
 router.post("/add/:videoId", addVideoToHistory);
 
-// Update an existing history entry
-router.put("/update/:historyId", removeVideoFromHistory);
+// Remove video from history
+router.delete("/:videoId", removeVideoFromHistory);
 
-// Delete a history entry
-router.delete("/delete/:historyId", clearUserHistory);
+// Clear all history
+router.delete("/clear", clearUserHistory);
 
 // Export the router
 export default router;
