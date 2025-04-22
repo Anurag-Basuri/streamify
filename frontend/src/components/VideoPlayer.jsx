@@ -7,7 +7,7 @@ import { AuthContext } from "../services/AuthContext.jsx";
 
 const VideoPlayer = () => {
     const { user } = useContext(AuthContext);
-    console.log(useParams()); // Debug log
+    console.log(useParams());
     const [videoID, setVideoID] = useState(useParams().videoID);
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
