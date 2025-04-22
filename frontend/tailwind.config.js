@@ -22,6 +22,16 @@ export default {
         transitionTimingFunction: {
             sidebar: "cubic-bezier(0.4, 0, 0.2, 1)",
         },
+        colors: {
+            background: "hsl(var(--background))",
+            foreground: "hsl(var(--foreground))",
+            primary: "hsl(var(--primary))",
+            "primary-hover": "hsl(var(--primary-hover))",
+            destructive: "hsl(var(--destructive))",
+            "destructive-hover": "hsl(var(--destructive-hover))",
+            accent: "hsl(var(--accent))",
+            muted: "hsl(var(--muted))",
+        },
     },
     plugins: [],
 };
