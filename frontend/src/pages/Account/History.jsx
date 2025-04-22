@@ -82,7 +82,7 @@ const History = () => {
 
     const handleRemove = async (videoId) => {
         try {
-            const response = await fetch(`/api/v1/history/remove/${videoId}`, {
+            const response = await fetch(`/api/v1/history/${videoId}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${user?.token}`,
@@ -174,6 +174,108 @@ const History = () => {
         );
     }
 
+    if (history.length === 0) {
+        return (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="min-h-screen bg-background flex items-center justify-center p-8"
+            >
+                <div className="max-w-2xl text-center">
+                    <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 100 }}
+                        className="relative mb-12 mx-auto w-72 h-72"
+                    >
+                        {/* Animated timeline illustration */}
+                        <div className="absolute inset-0">
+                            {/* Main timeline line */}
+                            <div className="absolute left-1/2 -translate-x-1/2 w-1 h-full bg-primary/20 rounded-full" />
+
+                            {/* Floating time markers */}
+                            {[...Array(5)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ y: 0, opacity: 0 }}
+                                    animate={{
+                                        y: [0, -20, 0],
+                                        opacity: [0, 1, 0],
+                                    }}
+                                    transition={{
+                                        duration: 3,
+                                        repeat: Infinity,
+                                        delay: i * 0.5,
+                                    }}
+                                    className="absolute left-1/2 -translate-x-1/2"
+                                    style={{ top: `${20 + i * 15}%` }}
+                                >
+                                    <div
+                                        className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center 
+                                    border-2 border-primary/30 shadow-sm"
+                                    >
+                                        <FaClock className="text-primary/50 w-4 h-4" />
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {/* Floating video card */}
+                            <motion.div
+                                initial={{ y: 0, scale: 0 }}
+                                animate={{
+                                    y: [-20, 20, -20],
+                                    scale: 1,
+                                    rotate: [0, 5, -5, 0],
+                                }}
+                                transition={{
+                                    duration: 8,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                                className="absolute left-1/2 -translate-x-1/2 top-1/2"
+                            >
+                                <div className="bg-foreground/5 p-3 rounded-lg shadow-lg transform rotate-3">
+                                    <div className="w-32 h-20 bg-primary/10 rounded-md mb-2" />
+                                    <div className="h-2 bg-primary/10 rounded-full mb-1 w-3/4" />
+                                    <div className="h-2 bg-primary/10 rounded-full w-1/2" />
+                                </div>
+                            </motion.div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <h2 className="text-4xl font-bold text-primary mb-4">
+                            Your Time Machine is Empty
+                        </h2>
+                        <p className="text-lg text-muted mb-8 max-w-xl mx-auto">
+                            Every video you watch becomes part of your personal
+                            timeline. Start exploring and let&apos;s build your
+                            viewing history together!
+                        </p>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Link
+                                to="/videos"
+                                className="inline-flex items-center gap-3 bg-primary text-white px-8 py-4 
+                                rounded-xl shadow-lg hover:bg-primary-hover transition-all duration-300 
+                                text-lg font-medium"
+                            >
+                                <FaPlayCircle className="w-6 h-6" />
+                                Begin Your Journey
+                            </Link>
+                        </motion.div>
+                    </motion.div>
+                </div>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -206,141 +308,101 @@ const History = () => {
                     )}
                 </div>
 
-                {history.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-12 bg-foreground/5 rounded-2xl shadow-sm"
-                    >
-                        <div className="w-64 h-64 mx-auto mb-8 relative">
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{
-                                    duration: 12,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
-                                className="absolute inset-0 border-4 border-primary/10 rounded-full"
-                            />
-                            <div className="absolute inset-8 flex items-center justify-center">
-                                <FaClock className="text-6xl text-primary/50" />
-                            </div>
-                        </div>
-                        <h2 className="text-2xl font-bold text-primary mb-4">
-                            Your History is Empty
-                        </h2>
-                        <p className="text-muted max-w-md mx-auto mb-8">
-                            Videos you watch will appear here. Start exploring
-                            and build your viewing history!
-                        </p>
-                        <Link
-                            to="/videos"
-                            className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-xl 
-                            hover:bg-primary-hover transition-all transform hover:-translate-y-1 shadow-lg"
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {history.map((item) => (
+                        <motion.div
+                            key={item.video._id}
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            className="bg-foreground/5 rounded-xl shadow-lg hover:shadow-2xl transition-all 
+                            duration-300 transform hover:-translate-y-2 group relative border border-accent/20"
                         >
-                            <FaPlayCircle className="w-5 h-5" />
-                            Start Watching
-                        </Link>
-                    </motion.div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {history.map((item) => (
-                            <motion.div
-                                key={item.video._id}
-                                initial={{ scale: 0.95 }}
-                                animate={{ scale: 1 }}
-                                className="bg-foreground/5 rounded-xl shadow-lg hover:shadow-2xl transition-all 
-                                duration-300 transform hover:-translate-y-2 group relative border border-accent/20"
-                            >
-                                <div className="relative aspect-video rounded-t-xl overflow-hidden">
-                                    <img
-                                        src={item.video.thumbnail?.url}
-                                        alt={item.video.title}
-                                        loading="lazy"
-                                        className="w-full h-full object-cover transform group-hover:scale-105 
-                                        transition-transform duration-300"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                                        <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
-                                            {formatDuration(
-                                                item.video.duration
-                                            )}
-                                        </div>
+                            <div className="relative aspect-video rounded-t-xl overflow-hidden">
+                                <img
+                                    src={item.video.thumbnail?.url}
+                                    alt={item.video.title}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover transform group-hover:scale-105 
+                                    transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                                    <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
+                                        {formatDuration(item.video.duration)}
                                     </div>
+                                </div>
+                                <Link
+                                    to={`/video/${item.video._id}`}
+                                    className="absolute inset-0 flex items-center justify-center opacity-0 
+                                    group-hover:opacity-100 transition-opacity"
+                                >
+                                    <FaPlayCircle className="w-16 h-16 text-white drop-shadow-lg" />
+                                </Link>
+                            </div>
+
+                            <div className="p-4">
+                                <div className="flex justify-between items-start mb-2">
                                     <Link
                                         to={`/video/${item.video._id}`}
-                                        className="absolute inset-0 flex items-center justify-center opacity-0 
-                                        group-hover:opacity-100 transition-opacity"
+                                        className="font-bold text-primary hover:text-primary-hover line-clamp-2 
+                                        text-lg leading-tight"
                                     >
-                                        <FaPlayCircle className="w-16 h-16 text-white drop-shadow-lg" />
+                                        {item.video.title}
                                     </Link>
+                                    <button
+                                        onClick={() =>
+                                            setRemovingId(item.video._id)
+                                        }
+                                        className="text-muted hover:text-destructive p-1 -mt-1 -mr-1 
+                                        transition-colors"
+                                        aria-label="Remove from history"
+                                    >
+                                        <FaTrash className="w-5 h-5" />
+                                    </button>
                                 </div>
 
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Link
-                                            to={`/video/${item.video._id}`}
-                                            className="font-bold text-primary hover:text-primary-hover line-clamp-2 
-                                            text-lg leading-tight"
-                                        >
-                                            {item.video.title}
-                                        </Link>
-                                        <button
-                                            onClick={() =>
-                                                setRemovingId(item.video._id)
-                                            }
-                                            className="text-muted hover:text-destructive p-1 -mt-1 -mr-1 
-                                            transition-colors"
-                                            aria-label="Remove from history"
-                                        >
-                                            <FaTrash className="w-5 h-5" />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 mt-3">
+                                <div className="flex items-center gap-3 mt-3">
+                                    <Link
+                                        to={`/channel/${item.video.owner?._id}`}
+                                        className="flex items-center gap-2 group shrink-0"
+                                    >
+                                        <img
+                                            src={item.video.owner?.avatar}
+                                            alt={item.video.owner?.userName}
+                                            className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
+                                        />
+                                    </Link>
+                                    <div className="min-w-0">
                                         <Link
                                             to={`/channel/${item.video.owner?._id}`}
-                                            className="flex items-center gap-2 group shrink-0"
+                                            className="text-sm font-medium text-primary truncate 
+                                            hover:text-primary-hover"
                                         >
-                                            <img
-                                                src={item.video.owner?.avatar}
-                                                alt={item.video.owner?.userName}
-                                                className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
-                                            />
+                                            {item.video.owner?.userName}
                                         </Link>
-                                        <div className="min-w-0">
-                                            <Link
-                                                to={`/channel/${item.video.owner?._id}`}
-                                                className="text-sm font-medium text-primary truncate 
-                                                hover:text-primary-hover"
-                                            >
-                                                {item.video.owner?.userName}
-                                            </Link>
-                                            <p className="text-sm text-muted truncate">
-                                                {item.video.views} views •{" "}
-                                                {formatDistanceToNow(
-                                                    new Date(item.watchedAt),
-                                                    { addSuffix: true }
-                                                )}
-                                            </p>
-                                        </div>
+                                        <p className="text-sm text-muted truncate">
+                                            {item.video.views} views •{" "}
+                                            {formatDistanceToNow(
+                                                new Date(item.watchedAt),
+                                                { addSuffix: true }
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                {removingId === item.video._id && (
-                                    <ConfirmModal
-                                        title="Remove from History?"
-                                        message="This action will remove this video from your watch history."
-                                        onCancel={() => setRemovingId(null)}
-                                        onConfirm={() =>
-                                            handleRemove(item.video._id)
-                                        }
-                                    />
-                                )}
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
+                            {removingId === item.video._id && (
+                                <ConfirmModal
+                                    title="Remove from History?"
+                                    message="This action will remove this video from your watch history."
+                                    onCancel={() => setRemovingId(null)}
+                                    onConfirm={() =>
+                                        handleRemove(item.video._id)
+                                    }
+                                />
+                            )}
+                        </motion.div>
+                    ))}
+                </div>
 
                 {showClearModal && (
                     <ConfirmModal

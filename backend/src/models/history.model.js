@@ -4,14 +4,14 @@ const historySchema = new Schema(
     {
         user: {
             type: Schema.Types.ObjectId,
-            ref: "User", // Reference to the user who owns the history
+            ref: "User",
             required: true,
         },
         videos: [
             {
                 video: {
                     type: Schema.Types.ObjectId,
-                    ref: "Video", // Reference to videos in the history
+                    ref: "Video",
                 },
                 watchedAt: {
                     type: Date,
