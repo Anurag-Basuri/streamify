@@ -7,7 +7,6 @@ import { AuthContext } from "../services/AuthContext.jsx";
 
 const VideoPlayer = () => {
     const { user } = useContext(AuthContext);
-    console.log(useParams());
     const [videoID, setVideoID] = useState(useParams().videoID);
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -20,7 +19,6 @@ const VideoPlayer = () => {
                 const response = await axios.get(
                     `http://localhost:8000/api/v1/videos/${videoID}`
                 );
-                console.log("API Response:", response.data); // Debug log
                 if (!response.data.success) {
                     throw new Error("Failed to fetch video details");
                 }
@@ -52,21 +50,22 @@ const VideoPlayer = () => {
                     }
                 );
                 localStorage.setItem(viewedKey, true);
-
-                // Add to history if user is logged in
-                if (user?.token) {
-                    await axios.post(
-                        `/api/v1/history/add/${videoID}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${user.token}`,
-                            },
-                        }
-                    );
-                }
             } catch (err) {
                 console.error("Error updating video stats:", err);
             }
+        }
+
+        // Add to history if user is logged in
+        console.log(user);
+        if (user?.token) {
+            await axios.post(
+                `/api/v1/history/add/${videoID}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${user.token}`,
+                    },
+                }
+            );
         }
     };
 
