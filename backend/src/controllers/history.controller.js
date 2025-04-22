@@ -23,37 +23,56 @@ const addVideoToHistory = asynchandler(async (req, res) => {
         throw new APIerror(404, "User not found");
     }
 
-    // Check if the history already exists for the user
+    // Find or create history for the user
     let history = await History.findOne({ user: userId });
     if (!history) {
-        // Create a new history entry if it doesn't exist
         history = new History({ user: userId, videos: [] });
     }
 
-    // Add the video to the user's history if it doesn't already exist
-    if (!history.videos.includes(videoId)) {
-        history.videos.push(videoId);
-        await history.save();
+    // Remove the video if it already exists in history
+    history.videos = history.videos.filter(
+        (item) => !item.video.equals(videoId)
+    );
+
+    // Add the video to the beginning of the array with current timestamp
+    history.videos.unshift({
+        video: videoId,
+        watchedAt: new Date(),
+    });
+
+    // Limit history to last 100 videos
+    if (history.videos.length > 100) {
+        history.videos = history.videos.slice(0, 100);
     }
 
-    res.status(200).json(new APIresponse(200, history));
+    await history.save();
+
+    res.status(200).json(
+        new APIresponse(200, history, "Video added to history successfully")
+    );
 });
 
 // Get user's history
 const getUserHistory = asynchandler(async (req, res) => {
     const userId = req.user._id;
 
-    // Check if the user exists
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new APIerror(404, "User not found");
+    const history = await History.findOne({ user: userId })
+        .populate({
+            path: "videos.video",
+            select: "title thumbnail duration views owner createdAt",
+            populate: {
+                path: "owner",
+                select: "userName avatar",
+            },
+        })
+        .sort({ "videos.watchedAt": -1 });
+
+    if (!history) {
+        return res
+            .status(200)
+            .json(new APIresponse(200, { videos: [] }, "No history found"));
     }
 
-    // Find the user's history
-    const history = await History.findOne({ user: userId }).populate("videos");
-    if (!history) {
-        throw new APIerror(404, "History not found");
-    }
     res.status(200).json(
         new APIresponse(200, history, "History retrieved successfully")
     );
@@ -64,20 +83,14 @@ const removeVideoFromHistory = asynchandler(async (req, res) => {
     const { videoId } = req.body;
     const userId = req.user._id;
 
-    // Check if the user exists
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new APIerror(404, "User not found");
-    }
-
-    // Find the user's history
     const history = await History.findOne({ user: userId });
     if (!history) {
         throw new APIerror(404, "History not found");
     }
 
-    // Remove the video from the user's history
-    history.videos = history.videos.filter((video) => !video.equals(videoId));
+    history.videos = history.videos.filter(
+        (item) => !item.video.equals(videoId)
+    );
     await history.save();
 
     res.status(200).json(
@@ -89,19 +102,11 @@ const removeVideoFromHistory = asynchandler(async (req, res) => {
 const clearUserHistory = asynchandler(async (req, res) => {
     const userId = req.user._id;
 
-    // Check if the user exists
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new APIerror(404, "User not found");
-    }
-
-    // Find the user's history
     const history = await History.findOne({ user: userId });
     if (!history) {
         throw new APIerror(404, "History not found");
     }
 
-    // Clear the user's history
     history.videos = [];
     await history.save();
 
