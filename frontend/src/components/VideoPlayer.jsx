@@ -56,17 +56,12 @@ const VideoPlayer = () => {
         }
 
         // Add to history if user is logged in
-        console.log(user);
-        if (user?.token) {
-            await axios.post(
-                `/api/v1/history/add/${videoID}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`,
-                    },
-                }
-            );
-        }
+        await axios.post(`/api/v1/history/add/${videoID}`, {
+            headers: {
+                Authorization: `Bearer ${user.token}`,
+            },
+        });
+        
     };
 
     // Handle video ID from URL parameters

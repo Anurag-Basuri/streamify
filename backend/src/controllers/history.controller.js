@@ -10,6 +10,8 @@ import { asynchandler } from "../utils/asynchandler.js";
 const addVideoToHistory = asynchandler(async (req, res) => {
     const { videoId } = req.params;
     const userId = req.user._id;
+    console.log(userId);
+    console.log(videoId);
 
     // Check if the video exists
     const video = await Video.findById(videoId);
@@ -80,17 +82,30 @@ const getUserHistory = asynchandler(async (req, res) => {
 
 // Remove video from history
 const removeVideoFromHistory = asynchandler(async (req, res) => {
-    const { videoId } = req.body;
+    const { videoId } = req.params;
     const userId = req.user._id;
+
+    // Validate videoId
+    if (!videoId || !mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new APIerror(400, "Invalid video ID");
+    }
 
     const history = await History.findOne({ user: userId });
     if (!history) {
         throw new APIerror(404, "History not found");
     }
 
-    history.videos = history.videos.filter(
-        (item) => !item.video.equals(videoId)
+    // Check if video exists in history
+    const videoIndex = history.videos.findIndex(
+        (item) => item.video.toString() === videoId
     );
+
+    if (videoIndex === -1) {
+        throw new APIerror(404, "Video not found in history");
+    }
+
+    // Remove the video from history
+    history.videos.splice(videoIndex, 1);
     await history.save();
 
     res.status(200).json(
