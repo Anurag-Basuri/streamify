@@ -10,8 +10,6 @@ import { asynchandler } from "../utils/asynchandler.js";
 const addVideoToHistory = asynchandler(async (req, res) => {
     const { videoId } = req.params;
     const userId = req.user._id;
-    console.log(userId);
-    console.log(videoId);
 
     // Check if the video exists
     const video = await Video.findById(videoId);
@@ -33,7 +31,7 @@ const addVideoToHistory = asynchandler(async (req, res) => {
 
     // Remove the video if it already exists in history
     history.videos = history.videos.filter(
-        (item) => !item.video.equals(videoId)
+        (item) => !item._id.equals(videoId)
     );
 
     // Add the video to the beginning of the array with current timestamp
