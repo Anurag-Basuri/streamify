@@ -46,7 +46,9 @@ const History = () => {
                 },
             });
             if (!response.ok) throw new Error("Failed to remove from history");
-            setHistory((prev) => prev.filter((item) => item._id !== videoId));
+            setHistory((prev) =>
+                prev.filter((item) => item.video._id !== videoId)
+            );
             setRemovingId(null);
         } catch (err) {
             setError(err.message);
@@ -69,6 +71,21 @@ const History = () => {
             setError(err.message);
             setShowClearModal(false);
         }
+    };
+
+    const formatDuration = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}:${minutes
+                .toString()
+                .padStart(2, "0")}:${remainingSeconds
+                .toString()
+                .padStart(2, "0")}`;
+        }
+        return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
 
     const ConfirmModal = ({
@@ -328,9 +345,9 @@ const History = () => {
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {history.map((video) => (
+                        {history.map((item) => (
                             <motion.div
-                                key={video._id}
+                                key={item.video._id}
                                 initial={{ scale: 0.95 }}
                                 animate={{ scale: 1 }}
                                 className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all 
@@ -338,18 +355,20 @@ const History = () => {
                             >
                                 <div className="relative aspect-video rounded-t-xl overflow-hidden">
                                     <img
-                                        src={video.thumbnail?.url}
-                                        alt={video.title}
+                                        src={item.video.thumbnail?.url}
+                                        alt={item.video.title}
                                         className="w-full h-full object-cover transform group-hover:scale-105 
                                         transition-transform duration-300"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
                                         <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
-                                            {video.duration}
+                                            {formatDuration(
+                                                item.video.duration
+                                            )}
                                         </div>
                                     </div>
                                     <Link
-                                        to={`/video/${video._id}`}
+                                        to={`/video/${item.video._id}`}
                                         className="absolute inset-0 flex items-center justify-center opacity-0 
                                         group-hover:opacity-100 transition-opacity"
                                     >
@@ -360,15 +379,15 @@ const History = () => {
                                 <div className="p-4">
                                     <div className="flex justify-between items-start mb-2">
                                         <Link
-                                            to={`/video/${video._id}`}
+                                            to={`/video/${item.video._id}`}
                                             className="font-bold text-gray-900 hover:text-purple-600 line-clamp-2 
                                             text-lg leading-tight"
                                         >
-                                            {video.title}
+                                            {item.video.title}
                                         </Link>
                                         <button
                                             onClick={() =>
-                                                setRemovingId(video._id)
+                                                setRemovingId(item.video._id)
                                             }
                                             className="text-gray-400 hover:text-red-600 p-1 -mt-1 -mr-1 
                                             transition-colors"
@@ -380,27 +399,27 @@ const History = () => {
 
                                     <div className="flex items-center gap-3 mt-3">
                                         <Link
-                                            to={`/channel/${video.owner?._id}`}
+                                            to={`/channel/${item.video.owner?._id}`}
                                             className="flex items-center gap-2 group shrink-0"
                                         >
                                             <img
-                                                src={video.owner?.avatar}
-                                                alt={video.owner?.userName}
+                                                src={item.video.owner?.avatar}
+                                                alt={item.video.owner?.userName}
                                                 className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                                             />
                                         </Link>
                                         <div className="min-w-0">
                                             <Link
-                                                to={`/channel/${video.owner?._id}`}
+                                                to={`/channel/${item.video.owner?._id}`}
                                                 className="text-sm font-medium text-gray-900 truncate 
                                                 hover:text-purple-600"
                                             >
-                                                {video.owner?.userName}
+                                                {item.video.owner?.userName}
                                             </Link>
                                             <p className="text-sm text-gray-500 truncate">
-                                                {video.views} views •{" "}
+                                                {item.video.views} views •{" "}
                                                 {formatDistanceToNow(
-                                                    new Date(video.createdAt),
+                                                    new Date(item.watchedAt),
                                                     { addSuffix: true }
                                                 )}
                                             </p>
@@ -408,13 +427,13 @@ const History = () => {
                                     </div>
                                 </div>
 
-                                {removingId === video._id && (
+                                {removingId === item.video._id && (
                                     <ConfirmModal
                                         title="Remove from History?"
                                         message="This action will remove this video from your watch history."
                                         onCancel={() => setRemovingId(null)}
                                         onConfirm={() =>
-                                            handleRemove(video._id)
+                                            handleRemove(item.video._id)
                                         }
                                     />
                                 )}
