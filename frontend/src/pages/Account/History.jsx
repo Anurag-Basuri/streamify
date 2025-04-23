@@ -3,9 +3,31 @@ import { AuthContext } from "../../services/AuthContext.jsx";
 import { Link } from "react-router-dom";
 import { FaClock, FaTrash, FaPlayCircle } from "react-icons/fa";
 import { GiHourglass } from "react-icons/gi";
-import { formatDistanceToNow } from "date-fns";
+import {
+    formatDistanceToNow,
+    isToday,
+    isYesterday,
+    subDays,
+    format,
+} from "date-fns";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
+
+// Updated color palette
+const colors = {
+    background: "bg-gray-50",
+    foreground: "bg-white",
+    primary: "text-indigo-700",
+    primaryBg: "bg-indigo-700",
+    primaryHover: "hover:bg-indigo-800",
+    accent: "border-gray-200",
+    muted: "text-gray-600",
+    destructive: "text-rose-600",
+    destructiveBg: "bg-rose-600",
+    destructiveHover: "hover:bg-rose-700",
+    cardBg: "bg-white",
+    cardBorder: "border-gray-200",
+};
 
 const ConfirmModal = ({
     title,
@@ -16,23 +38,27 @@ const ConfirmModal = ({
     danger = false,
 }) => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-background rounded-xl p-6 max-w-md w-full border border-accent">
-            <h3 className="text-xl font-bold mb-2 text-primary">{title}</h3>
-            <p className="text-muted mb-6">{message}</p>
+        <div
+            className={`${colors.foreground} rounded-xl p-6 max-w-md w-full shadow-xl ${colors.cardBorder}`}
+        >
+            <h3 className={`text-xl font-bold mb-2 ${colors.primary}`}>
+                {title}
+            </h3>
+            <p className={`${colors.muted} mb-6`}>{message}</p>
             <div className="flex justify-end gap-4">
                 <button
                     onClick={onCancel}
-                    className="px-4 py-2 text-muted hover:text-primary transition-colors"
+                    className={`px-4 py-2 ${colors.muted} hover:${colors.primary} transition-colors rounded-lg`}
                 >
                     Cancel
                 </button>
                 <button
                     onClick={onConfirm}
-                    className={`px-4 py-2 rounded-lg ${
+                    className={`px-4 py-2 rounded-lg text-white ${
                         danger
-                            ? "bg-destructive hover:bg-destructive-hover"
-                            : "bg-primary hover:bg-primary-hover"
-                    } text-white transition-colors`}
+                            ? `${colors.destructiveBg} ${colors.destructiveHover}`
+                            : `${colors.primaryBg} ${colors.primaryHover}`
+                    } transition-colors`}
                 >
                     {confirmText}
                 </button>
@@ -99,6 +125,33 @@ const History = () => {
         }
     };
 
+    const groupHistoryByDate = (history) => {
+        return history.reduce((acc, item) => {
+            const date = new Date(item.watchedAt);
+            let group;
+
+            if (isToday(date)) {
+                group = "Today";
+            } else if (isYesterday(date)) {
+                group = "Yesterday";
+            } else if (date > subDays(new Date(), 7)) {
+                group = "This Week";
+            } else {
+                group = format(date, "MMMM yyyy");
+            }
+
+            if (!acc[group]) acc[group] = [];
+            acc[group].push(item);
+            return acc;
+        }, {});
+    };
+
+    const formatTime = (date) => {
+        return format(new Date(date), "h:mm a");
+    };
+
+    const groupedHistory = groupHistoryByDate(history);
+
     const handleClearAll = async () => {
         try {
             const response = await fetch("/api/v1/history/clear", {
@@ -132,19 +185,27 @@ const History = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background p-8">
+            <div className={`min-h-screen ${colors.background} p-4 md:p-8`}>
                 <div className="max-w-7xl mx-auto animate-pulse">
-                    <div className="h-8 bg-muted/20 rounded-full w-48 mb-8" />
+                    <div
+                        className={`h-8 ${colors.primaryBg}/20 rounded-full w-48 mb-8`}
+                    />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
                             <div
                                 key={i}
-                                className="bg-foreground/5 rounded-xl shadow-lg"
+                                className={`${colors.cardBg} rounded-xl shadow-sm ${colors.cardBorder}`}
                             >
-                                <div className="aspect-video bg-muted/20 rounded-t-xl" />
+                                <div
+                                    className={`aspect-video ${colors.primaryBg}/20 rounded-t-xl`}
+                                />
                                 <div className="p-4 space-y-3">
-                                    <div className="h-4 bg-muted/20 rounded-full w-3/4" />
-                                    <div className="h-4 bg-muted/20 rounded-full w-1/2" />
+                                    <div
+                                        className={`h-4 ${colors.primaryBg}/20 rounded-full w-3/4`}
+                                    />
+                                    <div
+                                        className={`h-4 ${colors.primaryBg}/20 rounded-full w-1/2`}
+                                    />
                                 </div>
                             </div>
                         ))}
@@ -156,16 +217,24 @@ const History = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="max-w-md text-center bg-destructive/10 p-8 rounded-2xl shadow-lg border border-destructive/20">
-                    <GiHourglass className="w-16 h-16 text-destructive mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold text-destructive mb-2">
+            <div
+                className={`min-h-screen ${colors.background} flex items-center justify-center p-4`}
+            >
+                <div
+                    className={`max-w-md text-center ${colors.destructiveBg}/10 p-8 rounded-2xl shadow-lg ${colors.cardBorder}`}
+                >
+                    <GiHourglass
+                        className={`w-16 h-16 ${colors.destructive} mx-auto mb-4`}
+                    />
+                    <h2
+                        className={`text-2xl font-bold ${colors.destructive} mb-2`}
+                    >
                         History Load Failed
                     </h2>
-                    <p className="text-destructive mb-6">{error}</p>
+                    <p className={`${colors.destructive} mb-6`}>{error}</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="bg-destructive text-white px-6 py-2 rounded-lg hover:bg-destructive-hover transition-colors"
+                        className={`${colors.destructiveBg} text-white px-6 py-2 rounded-lg ${colors.destructiveHover} transition-colors`}
                     >
                         Try Again
                     </button>
@@ -179,7 +248,7 @@ const History = () => {
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="min-h-screen bg-background flex items-center justify-center p-8"
+                className={`min-h-screen ${colors.background} flex items-center justify-center p-8`}
             >
                 <div className="max-w-2xl text-center">
                     <motion.div
@@ -188,12 +257,10 @@ const History = () => {
                         transition={{ type: "spring", stiffness: 100 }}
                         className="relative mb-12 mx-auto w-72 h-72"
                     >
-                        {/* Animated timeline illustration */}
                         <div className="absolute inset-0">
-                            {/* Main timeline line */}
-                            <div className="absolute left-1/2 -translate-x-1/2 w-1 h-full bg-primary/20 rounded-full" />
-
-                            {/* Floating time markers */}
+                            <div
+                                className={`absolute left-1/2 -translate-x-1/2 w-1 h-full ${colors.primaryBg}/20 rounded-full`}
+                            />
                             {[...Array(5)].map((_, i) => (
                                 <motion.div
                                     key={i}
@@ -211,15 +278,15 @@ const History = () => {
                                     style={{ top: `${20 + i * 15}%` }}
                                 >
                                     <div
-                                        className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center 
-                                    border-2 border-primary/30 shadow-sm"
+                                        className={`w-8 h-8 ${colors.primaryBg}/10 rounded-full flex items-center justify-center 
+                                    border-2 ${colors.primaryBg}/30 shadow-sm`}
                                     >
-                                        <FaClock className="text-primary/50 w-4 h-4" />
+                                        <FaClock
+                                            className={`${colors.primaryBg}/50 w-4 h-4`}
+                                        />
                                     </div>
                                 </motion.div>
                             ))}
-
-                            {/* Floating video card */}
                             <motion.div
                                 initial={{ y: 0, scale: 0 }}
                                 animate={{
@@ -234,10 +301,18 @@ const History = () => {
                                 }}
                                 className="absolute left-1/2 -translate-x-1/2 top-1/2"
                             >
-                                <div className="bg-foreground/5 p-3 rounded-lg shadow-lg transform rotate-3">
-                                    <div className="w-32 h-20 bg-primary/10 rounded-md mb-2" />
-                                    <div className="h-2 bg-primary/10 rounded-full mb-1 w-3/4" />
-                                    <div className="h-2 bg-primary/10 rounded-full w-1/2" />
+                                <div
+                                    className={`${colors.cardBg}/5 p-3 rounded-lg shadow-lg transform rotate-3`}
+                                >
+                                    <div
+                                        className={`w-32 h-20 ${colors.primaryBg}/10 rounded-md mb-2`}
+                                    />
+                                    <div
+                                        className={`h-2 ${colors.primaryBg}/10 rounded-full mb-1 w-3/4`}
+                                    />
+                                    <div
+                                        className={`h-2 ${colors.primaryBg}/10 rounded-full w-1/2`}
+                                    />
                                 </div>
                             </motion.div>
                         </div>
@@ -248,10 +323,14 @@ const History = () => {
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.2 }}
                     >
-                        <h2 className="text-4xl font-bold text-primary mb-4">
+                        <h2
+                            className={`text-4xl font-bold ${colors.primary} mb-4`}
+                        >
                             Your Time Machine is Empty
                         </h2>
-                        <p className="text-lg text-muted mb-8 max-w-xl mx-auto">
+                        <p
+                            className={`text-lg ${colors.muted} mb-8 max-w-xl mx-auto`}
+                        >
                             Every video you watch becomes part of your personal
                             timeline. Start exploring and let&apos;s build your
                             viewing history together!
@@ -262,9 +341,9 @@ const History = () => {
                         >
                             <Link
                                 to="/videos"
-                                className="inline-flex items-center gap-3 bg-primary text-white px-8 py-4 
-                                rounded-xl shadow-lg hover:bg-primary-hover transition-all duration-300 
-                                text-lg font-medium"
+                                className={`inline-flex items-center gap-3 ${colors.primaryBg} text-white px-8 py-4 
+                                rounded-xl shadow-lg ${colors.primaryHover} transition-all duration-300 
+                                text-lg font-medium`}
                             >
                                 <FaPlayCircle className="w-6 h-6" />
                                 Begin Your Journey
@@ -280,19 +359,23 @@ const History = () => {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen bg-background p-8"
+            className={`min-h-screen ${colors.background} p-4 md:p-8`}
         >
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary rounded-xl shadow-lg">
-                            <FaClock className="w-8 h-8 text-white" />
+                        <div
+                            className={`p-3 ${colors.primaryBg} rounded-xl shadow-lg text-white`}
+                        >
+                            <FaClock className="w-8 h-8" />
                         </div>
                         <div>
-                            <h1 className="text-4xl font-bold text-primary">
+                            <h1
+                                className={`text-3xl md:text-4xl font-bold ${colors.primary}`}
+                            >
                                 Viewing History
                             </h1>
-                            <p className="text-muted mt-1">
+                            <p className={`${colors.muted} mt-1`}>
                                 {history.length} watched{" "}
                                 {history.length === 1 ? "item" : "items"}
                             </p>
@@ -301,108 +384,130 @@ const History = () => {
                     {history.length > 0 && (
                         <button
                             onClick={() => setShowClearModal(true)}
-                            className="bg-destructive/10 text-destructive px-4 py-2 rounded-lg hover:bg-destructive/20 transition-colors"
+                            className={`${colors.destructiveBg}/10 ${colors.destructive} px-4 py-2 rounded-lg hover:${colors.destructiveBg}/20 transition-colors`}
                         >
                             Clear All
                         </button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {history.map((item) => (
-                        <motion.div
-                            key={item.video._id}
-                            initial={{ scale: 0.95 }}
-                            animate={{ scale: 1 }}
-                            className="bg-foreground/5 rounded-xl shadow-lg hover:shadow-2xl transition-all 
-                            duration-300 transform hover:-translate-y-2 group relative border border-accent/20"
-                        >
-                            <div className="relative aspect-video rounded-t-xl overflow-hidden">
-                                <img
-                                    src={item.video.thumbnail?.url}
-                                    alt={item.video.title}
-                                    loading="lazy"
-                                    className="w-full h-full object-cover transform group-hover:scale-105 
-                                    transition-transform duration-300"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                                    <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
-                                        {formatDuration(item.video.duration)}
-                                    </div>
-                                </div>
-                                <Link
-                                    to={`/video/${item.video._id}`}
-                                    className="absolute inset-0 flex items-center justify-center opacity-0 
-                                    group-hover:opacity-100 transition-opacity"
+                {Object.entries(groupedHistory).map(([group, items]) => (
+                    <div key={group} className="mb-12">
+                        <div className="flex items-center mb-6">
+                            <div
+                                className={`h-px ${colors.cardBorder} flex-1`}
+                            />
+                            <h2
+                                className={`mx-4 text-lg md:text-xl font-semibold ${colors.primary} ${colors.foreground} px-4 py-2 rounded-lg shadow-sm ${colors.cardBorder}`}
+                            >
+                                {group}
+                            </h2>
+                            <div
+                                className={`h-px ${colors.cardBorder} flex-1`}
+                            />
+                        </div>
+
+                        <div className="space-y-4">
+                            {items.map((item) => (
+                                <motion.div
+                                    key={item.video._id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`group relative flex flex-col md:flex-row gap-4 items-start p-4 rounded-xl hover:${colors.primaryBg}/5 transition-colors ${colors.cardBorder} ${colors.cardBg} shadow-sm hover:shadow-md`}
                                 >
-                                    <FaPlayCircle className="w-16 h-16 text-white drop-shadow-lg" />
-                                </Link>
-                            </div>
-
-                            <div className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <Link
-                                        to={`/video/${item.video._id}`}
-                                        className="font-bold text-primary hover:text-primary-hover line-clamp-2 
-                                        text-lg leading-tight"
-                                    >
-                                        {item.video.title}
-                                    </Link>
-                                    <button
-                                        onClick={() =>
-                                            setRemovingId(item.video._id)
-                                        }
-                                        className="text-muted hover:text-destructive p-1 -mt-1 -mr-1 
-                                        transition-colors"
-                                        aria-label="Remove from history"
-                                    >
-                                        <FaTrash className="w-5 h-5" />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-3 mt-3">
-                                    <Link
-                                        to={`/channel/${item.video.owner?._id}`}
-                                        className="flex items-center gap-2 group shrink-0"
-                                    >
+                                    <div className="relative w-full md:w-48 aspect-video rounded-lg overflow-hidden">
                                         <img
-                                            src={item.video.owner?.avatar}
-                                            alt={item.video.owner?.userName}
-                                            className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
+                                            src={item.video.thumbnail?.url}
+                                            alt={item.video.title}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                                         />
-                                    </Link>
-                                    <div className="min-w-0">
+                                        <Link
+                                            to={`/video/${item.video._id}`}
+                                            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40"
+                                        >
+                                            <FaPlayCircle className="w-12 h-12 text-white/90 hover:text-white transition-colors" />
+                                        </Link>
+                                        <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
+                                            {formatDuration(
+                                                item.video.duration
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0 w-full">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <Link
+                                                to={`/video/${item.video._id}`}
+                                                className={`text-lg font-semibold ${colors.primary} hover:underline line-clamp-2`}
+                                            >
+                                                {item.video.title}
+                                            </Link>
+                                            <button
+                                                onClick={() =>
+                                                    setRemovingId(
+                                                        item.video._id
+                                                    )
+                                                }
+                                                className={`${colors.muted} hover:${colors.destructive} p-1 transition-colors`}
+                                            >
+                                                <FaTrash className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
                                         <Link
                                             to={`/channel/${item.video.owner?._id}`}
-                                            className="text-sm font-medium text-primary truncate 
-                                            hover:text-primary-hover"
+                                            className="flex items-center gap-3 mt-3"
                                         >
-                                            {item.video.owner?.userName}
+                                            <img
+                                                src={item.video.owner?.avatar}
+                                                alt={item.video.owner?.userName}
+                                                className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                                            />
+                                            <span
+                                                className={`text-sm font-medium ${colors.primary} hover:underline`}
+                                            >
+                                                {item.video.owner?.userName}
+                                            </span>
                                         </Link>
-                                        <p className="text-sm text-muted truncate">
-                                            {item.video.views} views •{" "}
-                                            {formatDistanceToNow(
-                                                new Date(item.watchedAt),
-                                                { addSuffix: true }
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {removingId === item.video._id && (
-                                <ConfirmModal
-                                    title="Remove from History?"
-                                    message="This action will remove this video from your watch history."
-                                    onCancel={() => setRemovingId(null)}
-                                    onConfirm={() =>
-                                        handleRemove(item.video._id)
-                                    }
-                                />
-                            )}
-                        </motion.div>
-                    ))}
-                </div>
+                                        <div className="flex flex-wrap items-center gap-3 mt-3 text-sm">
+                                            <span
+                                                className={`${colors.muted} bg-gray-100 px-2 py-1 rounded-md`}
+                                            >
+                                                {item.video.views} views
+                                            </span>
+                                            <span
+                                                className={`${colors.muted} bg-gray-100 px-2 py-1 rounded-md`}
+                                            >
+                                                {formatTime(item.watchedAt)}
+                                            </span>
+                                            <span
+                                                className={`${colors.muted} bg-gray-100 px-2 py-1 rounded-md`}
+                                            >
+                                                {formatDistanceToNow(
+                                                    new Date(item.watchedAt),
+                                                    { addSuffix: true }
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {removingId === item.video._id && (
+                                        <ConfirmModal
+                                            title="Remove from History?"
+                                            message="This action will remove this video from your watch history."
+                                            onCancel={() => setRemovingId(null)}
+                                            onConfirm={() =>
+                                                handleRemove(item.video._id)
+                                            }
+                                        />
+                                    )}
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
 
                 {showClearModal && (
                     <ConfirmModal

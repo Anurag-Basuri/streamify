@@ -30,8 +30,8 @@ const addVideoToHistory = asynchandler(async (req, res) => {
     }
 
     // Remove the video if it already exists in history
-    history.videos = history.videos.filter(
-        (item) => !item._id.equals(videoId)
+    history.videos = history.videos.filter((item) =>
+        item.video.toString() !== videoId
     );
 
     // Add the video to the beginning of the array with current timestamp
