@@ -16,7 +16,7 @@ import PropTypes from "prop-types";
 // Updated color palette to match project theme
 const colors = {
     background: "bg-background",
-    foreground: "bg-foreground",
+    foreground: "bg-background",
     primary: "text-white",
     primaryBg: "bg-primary",
     primaryHover: "hover:bg-primary-hover",
@@ -25,7 +25,7 @@ const colors = {
     destructive: "text-white",
     destructiveBg: "bg-destructive",
     destructiveHover: "hover:bg-destructive-hover",
-    cardBg: "bg-foreground",
+    cardBg: "bg-background",
     cardBorder: "border-accent",
     textPrimary: "text-white",
     textMuted: "text-white/80",
@@ -43,7 +43,7 @@ const ConfirmModal = ({
 }) => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div
-            className={`${colors.foreground} rounded-xl p-6 max-w-md w-full shadow-xl ${colors.cardBorder}`}
+            className={`${colors.background} rounded-xl p-6 max-w-md w-full shadow-xl ${colors.cardBorder}`}
         >
             <h3 className={`text-xl font-bold mb-2 ${colors.textWhite}`}>
                 {title}
