@@ -13,20 +13,24 @@ import {
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 
-// Updated color palette
+// Updated color palette to match project theme
 const colors = {
-    background: "bg-gray-50",
-    foreground: "bg-white",
-    primary: "text-indigo-700",
-    primaryBg: "bg-indigo-700",
-    primaryHover: "hover:bg-indigo-800",
-    accent: "border-gray-200",
-    muted: "text-gray-600",
-    destructive: "text-rose-600",
-    destructiveBg: "bg-rose-600",
-    destructiveHover: "hover:bg-rose-700",
-    cardBg: "bg-white",
-    cardBorder: "border-gray-200",
+    background: "bg-background",
+    foreground: "bg-foreground",
+    primary: "text-white",
+    primaryBg: "bg-primary",
+    primaryHover: "hover:bg-primary-hover",
+    accent: "border-accent",
+    muted: "text-white/80",
+    destructive: "text-white",
+    destructiveBg: "bg-destructive",
+    destructiveHover: "hover:bg-destructive-hover",
+    cardBg: "bg-foreground",
+    cardBorder: "border-accent",
+    textPrimary: "text-white",
+    textMuted: "text-white/80",
+    textDestructive: "text-white",
+    textWhite: "text-white",
 };
 
 const ConfirmModal = ({
@@ -41,20 +45,20 @@ const ConfirmModal = ({
         <div
             className={`${colors.foreground} rounded-xl p-6 max-w-md w-full shadow-xl ${colors.cardBorder}`}
         >
-            <h3 className={`text-xl font-bold mb-2 ${colors.primary}`}>
+            <h3 className={`text-xl font-bold mb-2 ${colors.textWhite}`}>
                 {title}
             </h3>
-            <p className={`${colors.muted} mb-6`}>{message}</p>
+            <p className={`${colors.textWhite}/80 mb-6`}>{message}</p>
             <div className="flex justify-end gap-4">
                 <button
                     onClick={onCancel}
-                    className={`px-4 py-2 ${colors.muted} hover:${colors.primary} transition-colors rounded-lg`}
+                    className={`px-4 py-2 ${colors.textWhite}/80 hover:${colors.textWhite} transition-colors rounded-lg`}
                 >
                     Cancel
                 </button>
                 <button
                     onClick={onConfirm}
-                    className={`px-4 py-2 rounded-lg text-white ${
+                    className={`px-4 py-2 rounded-lg ${colors.textWhite} ${
                         danger
                             ? `${colors.destructiveBg} ${colors.destructiveHover}`
                             : `${colors.primaryBg} ${colors.primaryHover}`
