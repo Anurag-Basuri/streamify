@@ -263,6 +263,8 @@ const Home = () => {
                                                   video._id
                                               );
                                     }}
+                                    inWatchLater={watchLater.isInWatchLater(video._id)}
+                                    watchLaterLoading={watchLater.loading}
                                 />
                             ))}
                         </div>
@@ -299,6 +301,8 @@ const Home = () => {
                                                     video._id
                                                 );
                                       }}
+                                      inWatchLater={watchLater.isInWatchLater(video._id)}
+                                      watchLaterLoading={watchLater.loading}
                                   />
                               ))}
                     </div>
@@ -392,14 +396,12 @@ const Home = () => {
     );
 };
 
-const VideoCard = ({ video, onAction }) => {
+const VideoCard = ({ video, onAction, inWatchLater, watchLaterLoading }) => {
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
-    const { isInWatchLater, loading } = useWatchLater(useContext(AuthContext).user);
-    const inWatchLater = isInWatchLater(video._id);
 
     return (
         <motion.div
@@ -428,10 +430,10 @@ const VideoCard = ({ video, onAction }) => {
                                 e.preventDefault();
                                 onAction("watchlater", video._id);
                             }}
-                            disabled={loading}
+                            disabled={watchLaterLoading}
                         >
                             <FaClock className="text-lg" />
-                            {loading && <span className="absolute inset-0 flex items-center justify-center"><span className="loader" /></span>}
+                            {watchLaterLoading && <span className="absolute inset-0 flex items-center justify-center"><span className="loader" /></span>}
                         </button>
                         <button
                             className="p-2 hover:bg-gray-800/50 rounded-full"
@@ -533,6 +535,8 @@ VideoCard.propTypes = {
         }),
     }).isRequired,
     onAction: PropTypes.func.isRequired,
+    inWatchLater: PropTypes.bool.isRequired,
+    watchLaterLoading: PropTypes.bool.isRequired,
 };
 
 const VideoCardSkeleton = () => (
