@@ -2,8 +2,9 @@ import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import ReactPlayer from "react-player";
-import { FaSpinner } from "react-icons/fa";
+import { FaSpinner, FaClock } from "react-icons/fa";
 import { AuthContext } from "../services/AuthContext.jsx";
+import useWatchLater from "../hooks/useWatchLater";
 
 const VideoPlayer = () => {
     const { user } = useContext(AuthContext);
@@ -11,6 +12,7 @@ const VideoPlayer = () => {
     const [video, setVideo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const watchLater = useWatchLater(user);
 
     // Get video ID from URL parameters
     useEffect(() => {
@@ -32,6 +34,7 @@ const VideoPlayer = () => {
         };
 
         fetchVideo();
+        watchLater.fetchWatchLater();
     }, [videoID]);
 
     // Handle video play event to increment view count and add to history
@@ -64,6 +67,16 @@ const VideoPlayer = () => {
         
     };
 
+    // Handle Watch Later button click
+    const handleWatchLater = async () => {
+        if (!video?._id) return;
+        if (watchLater.isInWatchLater(video._id)) {
+            await watchLater.removeFromWatchLater(video._id);
+        } else {
+            await watchLater.addToWatchLater(video._id);
+        }
+    };
+
     // Handle video ID from URL parameters
     if (loading) {
         return (
@@ -82,10 +95,12 @@ const VideoPlayer = () => {
         );
     }
 
+    const inWatchLater = watchLater.isInWatchLater(video._id);
+
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
             <div className="max-w-7xl mx-auto">
-                <div className="aspect-video bg-black rounded-xl overflow-hidden">
+                <div className="aspect-video bg-black rounded-xl overflow-hidden relative">
                     {video?.videoFile?.url && (
                         <ReactPlayer
                             onPlay={handlePlay}
@@ -103,6 +118,18 @@ const VideoPlayer = () => {
                             }}
                         />
                     )}
+                    {/* Watch Later Button Overlay */}
+                    <button
+                        className={`absolute top-4 right-4 z-10 p-3 rounded-full shadow-lg transition-colors text-lg ${inWatchLater ? 'bg-yellow-400 text-white' : 'bg-gray-900/80 text-yellow-400 hover:bg-yellow-500'}`}
+                        title={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
+                        onClick={handleWatchLater}
+                        disabled={watchLater.loading}
+                    >
+                        <FaClock />
+                        {watchLater.loading && (
+                            <span className="ml-2 animate-spin"><FaSpinner /></span>
+                        )}
+                    </button>
                 </div>
 
                 <div className="mt-8 space-y-4">

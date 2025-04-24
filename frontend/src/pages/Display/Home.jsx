@@ -25,6 +25,8 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";
 import PropTypes from "prop-types";
+import useWatchLater from "../../hooks/useWatchLater";
+import { Tooltip } from "react-tooltip";
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -36,35 +38,37 @@ const Home = () => {
     const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [playlists, setPlaylists] = useState([]);
     const [newPlaylistName, setNewPlaylistName] = useState("");
+    const watchLater = useWatchLater(user);
 
     // Fetch random videos
-    const fetchData = useCallback(async () => {
-        try {
-            const [videosRes, playlistsRes, historyRes] = await Promise.all([
-                axios.get("/api/v1/videos/", {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }),
-            ]);
-
-            setVideos(
-                videosRes.data.data.videos.map((video) => ({
-                    ...video,
-                    isLiked: video.likes?.includes?.(user?._id) || false,
-                }))
-            );
-        } catch (err) {
-            setError(err.message);
-            toast.error("Failed to load content");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user]);
-
     useEffect(() => {
+        const fetchData = useCallback(async () => {
+            try {
+                const [videosRes, playlistsRes, historyRes] = await Promise.all([
+                    axios.get("/api/v1/videos/", {
+                        headers: {
+                            Authorization: `Bearer ${user?.token}`,
+                        },
+                    }),
+                ]);
+
+                setVideos(
+                    videosRes.data.data.videos.map((video) => ({
+                        ...video,
+                        isLiked: video.likes?.includes?.(user?._id) || false,
+                    }))
+                );
+            } catch (err) {
+                setError(err.message);
+                toast.error("Failed to load content");
+            } finally {
+                setIsLoading(false);
+            }
+        }, [user]);
+
         fetchData();
-    }, [fetchData]);
+        watchLater.fetchWatchLater();
+    }, [user, watchLater]);
 
     // Video actions
     const handleVideoAction = async (action, videoId) => {
@@ -104,14 +108,21 @@ const Home = () => {
                     window.open(data.url, "_blank");
                     break;
                 }
-                case "watchlater": {
+                case "watchlater":
+                    if (watchLater.isInWatchLater(videoId)) {
+                        await watchLater.removeFromWatchLater(videoId);
+                    } else {
+                        await watchLater.addToWatchLater(videoId);
+                    }
+                    break;
+                case "playlist": {
                     const token = localStorage.getItem("accessToken");
                     if (!token) {
                         toast.error("You must be logged in to add to Watch Later.");
                         break;
                     }
                     await axios.post(
-                        `/api/v1/watchlater/${videoId}`,
+                        `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
                         {},
                         {
                             headers: {
@@ -119,7 +130,7 @@ const Home = () => {
                             },
                         }
                     );
-                    toast.success("Added to Watch Later!");
+                    toast.success("Added to playlist!");
                     break;
                 }
             }
@@ -387,6 +398,8 @@ const VideoCard = ({ video, onAction }) => {
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
+    const { isInWatchLater, loading } = useWatchLater(useContext(AuthContext).user);
+    const inWatchLater = isInWatchLater(video._id);
 
     return (
         <motion.div
@@ -408,15 +421,17 @@ const VideoCard = ({ video, onAction }) => {
                     <div className="flex justify-end gap-2">
                         {/* Watch Later Button */}
                         <button
-                            className="p-2 hover:bg-gray-800/70 rounded-full bg-gray-900/70 text-yellow-400"
-                            title="Add to Watch Later"
+                            className={`p-2 rounded-full ${inWatchLater ? 'bg-yellow-400 text-white' : 'bg-gray-900/70 text-yellow-400 hover:bg-gray-800/70'} relative`}
+                            title={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 onAction("watchlater", video._id);
                             }}
+                            disabled={loading}
                         >
                             <FaClock className="text-lg" />
+                            {loading && <span className="absolute inset-0 flex items-center justify-center"><span className="loader" /></span>}
                         </button>
                         <button
                             className="p-2 hover:bg-gray-800/50 rounded-full"
