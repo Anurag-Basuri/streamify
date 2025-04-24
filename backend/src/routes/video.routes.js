@@ -1,5 +1,5 @@
 import Router from "express";
-import { body, param } from "express-validator";
+import { body, param, query } from "express-validator";
 import { uploadFields } from "../middlewares/multer.middleware.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
 import {
@@ -8,9 +8,10 @@ import {
     update_video,
     delete_video,
     togglePublishStatus,
-    getRandomVideos,
     incrementViewCount,
     get_User_Videos,
+    getAllVideos,
+    generateDownloadUrl,
 } from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -20,7 +21,7 @@ const router = Router();
 router.get(
     "/",
     query("page").isInt({ min: 1 }).optional(),
-    query("limit").isInt({ min: 1, max: 50 }).optional(),
+    query("limit").isInt({ min: 1, max: 10 }).optional(),
     validateResult,
     getAllVideos
 );
