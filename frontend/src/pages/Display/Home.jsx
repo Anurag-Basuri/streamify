@@ -1,4 +1,4 @@
-import {
+import React, {
     useEffect,
     useState,
     useCallback,
@@ -250,6 +250,7 @@ const Home = () => {
     );
 };
 
+// Hero Section
 const HeroSection = () => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -282,14 +283,59 @@ const HeroSection = () => (
     </motion.div>
 );
 
+// History Section
+const HistorySection = ({ history, ...props }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-12"
+    >
+        <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-600 rounded-lg">
+                <FaHistory className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold">Continue Watching</h2>
+        </div>
+
+        {history.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {history.map((video) => (
+                    <VideoCard key={video._id} video={video} {...props} />
+                ))}
+            </div>
+        ) : (
+            <div className="text-center py-12 text-gray-400">
+                No watch history available
+            </div>
+        )}
+    </motion.div>
+);
+
+// Video Grid Section
+const VideoGridSection = ({ videoGridContent }) => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-8"
+    >
+        <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Trending Videos
+            </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {videoGridContent}
+        </div>
+    </motion.div>
+);
+
 const VideoCard = React.memo(
     ({ video, onAction, inWatchLater, watchLaterLoading }) => {
-        const formatDuration = (seconds) => {
-            if (seconds == null) return "0:00";
+        const formatDuration = useCallback((seconds) => {
             const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
+            const secs = seconds % 60;
             return `${mins}:${secs.toString().padStart(2, "0")}`;
-        };
+        }, []);
 
         return (
             <motion.div
@@ -303,54 +349,35 @@ const VideoCard = React.memo(
                         src={video.thumbnail?.url || "/default-thumbnail.jpg"}
                         alt={video.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        loading="lazy"
                     />
 
                     {/* Overlay Controls */}
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent p-4 flex flex-col justify-between">
-                        {/* Top Bar */}
                         <div className="flex justify-end gap-2">
-                            {/* Watch Later Button */}
-                            <button
-                                className={`p-2 rounded-full ${
-                                    inWatchLater
-                                        ? "bg-yellow-400 text-white"
-                                        : "bg-gray-900/70 text-yellow-400 hover:bg-gray-800/70"
-                                } relative`}
-                                title={
-                                    inWatchLater
-                                        ? "Remove from Watch Later"
-                                        : "Add to Watch Later"
-                                }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    onAction("watchlater", video._id);
-                                }}
-                                disabled={watchLaterLoading}
-                            >
-                                <FaClock className="text-lg" />
-                                {watchLaterLoading && (
-                                    <span className="absolute inset-0 flex items-center justify-center">
-                                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                    </span>
-                                )}
-                            </button>
+                            <WatchLaterButton
+                                inWatchLater={inWatchLater}
+                                watchLaterLoading={watchLaterLoading}
+                                onAction={onAction}
+                                videoId={video._id}
+                            />
                             <button
                                 className="p-2 hover:bg-gray-800/50 rounded-full"
-                                onClick={() => onAction("playlist")}
+                                onClick={() => onAction("playlist", video._id)}
+                                aria-label="More options"
                             >
                                 <FiMoreVertical className="text-xl" />
                             </button>
                         </div>
 
-                        {/* Bottom Bar */}
                         <div className="flex justify-between items-end">
                             <div className="bg-gray-900/80 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
                                 {formatDuration(video.duration)}
                             </div>
                             <button
                                 className="bg-gray-900/80 p-2 rounded-full backdrop-blur-sm hover:bg-purple-600 transition-colors"
-                                onClick={() => onAction("download")}
+                                onClick={() => onAction("download", video._id)}
+                                aria-label="Download video"
                             >
                                 <FaDownload className="text-lg" />
                             </button>
@@ -358,60 +385,8 @@ const VideoCard = React.memo(
                     </div>
                 </div>
 
-                {/* Video Info */}
-                <div className="p-4 space-y-3">
-                    <Link to={`/video/${video._id}`} className="block">
-                        <h3 className="font-semibold text-lg line-clamp-2 hover:text-purple-400 transition-colors">
-                            {video.title}
-                        </h3>
-                    </Link>
-
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-sm text-gray-400">
-                        <div className="flex items-center gap-4">
-                            <button
-                                className={`flex items-center gap-1 ${
-                                    video.isLiked
-                                        ? "text-red-500"
-                                        : "hover:text-white"
-                                }`}
-                                onClick={() => onAction("like")}
-                            >
-                                <FaHeart /> {video.likes}
-                            </button>
-                            <div className="flex items-center gap-1">
-                                <FaComment /> {video.commentsCount}
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <FaEye /> {video.views?.toLocaleString()}
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <FaClock />
-                            {new Date(video.createdAt).toLocaleDateString()}
-                        </div>
-                    </div>
-
-                    {/* Creator Info */}
-                    <div className="flex items-center gap-3 pt-3 border-t border-gray-700/50">
-                        <div className="shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                            {video.owner?.avatar ? (
-                                <img
-                                    src={video.owner.avatar}
-                                    alt="Creator"
-                                    className="rounded-full"
-                                />
-                            ) : (
-                                <FaUser className="text-gray-400" />
-                            )}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm truncate">
-                                {video.owner?.username || "Unknown Creator"}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                {/* Video Info Section */}
+                <VideoInfo video={video} onAction={onAction} />
             </motion.div>
         );
     }
