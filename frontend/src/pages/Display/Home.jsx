@@ -104,6 +104,24 @@ const Home = () => {
                     window.open(data.url, "_blank");
                     break;
                 }
+                case "watchlater": {
+                    const token = localStorage.getItem("accessToken");
+                    if (!token) {
+                        toast.error("You must be logged in to add to Watch Later.");
+                        break;
+                    }
+                    await axios.post(
+                        `/api/v1/watchlater/${videoId}`,
+                        {},
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
+                    toast.success("Added to Watch Later!");
+                    break;
+                }
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Action failed");
@@ -387,7 +405,19 @@ const VideoCard = ({ video, onAction }) => {
                 {/* Overlay Controls */}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent p-4 flex flex-col justify-between">
                     {/* Top Bar */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
+                        {/* Watch Later Button */}
+                        <button
+                            className="p-2 hover:bg-gray-800/70 rounded-full bg-gray-900/70 text-yellow-400"
+                            title="Add to Watch Later"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onAction("watchlater", video._id);
+                            }}
+                        >
+                            <FaClock className="text-lg" />
+                        </button>
                         <button
                             className="p-2 hover:bg-gray-800/50 rounded-full"
                             onClick={() => onAction("playlist")}
