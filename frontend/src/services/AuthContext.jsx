@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import {
     createContext,
     useState,
@@ -22,32 +24,27 @@ const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false); // Track initialization
+    const [isInitialized, setIsInitialized] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const intervalRef = useRef(null);
 
-    // Load user profile and update state
     const loadUserProfile = useCallback(async () => {
         setIsLoading(true);
         try {
             const profile = await getCurrentUser();
-            console.log("User profile loaded:", profile); // Log profile
             setUser(profile);
             return profile;
         } catch (error) {
-            console.error("Failed to load user profile:", error); // Log error
             setUser(null);
             throw error;
         } finally {
-            setIsLoading(false); // Ensure this is called
+            setIsLoading(false);
         }
     }, []);
 
-    // Handle token refresh
     const handleTokenRefresh = useCallback(async () => {
         if (isTokenRefreshing) return;
-
         setIsTokenRefreshing(true);
         try {
             const newToken = await refreshToken();
@@ -57,21 +54,20 @@ const AuthProvider = ({ children }) => {
             setUser(null);
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
-            navigate("/auth"); // Redirect to login on refresh failure
+            navigate("/auth");
         } finally {
             setIsTokenRefreshing(false);
         }
     }, [isTokenRefreshing, navigate]);
 
-    // Auth initialization
     useEffect(() => {
         let isMounted = true;
         const initializeAuth = async () => {
             try {
                 if (localStorage.getItem("accessToken")) {
-                    await loadUserProfile(); // This handles isLoading internally
+                    await loadUserProfile();
                 } else {
-                    setIsLoading(false); // No token, stop loading immediately
+                    setIsLoading(false);
                 }
             } catch (error) {
                 if (isMounted) {
@@ -91,12 +87,10 @@ const AuthProvider = ({ children }) => {
         };
     }, [navigate, loadUserProfile]);
 
-    // Token refresh interval
     useEffect(() => {
         if (user) {
-            intervalRef.current = setInterval(handleTokenRefresh, 300000); // Refresh every 5 minutes
+            intervalRef.current = setInterval(handleTokenRefresh, 300000);
         }
-
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
@@ -104,7 +98,6 @@ const AuthProvider = ({ children }) => {
         };
     }, [user, handleTokenRefresh]);
 
-    // OAuth callback handler
     useEffect(() => {
         const handleOAuthCallback = async () => {
             const params = new URLSearchParams(window.location.search);
@@ -117,8 +110,6 @@ const AuthProvider = ({ children }) => {
                     localStorage.setItem("refreshToken", refreshToken);
                     await loadUserProfile();
                     navigate(location.state?.from || "/profile");
-
-                    // Clear OAuth params from URL
                     window.history.replaceState(
                         {},
                         document.title,
@@ -127,7 +118,7 @@ const AuthProvider = ({ children }) => {
                 } catch (error) {
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
-                    navigate("/auth"); // Redirect to login on OAuth failure
+                    navigate("/auth");
                 }
             }
         };
@@ -135,32 +126,24 @@ const AuthProvider = ({ children }) => {
         handleOAuthCallback();
     }, [navigate, location, loadUserProfile]);
 
-    // Login function
     const login = useCallback(
         async (credentials) => {
             try {
                 const { accessToken, refreshToken } = await signIn(credentials);
-                console.log("Sign-in successful. Tokens:", {
-                    accessToken,
-                    refreshToken,
-                }); // Log tokens
                 localStorage.setItem("accessToken", accessToken);
                 localStorage.setItem("refreshToken", refreshToken);
                 await loadUserProfile();
-                console.log("Login successful. User:", user); // Log user
                 return true;
             } catch (error) {
-                console.error("Login failed:", error); // Log error
                 setUser(null);
                 localStorage.removeItem("accessToken");
                 localStorage.removeItem("refreshToken");
                 return false;
             }
         },
-        [loadUserProfile, user]
+        [loadUserProfile]
     );
 
-    // Register function
     const register = useCallback(
         async (userData) => {
             try {
@@ -176,7 +159,6 @@ const AuthProvider = ({ children }) => {
         [loadUserProfile]
     );
 
-    // Logout function
     const logoutUser = useCallback(async () => {
         try {
             await logout();
@@ -192,7 +174,6 @@ const AuthProvider = ({ children }) => {
         }
     }, [navigate]);
 
-    // Google login function
     const googleLogin = useCallback(async () => {
         try {
             await handleGoogleAuth();
@@ -201,16 +182,14 @@ const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    // Update user in context
     const updateUserInContext = useCallback((newUserData) => {
         setUser((prev) => ({ ...prev, ...newUserData }));
     }, []);
 
-    // Memoize context value to prevent unnecessary re-renders
     const authContextValue = useMemo(
         () => ({
             user,
-            isLoading: isLoading || !isInitialized, // Track initialization status
+            isLoading: isLoading || !isInitialized,
             isAuthenticated: !!user,
             login,
             register,
@@ -221,7 +200,7 @@ const AuthProvider = ({ children }) => {
         [
             user,
             isLoading,
-            isInitialized, // Add isInitialized to dependencies
+            isInitialized,
             login,
             register,
             logoutUser,
