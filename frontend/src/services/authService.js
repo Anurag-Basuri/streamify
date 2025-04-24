@@ -58,7 +58,8 @@ apiClient.interceptors.response.use(
 export const getCurrentUser = async () => {
     try {
         const response = await apiClient.get("/current-user");
-        return response.data.data;
+        const { token, refreshToken, ...userData } = response.data.data;
+        return userData;
     } catch (error) {
         if (error.response?.status === 401) {
             localStorage.removeItem("accessToken");

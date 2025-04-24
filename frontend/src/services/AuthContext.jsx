@@ -130,7 +130,8 @@ const AuthProvider = ({ children }) => {
                 const { accessToken, refreshToken } = await signIn(credentials);
                 localStorage.setItem("accessToken", accessToken);
                 localStorage.setItem("refreshToken", refreshToken);
-                await loadUserProfile();
+                const profile = await getCurrentUser();
+                setUser(profile);
                 return true;
             } catch (error) {
                 setUser(null);
