@@ -33,8 +33,7 @@ import PropTypes from "prop-types";
 import useWatchLater from "../../hooks/useWatchLater";
 
 const Home = () => {
-    const { user } = useContext(AuthContext);
-    console.log(user);
+    const { user, isAuthenticated } = useContext(AuthContext);
     const [videos, setVideos] = useState([]);
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,10 +52,12 @@ const Home = () => {
 
     const apiConfig = useMemo(
         () => ({
-            headers: { Authorization: `Bearer ${user?.token}` },
+            headers: isAuthenticated
+                ? { Authorization: `Bearer ${user?.token}` }
+                : {},
             signal: controller.current.signal,
         }),
-        [user?.token]
+        [isAuthenticated, user?.token]
     );
 
     // Fetch videos with pagination
@@ -71,7 +72,9 @@ const Home = () => {
 
                 const formattedVideos = data.data.videos.map((video) => ({
                     ...video,
-                    isLiked: video.likes?.includes(user?._id),
+                    isLiked: isAuthenticated
+                        ? video.likes?.includes(user?._id)
+                        : false,
                 }));
 
                 if (pageNum === 1) {
@@ -94,17 +97,17 @@ const Home = () => {
                 setLoadingMore(false);
             }
         },
-        [apiConfig, user?._id]
+        [apiConfig, isAuthenticated, user?._id]
     );
 
     // Fetch initial data
     const fetchInitialData = useCallback(async () => {
         try {
             const [historyRes, playlistsRes] = await Promise.all([
-                user
+                isAuthenticated
                     ? axios.get("/api/v1/users/history", apiConfig)
                     : { data: { data: { history: [] } } },
-                user
+                isAuthenticated
                     ? axios.get("/api/v1/playlists", apiConfig)
                     : { data: { data: { playlists: [] } } },
             ]);
@@ -121,7 +124,7 @@ const Home = () => {
                 );
             }
         }
-    }, [apiConfig, user, fetchVideos]);
+    }, [apiConfig, isAuthenticated, fetchVideos]);
 
     // Set up intersection observer for infinite scroll
     useEffect(() => {
@@ -162,16 +165,21 @@ const Home = () => {
     useEffect(() => {
         const loadData = async () => {
             await fetchInitialData();
-            if (user) watchLater.fetchWatchLater();
+            if (isAuthenticated) watchLater.fetchWatchLater();
         };
 
         loadData();
         return () => controller.current.abort();
-    }, [fetchInitialData, user, watchLater]);
+    }, [fetchInitialData, isAuthenticated, watchLater]);
 
     // Handle video actions
     const handleVideoAction = useCallback(
         async (action, videoId) => {
+            if (action !== "download" && !isAuthenticated) {
+                toast.error("Please login to perform this action");
+                return;
+            }
+
             try {
                 const video = videos.find((v) => v._id === videoId);
                 if (!video) return;
@@ -222,7 +230,7 @@ const Home = () => {
                 toast.error(error.response?.data?.message || "Action failed");
             }
         },
-        [videos, apiConfig, watchLater]
+        [videos, apiConfig, watchLater, isAuthenticated]
     );
 
     // Handle playlist operations
@@ -296,7 +304,7 @@ const Home = () => {
                 <HeroSection />
 
                 {/* History Section */}
-                {user && (
+                {isAuthenticated && (
                     <HistorySection
                         history={history}
                         watchLater={watchLater}
