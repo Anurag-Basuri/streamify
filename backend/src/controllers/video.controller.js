@@ -6,6 +6,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 import fs from "fs";
 import { compressVideo } from "../middlewares/multer.middleware.js";
+import paginate from "mongoose-paginate-v2";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
@@ -246,7 +247,7 @@ const getAllVideos = asynchandler(async (req, res) => {
     };
 
     const videos = await Video.paginate(
-        { isPublished: true, isDeleted: false }, 
+        { isPublished: true, isDeleted: false },
         options
     );
 
