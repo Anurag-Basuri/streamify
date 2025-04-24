@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useContext, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
@@ -6,7 +6,6 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import {
-    FaPlay,
     FaEye,
     FaClock,
     FaUser,
@@ -14,19 +13,17 @@ import {
     FaComment,
     FaDownload,
     FaPlus,
-    FaList,
     FaTrash,
     FaRegFolder,
     FaHistory,
 } from "react-icons/fa";
-import { FiChevronRight, FiMoreVertical } from "react-icons/fi";
+import { FiMoreVertical } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/autoplay";
 import PropTypes from "prop-types";
 import useWatchLater from "../../hooks/useWatchLater";
-import React from "react";
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -77,13 +74,25 @@ const Home = () => {
         try {
             switch (action) {
                 case "like": {
-                    const updatedVideos = videos.map(video => 
-                        video._id === videoId ? {
-                            ...video,
-                            isLiked: !video.isLiked,
-                            likes: video.isLiked ? video.likes - 1 : video.likes + 1
-                        } : video
-                    );
+                    const updatedVideos = videos.map(video => {
+                        if (video._id === videoId) {
+                            // Toggle the isLiked status
+                            const newIsLiked = !video.isLiked;
+                            
+                            // Handle likes count properly
+                            let newLikes = video.likes;
+                            if (typeof newLikes === 'number') {
+                                newLikes = newIsLiked ? newLikes + 1 : newLikes - 1;
+                            }
+                            
+                            return {
+                                ...video,
+                                isLiked: newIsLiked,
+                                likes: newLikes
+                            };
+                        }
+                        return video;
+                    });
                     setVideos(updatedVideos);
                     await axios.post(`/api/v1/likes/video/${videoId}`, {}, apiConfig);
                     break;
@@ -102,12 +111,14 @@ const Home = () => {
                     break;
                 }
                 case "playlist": {
-                    await axios.post(
-                        `/api/v1/playlists/${playlists[0]?._id}/videos/${selectedVideo._id}`,
-                        {},
-                        apiConfig
-                    );
-                    toast.success("Added to playlist!");
+                    // Set the selected video for the playlist modal
+                    const videoToAdd = videos.find(v => v._id === videoId);
+                    if (videoToAdd) {
+                        setSelectedVideo(videoToAdd);
+                        setShowPlaylistModal(true);
+                    } else {
+                        toast.error("Video not found");
+                    }
                     break;
                 }
                 default:
@@ -229,15 +240,7 @@ const Home = () => {
                                 <VideoCard
                                     key={video._id}
                                     video={video}
-                                    onAction={(action) => {
-                                        setSelectedVideo(video);
-                                        action === "playlist"
-                                            ? setShowPlaylistModal(true)
-                                            : handleVideoAction(
-                                                  action,
-                                                  video._id
-                                              );
-                                    }}
+                            onAction={(action) => handleVideoAction(action, video._id)}
                                     inWatchLater={watchLater.isInWatchLater(video._id)}
                                     watchLaterLoading={watchLater.loading}
                                 />
@@ -266,84 +269,14 @@ const Home = () => {
                 {/* Playlist Modal */}
                 <AnimatePresence>
                     {showPlaylistModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-                            onClick={() => setShowPlaylistModal(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.95 }}
-                                animate={{ scale: 1 }}
-                                className="bg-gray-800 rounded-2xl p-6 w-full max-w-md"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                    <FaRegFolder className="text-purple-400" />
-                                    Add to Playlist
-                                </h3>
-
-                                {/* Create New Playlist */}
-                                <div className="flex gap-2 mb-6">
-                                    <input
-                                        type="text"
-                                        placeholder="New playlist name"
-                                        className="flex-1 bg-gray-700 rounded-lg p-3"
-                                        value={newPlaylistName}
-                                        onChange={(e) =>
-                                            setNewPlaylistName(e.target.value)
-                                        }
-                                    />
-                                    <button
-                                        onClick={() =>
-                                            handlePlaylistOperations("create")
-                                        }
-                                        className="bg-purple-600 hover:bg-purple-700 px-4 rounded-lg"
-                                    >
-                                        <FaPlus />
-                                    </button>
-                                </div>
-
-                                {/* Existing Playlists */}
-                                <div className="space-y-4 max-h-96 overflow-y-auto">
-                                    {playlists.map((playlist) => (
-                                        <div
-                                            key={playlist._id}
-                                            className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
-                                        >
-                                            <span className="truncate">
-                                                {playlist.name}
-                                            </span>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        handlePlaylistOperations(
-                                                            "add",
-                                                            playlist._id
-                                                        )
-                                                    }
-                                                    className="text-purple-400 hover:text-purple-300"
-                                                >
-                                                    <FaPlus />
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handlePlaylistOperations(
-                                                            "delete",
-                                                            playlist._id
-                                                        )
-                                                    }
-                                                    className="text-red-400 hover:text-red-300"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        </motion.div>
+                        <PlaylistModal 
+                            isOpen={showPlaylistModal}
+                            onClose={() => setShowPlaylistModal(false)}
+                            playlists={playlists}
+                            newPlaylistName={newPlaylistName}
+                            setNewPlaylistName={setNewPlaylistName}
+                            onPlaylistAction={handlePlaylistOperations}
+                        />
                     )}
                 </AnimatePresence>
             </div>
@@ -353,8 +286,9 @@ const Home = () => {
 
 const VideoCard = React.memo(({ video, onAction, inWatchLater, watchLaterLoading }) => {
     const formatDuration = (seconds) => {
+        if (seconds == null) return "0:00";
         const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
+        const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
@@ -388,7 +322,11 @@ const VideoCard = React.memo(({ video, onAction, inWatchLater, watchLaterLoading
                             disabled={watchLaterLoading}
                         >
                             <FaClock className="text-lg" />
-                            {watchLaterLoading && <span className="absolute inset-0 flex items-center justify-center"><span className="loader" /></span>}
+                            {watchLaterLoading && (
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                                </span>
+                            )}
                         </button>
                         <button
                             className="p-2 hover:bg-gray-800/50 rounded-full"
@@ -480,7 +418,7 @@ VideoCard.propTypes = {
         }),
         duration: PropTypes.number.isRequired,
         isLiked: PropTypes.bool,
-        likes: PropTypes.number,
+        likes: PropTypes.oneOfType([PropTypes.number, PropTypes.array]),
         commentsCount: PropTypes.number,
         views: PropTypes.number,
         createdAt: PropTypes.string.isRequired,
@@ -589,5 +527,23 @@ const PlaylistModal = ({ isOpen, onClose, playlists, newPlaylistName, setNewPlay
         </motion.div>
     );
 };
+
+PlaylistModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    playlists: PropTypes.array.isRequired,
+    newPlaylistName: PropTypes.string.isRequired,
+    setNewPlaylistName: PropTypes.func.isRequired,
+    onPlaylistAction: PropTypes.func.isRequired
+};
+
+VideoCardSkeleton.propTypes = {
+    // No props needed for this component
+};
+
+// Add display names to components
+VideoCard.displayName = 'VideoCard';
+PlaylistModal.displayName = 'PlaylistModal';
+VideoCardSkeleton.displayName = 'VideoCardSkeleton';
 
 export default Home;
