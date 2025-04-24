@@ -53,11 +53,15 @@ const Home = () => {
     const apiConfig = useMemo(
         () => ({
             headers: isAuthenticated
-                ? { Authorization: `Bearer ${user?.token}` }
+                ? {
+                      Authorization: `Bearer ${localStorage.getItem(
+                          "accessToken"
+                      )}`,
+                  }
                 : {},
             signal: controller.current.signal,
         }),
-        [isAuthenticated, user?.token]
+        [isAuthenticated]
     );
 
     // Fetch videos with pagination

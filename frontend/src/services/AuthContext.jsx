@@ -48,17 +48,15 @@ const AuthProvider = ({ children }) => {
         setIsTokenRefreshing(true);
         try {
             const newToken = await refreshToken();
+            localStorage.setItem('accessToken', newToken);
             const profile = await getCurrentUser();
             setUser(profile);
         } catch (error) {
-            setUser(null);
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            navigate("/auth");
+            // ... existing error handling
         } finally {
             setIsTokenRefreshing(false);
         }
-    }, [isTokenRefreshing, navigate]);
+    }, [isTokenRefreshing]);
 
     useEffect(() => {
         let isMounted = true;
