@@ -2,14 +2,19 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { Video } from "../models/video.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+    uploadOnCloudinary,
+    generateCloudinarySignedUrl,
+} from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 import fs from "fs";
 import { compressVideo } from "../middlewares/multer.middleware.js";
-import paginate from "mongoose-paginate-v2";
 
 // Create a new video
 const create_new_video = asynchandler(async (req, res) => {
+    // Define compressedPath here so it's accessible in the catch block
+    let compressedPath;
+
     try {
         const videoFile = req.files?.videoFile?.[0];
         const thumbnail = req.files?.thumbnail?.[0];
@@ -25,7 +30,7 @@ const create_new_video = asynchandler(async (req, res) => {
         }
 
         // Process video
-        const compressedPath = `../../public/compressed_${Date.now()}_${videoFile.filename}`;
+        compressedPath = `../../public/compressed_${Date.now()}_${videoFile.filename}`;
         await compressVideo(videoFile.path, compressedPath);
 
         // Upload to Cloudinary
@@ -206,8 +211,18 @@ const delete_video = asynchandler(async (req, res) => {
 const togglePublishStatus = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
-    // Validate video ownership
+    // Validate video ID
+    if (!mongoose.isValidObjectId(videoID)) {
+        throw new APIerror(400, "Invalid Video ID");
+    }
+
+    // Find video and validate ownership
     const video = await Video.findById(videoID);
+
+    if (!video) {
+        throw new APIerror(404, "Video not found");
+    }
+
     if (!video.owner.equals(req.user._id)) {
         throw new APIerror(403, "Unauthorized to update this video");
     }
@@ -234,16 +249,16 @@ const togglePublishStatus = asynchandler(async (req, res) => {
 const getAllVideos = asynchandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const sort = req.query.sort || '-createdAt';
+    const sort = req.query.sort || "-createdAt";
 
     const options = {
         page,
         limit,
         sort,
         populate: {
-            path: 'owner',
-            select: 'userName avatar'
-        }
+            path: "owner",
+            select: "userName avatar",
+        },
     };
 
     const videos = await Video.paginate(
@@ -251,16 +266,18 @@ const getAllVideos = asynchandler(async (req, res) => {
         options
     );
 
-    res.status(200).json(new APIresponse(
-        200,
-        {
-            videos: videos.docs,
-            totalVideos: videos.totalDocs,
-            totalPages: videos.totalPages,
-            hasNextPage: videos.hasNextPage
-        },
-        "Videos fetched successfully"
-    ));
+    res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                videos: videos.docs,
+                totalVideos: videos.totalDocs,
+                totalPages: videos.totalPages,
+                hasNextPage: videos.hasNextPage,
+            },
+            "Videos fetched successfully"
+        )
+    );
 });
 
 // Increment in views
@@ -316,18 +333,26 @@ const get_User_Videos = asynchandler(async (req, res) => {
 // Generate download URL
 const generateDownloadUrl = asynchandler(async (req, res) => {
     const { videoID } = req.params;
-    
+
+    if (!mongoose.isValidObjectId(videoID)) {
+        throw new APIerror(400, "Invalid Video ID");
+    }
+
     const video = await Video.findById(videoID);
     if (!video) {
         throw new APIerror(404, "Video not found");
     }
 
     // Generate signed URL (implementation depends on your storage provider)
-    const signedUrl = await generateCloudinarySignedUrl(video.videoFile.publicId);
-    
-    return res.status(200).json(
-        new APIresponse(200, { url: signedUrl }, "Download URL generated")
+    const signedUrl = await generateCloudinarySignedUrl(
+        video.videoFile.publicId
     );
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, { url: signedUrl }, "Download URL generated")
+        );
 });
 
 export {
