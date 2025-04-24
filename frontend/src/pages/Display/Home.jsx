@@ -44,6 +44,12 @@ const Home = () => {
     const watchLater = useWatchLater(user);
     const controller = useRef(new AbortController());
 
+    // Infinite scroll state
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const observerTarget = useRef(null);
+
     const apiConfig = useMemo(
         () => ({
             headers: { Authorization: `Bearer ${user?.token}` },
@@ -52,11 +58,48 @@ const Home = () => {
         [user?.token]
     );
 
+    // Fetch videos with pagination
+    const fetchVideos = useCallback(
+        async (pageNum) => {
+            try {
+                setLoadingMore(pageNum > 1);
+                const { data } = await axios.get(
+                    `/api/v1/videos?page=${pageNum}&limit=12`,
+                    apiConfig
+                );
+
+                const formattedVideos = data.data.videos.map((video) => ({
+                    ...video,
+                    isLiked: video.likes?.includes(user?._id),
+                }));
+
+                if (pageNum === 1) {
+                    setVideos(formattedVideos);
+                } else {
+                    setVideos((prev) => [...prev, ...formattedVideos]);
+                }
+
+                setHasMore(
+                    data.data.videos.length > 0 && data.data.hasNextPage
+                );
+            } catch (error) {
+                if (!axios.isCancel(error)) {
+                    toast.error(
+                        error.response?.data?.message || "Failed to load videos"
+                    );
+                }
+            } finally {
+                setIsLoading(false);
+                setLoadingMore(false);
+            }
+        },
+        [apiConfig, user?._id]
+    );
+
     // Fetch initial data
     const fetchInitialData = useCallback(async () => {
         try {
-            const [videosRes, historyRes, playlistsRes] = await Promise.all([
-                axios.get("/api/v1/videos/", apiConfig),
+            const [historyRes, playlistsRes] = await Promise.all([
                 user
                     ? axios.get("/api/v1/users/history", apiConfig)
                     : { data: { data: { history: [] } } },
@@ -65,25 +108,54 @@ const Home = () => {
                     : { data: { data: { playlists: [] } } },
             ]);
 
-            setVideos(
-                videosRes.data.data.videos.map((video) => ({
-                    ...video,
-                    isLiked: video.likes?.includes(user?._id),
-                }))
-            );
-
             setHistory(historyRes.data.data.history);
             setPlaylists(playlistsRes.data.data.playlists);
+
+            // Initial videos fetch
+            await fetchVideos(1);
         } catch (error) {
             if (!axios.isCancel(error)) {
                 toast.error(
                     error.response?.data?.message || "Failed to load data"
                 );
             }
-        } finally {
-            setIsLoading(false);
         }
-    }, [apiConfig, user]);
+    }, [apiConfig, user, fetchVideos]);
+
+    // Set up intersection observer for infinite scroll
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (
+                    entries[0].isIntersecting &&
+                    hasMore &&
+                    !loadingMore &&
+                    !isLoading
+                ) {
+                    setPage((prevPage) => prevPage + 1);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
+
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
+            }
+        };
+    }, [hasMore, loadingMore, isLoading]);
+
+    // Fetch more videos when page changes
+    useEffect(() => {
+        if (page > 1) {
+            fetchVideos(page);
+        }
+    }, [page, fetchVideos]);
 
     // Fetch initial data
     useEffect(() => {
@@ -227,7 +299,6 @@ const Home = () => {
                     <HistorySection
                         history={history}
                         watchLater={watchLater}
-                        handleVideoAction={handleVideoAction}
                         onAction={handleVideoAction}
                         inWatchLater={watchLater.isInWatchLater}
                         watchLaterLoading={watchLater.loading}
@@ -235,7 +306,25 @@ const Home = () => {
                 )}
 
                 {/* Video Grid */}
-                <VideoGridSection videoGridContent={videoGridContent} />
+                <VideoGridSection
+                    videoGridContent={videoGridContent}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                />
+
+                {/* Observer element for infinite scroll */}
+                {hasMore && (
+                    <div
+                        ref={observerTarget}
+                        className="h-20 flex items-center justify-center"
+                    >
+                        {loadingMore && (
+                            <div className="loader-container">
+                                <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Playlist Modal */}
                 <AnimatePresence>
@@ -335,7 +424,7 @@ HistorySection.propTypes = {
 };
 
 // Video Grid Section
-const VideoGridSection = ({ videoGridContent }) => (
+const VideoGridSection = ({ videoGridContent, hasMore, loadingMore }) => (
     <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -349,11 +438,18 @@ const VideoGridSection = ({ videoGridContent }) => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {videoGridContent}
         </div>
+        {!hasMore && !loadingMore && videoGridContent.length > 0 && (
+            <p className="text-center text-gray-400 mt-8 py-4">
+                You've reached the end of the list
+            </p>
+        )}
     </motion.div>
 );
 
 VideoGridSection.propTypes = {
     videoGridContent: PropTypes.node.isRequired,
+    hasMore: PropTypes.bool,
+    loadingMore: PropTypes.bool,
 };
 
 // Video Card
