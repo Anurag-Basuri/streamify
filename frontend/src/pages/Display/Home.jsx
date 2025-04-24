@@ -69,10 +69,14 @@ const Home = () => {
         async (pageNum) => {
             try {
                 setLoadingMore(pageNum > 1);
-                const { data } = await axios.get(
-                    `/api/v1/videos?page=${pageNum}&limit=12`,
-                    apiConfig
-                );
+                const { data } = await axios.get(`/api/v1/videos`, {
+                    ...apiConfig,
+                    params: {
+                        page: pageNum,
+                        limit: 12,
+                        sort: "-createdAt", // Add sorting
+                    },
+                });
 
                 const formattedVideos = data.data.videos.map((video) => ({
                     ...video,
