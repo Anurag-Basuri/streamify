@@ -40,35 +40,34 @@ const Home = () => {
     const [newPlaylistName, setNewPlaylistName] = useState("");
     const watchLater = useWatchLater(user);
 
-    // Fetch random videos
+    const fetchData = useCallback(async () => {
+        try {
+            const [videosRes] = await Promise.all([
+                axios.get("/api/v1/videos/", {
+                    headers: {
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                }),
+            ]);
+
+            setVideos(
+                videosRes.data.data.videos.map((video) => ({
+                    ...video,
+                    isLiked: video.likes?.includes?.(user?._id) || false,
+                }))
+            );
+        } catch (err) {
+            setError(err.message);
+            toast.error("Failed to load content");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user]);
+
     useEffect(() => {
-        const fetchData = useCallback(async () => {
-            try {
-                const [videosRes, playlistsRes, historyRes] = await Promise.all([
-                    axios.get("/api/v1/videos/", {
-                        headers: {
-                            Authorization: `Bearer ${user?.token}`,
-                        },
-                    }),
-                ]);
-
-                setVideos(
-                    videosRes.data.data.videos.map((video) => ({
-                        ...video,
-                        isLiked: video.likes?.includes?.(user?._id) || false,
-                    }))
-                );
-            } catch (err) {
-                setError(err.message);
-                toast.error("Failed to load content");
-            } finally {
-                setIsLoading(false);
-            }
-        }, [user]);
-
         fetchData();
         watchLater.fetchWatchLater();
-    }, [user, watchLater]);
+    }, [fetchData, watchLater]);
 
     // Video actions
     const handleVideoAction = async (action, videoId) => {
