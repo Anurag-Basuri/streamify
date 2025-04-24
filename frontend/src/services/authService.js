@@ -26,58 +26,62 @@ apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("accessToken");
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
-  });
-  
+});
+
 // Response interceptor
 apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
-      const originalRequest = error.config;
-      
-      if (error.response?.status === 401 &&
-          !originalRequest._retry &&
-          !originalRequest.url.includes("/refresh-token")) {
-        originalRequest._retry = true;
-  
-        try {
-          const newToken = await refreshToken();
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return baseClient(originalRequest); // Use base client to avoid interceptor loop
-        } catch (refreshError) {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          window.location.href = "/auth";
+        const originalRequest = error.config;
+
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url.includes("/refresh-token")
+        ) {
+            originalRequest._retry = true;
+
+            try {
+                const newToken = await refreshToken();
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                return baseClient(originalRequest); // Use base client to avoid interceptor loop
+            } catch (refreshError) {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                window.location.href = "/auth";
+            }
         }
-      }
-      return Promise.reject(error);
+        return Promise.reject(error);
     }
-  );
-  
+);
+
 // API Functions
 export const getCurrentUser = async () => {
     try {
-      const response = await apiClient.get("/current-user");
-      return response.data.data;
+        const response = await apiClient.get("/current-user");
+        return response.data.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to fetch user");
+        throw new Error(
+            error.response?.data?.message || "Failed to fetch user"
+        );
     }
 };
-  
+
 export const refreshToken = async () => {
     try {
-      const response = await baseClient.post("/refresh-token", {
-        refreshToken: localStorage.getItem("refreshToken")
-      });
-      
-      const newToken = response.data.data?.token;
-      if (!newToken) throw new Error("No token received");
-      
-      localStorage.setItem("accessToken", newToken);
-      return newToken;
+        const response = await baseClient.post("/refresh-token", {
+            refreshToken: localStorage.getItem("refreshToken"),
+        });
+
+        const newToken = response.data.data?.token;
+        if (!newToken) throw new Error("No token received");
+
+        localStorage.setItem("accessToken", newToken);
+        return newToken;
     } catch (error) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      throw error;
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        throw error;
     }
 };
 

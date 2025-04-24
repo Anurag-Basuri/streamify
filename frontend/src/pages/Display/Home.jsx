@@ -34,6 +34,7 @@ import useWatchLater from "../../hooks/useWatchLater";
 
 const Home = () => {
     const { user } = useContext(AuthContext);
+    console.log(user);
     const [videos, setVideos] = useState([]);
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
