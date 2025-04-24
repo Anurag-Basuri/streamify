@@ -9,9 +9,20 @@ const watchlaterSchema = new Schema(
         },
         videos: [
             {
-                type: Schema.Types.ObjectId,
-                ref: "Video", // Reference to the Video model
-                required: true,
+                video: {
+                    type: Schema.Types.ObjectId,
+                    ref: "Video",
+                    required: true,
+                },
+                addedAt: {
+                    type: Date,
+                    required: true,
+                    default: Date.now,
+                },
+                remindAt: {
+                    type: Date,
+                    required: false,
+                }
             },
         ],
     },

@@ -1,12 +1,24 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { Link } from "react-router-dom";
-import { ClockIcon, TrashIcon, PlayIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, TrashIcon, PlayIcon, BellIcon } from "@heroicons/react/24/outline";
 import {
     PlayCircleIcon,
     DocumentMagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
 import emptyStateIllustration from "../../assets/watch-later-empty.svg";
+
+// Helper to format "time ago"
+function timeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return date.toLocaleDateString();
+}
 
 const Watchlater = () => {
     const [videos, setVideos] = useState([]);
@@ -14,6 +26,9 @@ const Watchlater = () => {
     const [error, setError] = useState("");
     const { user } = useContext(AuthContext);
     const [removingVideo, setRemovingVideo] = useState(null);
+    const [sortBy, setSortBy] = useState("recent");
+    const [filter, setFilter] = useState("all");
+    const [remindLater, setRemindLater] = useState({});
 
     useEffect(() => {
         const fetchWatchLater = async () => {
@@ -28,7 +43,14 @@ const Watchlater = () => {
                     throw new Error(
                         data.message || "Couldn't fetch watch later"
                     );
-                setVideos(data.data?.videos || []);
+                // Flatten videos: { video, addedAt, remindAt }
+                const flat = (data.data?.videos || []).map((item) => ({
+                    ...item.video,
+                    addedAt: item.addedAt,
+                    remindAt: item.remindAt,
+                    _watchlaterId: item._id,
+                }));
+                setVideos(flat);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -55,6 +77,33 @@ const Watchlater = () => {
             setRemovingVideo(null);
         }
     };
+
+    // Creative: Remind Me Later (snooze)
+    const handleRemindLater = async (videoId) => {
+        // For demo, just update UI for now
+        setRemindLater((prev) => ({ ...prev, [videoId]: true }));
+        // TODO: Optionally call backend to set remindAt
+    };
+
+    // Sort and filter
+    let filteredVideos = videos;
+    if (filter === "today") {
+        filteredVideos = filteredVideos.filter((v) => {
+            const d = new Date(v.addedAt);
+            const now = new Date();
+            return d.toDateString() === now.toDateString();
+        });
+    } else if (filter === "week") {
+        filteredVideos = filteredVideos.filter((v) => {
+            const d = new Date(v.addedAt);
+            const now = new Date();
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            return d >= weekAgo;
+        });
+    }
+    if (sortBy === "recent") {
+        filteredVideos = [...filteredVideos].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    }
 
     if (loading) {
         return (
@@ -112,12 +161,22 @@ const Watchlater = () => {
                             Watch Later
                         </h1>
                         <p className="text-gray-500 mt-1">
-                            {videos.length} saved videos
+                            {filteredVideos.length} saved videos
                         </p>
+                    </div>
+                    <div className="ml-auto flex gap-3">
+                        <select className="rounded-lg px-2 py-1 border text-gray-700" value={filter} onChange={e => setFilter(e.target.value)}>
+                            <option value="all">All</option>
+                            <option value="today">Added Today</option>
+                            <option value="week">This Week</option>
+                        </select>
+                        <select className="rounded-lg px-2 py-1 border text-gray-700" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                            <option value="recent">Recently Added</option>
+                        </select>
                     </div>
                 </div>
 
-                {videos.length === 0 ? (
+                {filteredVideos.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
                         <img
                             src={emptyStateIllustration}
@@ -142,114 +201,134 @@ const Watchlater = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {videos.map((video) => (
-                            <div
-                                key={video._id}
-                                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all 
-                                duration-300 transform hover:-translate-y-2 group relative"
-                            >
-                                <div className="relative aspect-video rounded-t-xl overflow-hidden">
-                                    <img
-                                        src={video.thumbnail?.url}
-                                        alt={video.title}
-                                        className="w-full h-full object-cover transform group-hover:scale-105 
-                                        transition-transform duration-300"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                                        <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
-                                            {video.duration}
+                        {filteredVideos.map((video) => {
+                            const isNew = video.addedAt && (new Date() - new Date(video.addedAt) < 24 * 60 * 60 * 1000);
+                            return (
+                                <div
+                                    key={video._id}
+                                    className={`bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all 
+                                    duration-300 transform hover:-translate-y-2 group relative ${isNew ? 'ring-2 ring-blue-400' : ''}`}
+                                >
+                                    <div className="relative aspect-video rounded-t-xl overflow-hidden">
+                                        <img
+                                            src={video.thumbnail?.url}
+                                            alt={video.title}
+                                            className="w-full h-full object-cover transform group-hover:scale-105 
+                                            transition-transform duration-300"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                                            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-sm">
+                                                {video.duration}
+                                            </div>
+                                            {isNew && (
+                                                <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full shadow">
+                                                    New
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center opacity-0 
+                                        group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <PlayIcon className="w-16 h-16 text-white drop-shadow-lg" />
                                         </div>
                                     </div>
-                                    <div
-                                        className="absolute inset-0 flex items-center justify-center opacity-0 
-                                    group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <PlayIcon className="w-16 h-16 text-white drop-shadow-lg" />
-                                    </div>
-                                </div>
 
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Link
-                                            to={`/video/${video._id}`}
-                                            className="font-bold text-gray-900 hover:text-blue-600 line-clamp-2 
-                                            text-lg leading-tight"
-                                        >
-                                            {video.title}
-                                        </Link>
-                                        <button
-                                            onClick={() =>
-                                                setRemovingVideo(video._id)
-                                            }
-                                            className="text-gray-400 hover:text-red-600 p-1 -mt-1 -mr-1 
-                                            transition-colors"
-                                            aria-label="Remove from watch later"
-                                        >
-                                            <TrashIcon className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                                    <div className="p-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <Link
+                                                to={`/video/${video._id}`}
+                                                className="font-bold text-gray-900 hover:text-blue-600 line-clamp-2 
+                                                text-lg leading-tight"
+                                            >
+                                                {video.title}
+                                            </Link>
+                                            <button
+                                                onClick={() =>
+                                                    setRemovingVideo(video._id)
+                                                }
+                                                className="text-gray-400 hover:text-red-600 p-1 -mt-1 -mr-1 
+                                                transition-colors"
+                                                aria-label="Remove from watch later"
+                                            >
+                                                <TrashIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
 
-                                    <div className="flex items-center gap-3 mt-3">
-                                        <Link
-                                            to={`/channel/${video.owner?._id}`}
-                                            className="flex items-center gap-2 group shrink-0"
-                                        >
-                                            <img
-                                                src={video.owner?.avatar}
-                                                alt={video.owner?.userName}
-                                                className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
-                                            />
-                                        </Link>
-                                        <div className="min-w-0">
+                                        <div className="flex items-center gap-3 mt-3">
                                             <Link
                                                 to={`/channel/${video.owner?._id}`}
-                                                className="text-sm font-medium text-gray-900 truncate 
-                                                hover:text-blue-600"
+                                                className="flex items-center gap-2 group shrink-0"
                                             >
-                                                {video.owner?.userName}
+                                                <img
+                                                    src={video.owner?.avatar}
+                                                    alt={video.owner?.userName}
+                                                    className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                                                />
                                             </Link>
-                                            <p className="text-sm text-gray-500 truncate">
-                                                {video.views} views •{" "}
-                                                {video.createdAt}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {removingVideo === video._id && (
-                                    <div
-                                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center 
-                                    justify-center p-4 backdrop-blur-sm"
-                                    >
-                                        <div className="bg-white p-6 rounded-lg text-center">
-                                            <h3 className="font-bold text-lg mb-4">
-                                                Remove from Watch Later?
-                                            </h3>
-                                            <div className="flex gap-4 justify-center">
-                                                <button
-                                                    onClick={() =>
-                                                        setRemovingVideo(null)
-                                                    }
-                                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 
-                                                    transition-colors"
+                                            <div className="min-w-0">
+                                                <Link
+                                                    to={`/channel/${video.owner?._id}`}
+                                                    className="text-sm font-medium text-gray-900 truncate 
+                                                    hover:text-blue-600"
                                                 >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        handleRemove(video._id)
-                                                    }
-                                                    className="px-4 py-2 bg-red-600 text-white rounded-lg 
-                                                    hover:bg-red-700 transition-colors"
-                                                >
-                                                    Remove
-                                                </button>
+                                                    {video.owner?.userName}
+                                                </Link>
+                                                <p className="text-sm text-gray-500 truncate">
+                                                    {video.views} views • {video.createdAt}
+                                                </p>
                                             </div>
                                         </div>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <span className="text-xs text-gray-400">
+                                                Added {video.addedAt ? timeAgo(video.addedAt) : ""}
+                                            </span>
+                                            <button
+                                                className={`ml-2 px-2 py-1 text-xs rounded-full flex items-center gap-1 ${remindLater[video._id] ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
+                                                onClick={() => handleRemindLater(video._id)}
+                                                disabled={remindLater[video._id]}
+                                            >
+                                                <BellIcon className="w-4 h-4" />
+                                                {remindLater[video._id] ? "Reminder Set" : "Remind Me Later"}
+                                            </button>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+
+                                    {removingVideo === video._id && (
+                                        <div
+                                            className="absolute inset-0 bg-black/50 rounded-xl flex items-center 
+                                        justify-center p-4 backdrop-blur-sm"
+                                        >
+                                            <div className="bg-white p-6 rounded-lg text-center">
+                                                <h3 className="font-bold text-lg mb-4">
+                                                    Remove from Watch Later?
+                                                </h3>
+                                                <div className="flex gap-4 justify-center">
+                                                    <button
+                                                        onClick={() =>
+                                                            setRemovingVideo(null)
+                                                        }
+                                                        className="px-4 py-2 text-gray-600 hover:text-gray-800 
+                                                        transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleRemove(video._id)
+                                                        }
+                                                        className="px-4 py-2 bg-red-600 text-white rounded-lg 
+                                                        hover:bg-red-700 transition-colors"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -22,14 +22,18 @@ const addVideoToWatchLater = asynchandler(async (req, res) => {
     if (!watchLater) {
         watchLater = await WatchLater.create({
             owner: req.user._id,
-            videos: [videoId],
+            videos: [
+                {
+                    video: videoId,
+                    addedAt: new Date(),
+                },
+            ],
         });
     } else {
-        if (watchLater.videos.includes(videoId)) {
+        if (watchLater.videos.some(v => v.video.toString() === videoId)) {
             throw new APIerror(400, "Video is already in the watch later list");
         }
-
-        watchLater.videos.push(videoId);
+        watchLater.videos.push({ video: videoId, addedAt: new Date() });
         await watchLater.save();
     }
 
@@ -51,54 +55,34 @@ const removeVideoFromWatchLater = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid video ID");
     }
 
-    const watchLater = await WatchLater.findOne({ owner: req.user._id });
-
-    if (!watchLater || !watchLater.videos.includes(videoId)) {
-        throw new APIerror(404, "Video not found in the watch later list");
+    let watchLater = await WatchLater.findOne({ owner: req.user._id });
+    if (!watchLater) {
+        throw new APIerror(404, "Watch later list not found");
     }
 
-    watchLater.videos = watchLater.videos.filter(
-        (id) => id.toString() !== videoId
-    );
+    const originalLength = watchLater.videos.length;
+    watchLater.videos = watchLater.videos.filter(v => v.video.toString() !== videoId);
+    if (watchLater.videos.length === originalLength) {
+        throw new APIerror(404, "Video not found in watch later list");
+    }
+
     await watchLater.save();
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                watchLater,
-                "Video successfully removed from watch later"
-            )
-        );
+    return res.status(200).json(new APIresponse(200, watchLater, "Video removed from watch later"));
 });
 
 const getWatchLaterVideos = asynchandler(async (req, res) => {
-    const watchLater = await WatchLater.findOne({
-        owner: req.user._id,
-    }).populate("videos");
-
-    if (!watchLater || watchLater.videos.length === 0) {
-        return res
-            .status(404)
-            .json(
-                new APIresponse(
-                    404,
-                    null,
-                    "No videos found in watch later list"
-                )
-            );
+    let watchLater = await WatchLater.findOne({ owner: req.user._id })
+        .populate({
+            path: "videos.video",
+            model: "Video",
+        });
+    if (!watchLater) {
+        watchLater = await WatchLater.create({ owner: req.user._id, videos: [] });
     }
-
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                watchLater.videos,
-                "Watch later videos fetched successfully"
-            )
-        );
+    // Sort videos by addedAt descending (most recent first)
+    const sortedVideos = watchLater.videos.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    return res.status(200).json(new APIresponse(200, { videos: sortedVideos }, "Fetched watch later videos"));
 });
 
 export { addVideoToWatchLater, removeVideoFromWatchLater, getWatchLaterVideos };
