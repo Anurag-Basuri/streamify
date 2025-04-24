@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useContext } from "react";
+import { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
@@ -26,176 +26,152 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 import PropTypes from "prop-types";
 import useWatchLater from "../../hooks/useWatchLater";
-import { Tooltip } from "react-tooltip";
+import React from "react";
 
 const Home = () => {
     const { user } = useContext(AuthContext);
     const [videos, setVideos] = useState([]);
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState("");
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [playlists, setPlaylists] = useState([]);
     const [newPlaylistName, setNewPlaylistName] = useState("");
     const watchLater = useWatchLater(user);
 
-    const fetchData = useCallback(async () => {
+    const apiConfig = useMemo(() => ({
+        headers: { Authorization: `Bearer ${user?.token}` }
+    }), [user?.token]);
+
+    const fetchInitialData = useCallback(async () => {
         try {
-            const [videosRes] = await Promise.all([
-                axios.get("/api/v1/videos/", {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }),
+            const [videosRes, historyRes, playlistsRes] = await Promise.all([
+                axios.get("/api/v1/videos/", apiConfig),
+                axios.get("/api/v1/users/history", apiConfig),
+                axios.get("/api/v1/playlists", apiConfig)
             ]);
 
-            setVideos(
-                videosRes.data.data.videos.map((video) => ({
-                    ...video,
-                    isLiked: video.likes?.includes?.(user?._id) || false,
-                }))
-            );
-        } catch (err) {
-            setError(err.message);
-            toast.error("Failed to load content");
+            setVideos(videosRes.data.data.videos.map(video => ({
+                ...video,
+                isLiked: video.likes?.includes(user?._id)
+            })));
+
+            setHistory(historyRes.data.data.history);
+            setPlaylists(playlistsRes.data.data.playlists);
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to load data");
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [apiConfig, user?._id]);
 
     useEffect(() => {
-        fetchData();
-        watchLater.fetchWatchLater();
-    }, [fetchData, watchLater]);
+        const loadData = async () => {
+            await fetchInitialData();
+            watchLater.fetchWatchLater();
+        };
+        loadData();
+    }, [fetchInitialData, watchLater]);
 
-    // Video actions
-    const handleVideoAction = async (action, videoId) => {
+    const handleVideoAction = useCallback(async (action, videoId) => {
         try {
             switch (action) {
-                case "like":
-                    await axios.post(
-                        `/api/v1/likes/video/${videoId}`,
-                        {},
-                        {
-                            headers: {
-                                Authorization: `Bearer ${localStorage.getItem(
-                                    "accessToken"
-                                )}`,
-                            },
-                        }
+                case "like": {
+                    const updatedVideos = videos.map(video => 
+                        video._id === videoId ? {
+                            ...video,
+                            isLiked: !video.isLiked,
+                            likes: video.isLiked ? video.likes - 1 : video.likes + 1
+                        } : video
                     );
-                    setVideos((prev) =>
-                        prev.map((v) =>
-                            v._id === videoId
-                                ? {
-                                      ...v,
-                                      isLiked: !v.isLiked,
-                                      likes: v.isLiked
-                                          ? v.likes - 1
-                                          : v.likes + 1,
-                                  }
-                                : v
-                        )
-                    );
+                    setVideos(updatedVideos);
+                    await axios.post(`/api/v1/likes/video/${videoId}`, {}, apiConfig);
                     break;
-
+                }
                 case "download": {
-                    const { data } = await axios.get(
-                        `/api/v1/videos/download/${videoId}`
-                    );
+                    const { data } = await axios.get(`/api/v1/videos/download/${videoId}`);
                     window.open(data.url, "_blank");
                     break;
                 }
-                case "watchlater":
+                case "watchlater": {
                     if (watchLater.isInWatchLater(videoId)) {
                         await watchLater.removeFromWatchLater(videoId);
                     } else {
                         await watchLater.addToWatchLater(videoId);
                     }
                     break;
+                }
                 case "playlist": {
-                    const token = localStorage.getItem("accessToken");
-                    if (!token) {
-                        toast.error("You must be logged in to add to Watch Later.");
-                        break;
-                    }
                     await axios.post(
-                        `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
+                        `/api/v1/playlists/${playlists[0]?._id}/videos/${selectedVideo._id}`,
                         {},
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                        }
+                        apiConfig
                     );
                     toast.success("Added to playlist!");
                     break;
                 }
+                default:
+                    break;
             }
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Action failed");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Action failed");
         }
-    };
+    }, [videos, apiConfig, watchLater]);
 
-    // Playlist actions
-    const handlePlaylistAction = async (action, playlistId) => {
+    const handlePlaylistOperations = useCallback(async (operation, playlistId) => {
         try {
-            switch (action) {
-                case "add":
+            if (!selectedVideo) return;
+
+            switch (operation) {
+                case "add": {
                     await axios.post(
                         `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
                         {},
-                        {
-                            headers: {
-                                Authorization: `Bearer ${localStorage.getItem(
-                                    "accessToken"
-                                )}`,
-                            },
-                        }
+                        apiConfig
                     );
                     toast.success("Added to playlist!");
                     break;
-
-                case "create":
+                }
+                case "delete": {
+                    await axios.delete(`/api/v1/playlists/${playlistId}`, apiConfig);
+                    setPlaylists(playlists => playlists.filter(p => p._id !== playlistId));
+                    toast.success("Playlist deleted!");
+                    break;
+                }
+                case "create": {
                     const { data } = await axios.post(
                         "/api/v1/playlists/create",
                         { name: newPlaylistName },
-                        {
-                            headers: {
-                                Authorization: `Bearer ${localStorage.getItem(
-                                    "accessToken"
-                                )}`,
-                            },
-                        }
+                        apiConfig
                     );
                     setPlaylists((prev) => [data.data, ...prev]);
                     setNewPlaylistName("");
                     toast.success("Playlist created!");
                     break;
-
-                case "delete":
-                    await axios.delete(
-                        `/api/v1/playlists/delete/${playlistId}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${localStorage.getItem(
-                                    "accessToken"
-                                )}`,
-                            },
-                        }
-                    );
-                    setPlaylists((prev) =>
-                        prev.filter((p) => p._id !== playlistId)
-                    );
-                    toast.success("Playlist deleted!");
+                }
+                default:
                     break;
             }
-            setShowPlaylistModal(false);
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Action failed");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Operation failed");
         }
-    };
+    }, [selectedVideo, apiConfig, playlists, newPlaylistName]);
+
+    const videoGridContent = useMemo(() => (
+        isLoading ? (
+            [...Array(8)].map((_, i) => <VideoCardSkeleton key={i} />)
+        ) : (
+            videos.map(video => (
+                <VideoCard
+                    key={video._id}
+                    video={video}
+                    onAction={handleVideoAction}
+                    inWatchLater={watchLater.isInWatchLater(video._id)}
+                    watchLaterLoading={watchLater.loading}
+                />
+            ))
+        )
+    ), [isLoading, videos, handleVideoAction, watchLater]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 pt-20">
@@ -283,27 +259,7 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {isLoading
-                            ? [...Array(8)].map((_, i) => (
-                                  <VideoCardSkeleton key={i} />
-                              ))
-                            : videos.map((video) => (
-                                  <VideoCard
-                                      key={video._id}
-                                      video={video}
-                                      onAction={(action) => {
-                                          setSelectedVideo(video);
-                                          action === "playlist"
-                                              ? setShowPlaylistModal(true)
-                                              : handleVideoAction(
-                                                    action,
-                                                    video._id
-                                                );
-                                      }}
-                                      inWatchLater={watchLater.isInWatchLater(video._id)}
-                                      watchLaterLoading={watchLater.loading}
-                                  />
-                              ))}
+                        {videoGridContent}
                     </div>
                 </motion.div>
 
@@ -341,7 +297,7 @@ const Home = () => {
                                     />
                                     <button
                                         onClick={() =>
-                                            handlePlaylistAction("create")
+                                            handlePlaylistOperations("create")
                                         }
                                         className="bg-purple-600 hover:bg-purple-700 px-4 rounded-lg"
                                     >
@@ -362,7 +318,7 @@ const Home = () => {
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() =>
-                                                        handlePlaylistAction(
+                                                        handlePlaylistOperations(
                                                             "add",
                                                             playlist._id
                                                         )
@@ -373,7 +329,7 @@ const Home = () => {
                                                 </button>
                                                 <button
                                                     onClick={() =>
-                                                        handlePlaylistAction(
+                                                        handlePlaylistOperations(
                                                             "delete",
                                                             playlist._id
                                                         )
@@ -395,7 +351,7 @@ const Home = () => {
     );
 };
 
-const VideoCard = ({ video, onAction, inWatchLater, watchLaterLoading }) => {
+const VideoCard = React.memo(({ video, onAction, inWatchLater, watchLaterLoading }) => {
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -513,7 +469,7 @@ const VideoCard = ({ video, onAction, inWatchLater, watchLaterLoading }) => {
             </div>
         </motion.div>
     );
-};
+});
 
 VideoCard.propTypes = {
     video: PropTypes.shape({
@@ -548,5 +504,90 @@ const VideoCardSkeleton = () => (
         </div>
     </div>
 );
+
+const PlaylistModal = ({ isOpen, onClose, playlists, newPlaylistName, setNewPlaylistName, onPlaylistAction }) => {
+    if (!isOpen) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                className="bg-gray-800 rounded-2xl p-6 w-full max-w-md"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <FaRegFolder className="text-purple-400" />
+                    Add to Playlist
+                </h3>
+
+                {/* Create New Playlist */}
+                <div className="flex gap-2 mb-6">
+                    <input
+                        type="text"
+                        placeholder="New playlist name"
+                        className="flex-1 bg-gray-700 rounded-lg p-3"
+                        value={newPlaylistName}
+                        onChange={(e) =>
+                            setNewPlaylistName(e.target.value)
+                        }
+                    />
+                    <button
+                        onClick={() =>
+                            onPlaylistAction("create")
+                        }
+                        className="bg-purple-600 hover:bg-purple-700 px-4 rounded-lg"
+                    >
+                        <FaPlus />
+                    </button>
+                </div>
+
+                {/* Existing Playlists */}
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {playlists.map((playlist) => (
+                        <div
+                            key={playlist._id}
+                            className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+                        >
+                            <span className="truncate">
+                                {playlist.name}
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() =>
+                                        onPlaylistAction(
+                                            "add",
+                                            playlist._id
+                                        )
+                                    }
+                                    className="text-purple-400 hover:text-purple-300"
+                                >
+                                    <FaPlus />
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        onPlaylistAction(
+                                            "delete",
+                                            playlist._id
+                                        )
+                                    }
+                                    className="text-red-400 hover:text-red-300"
+                                >
+                                    <FaTrash />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
 
 export default Home;
