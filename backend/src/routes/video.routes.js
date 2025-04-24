@@ -17,7 +17,13 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 const router = Router();
 
 // Public route
-router.get("/", getRandomVideos);
+router.get(
+    "/",
+    query("page").isInt({ min: 1 }).optional(),
+    query("limit").isInt({ min: 1, max: 50 }).optional(),
+    validateResult,
+    getAllVideos
+);
 
 // Route to fetch a single video by ID
 router
@@ -120,6 +126,14 @@ router.get(
     param("userID").isMongoId().withMessage("Invalid user ID"),
     validateResult,
     get_User_Videos
+);
+
+// Route to generate download URL
+router.get(
+    "/:videoID/download",
+    param("videoID").isMongoId(),
+    validateResult,
+    generateDownloadUrl
 );
 
 export default router;
