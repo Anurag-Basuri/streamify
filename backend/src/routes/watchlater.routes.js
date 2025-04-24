@@ -10,8 +10,8 @@ const router = express.Router();
 
 router.use(verifyAccessToken);
 
+router.get("/", getWatchLaterVideos);
 router.post("/:videoId", addVideoToWatchLater);
 router.delete("/:videoId", removeVideoFromWatchLater);
-router.get("/", getWatchLaterVideos); // Fetch all videos in the watch later list
 
 export default router;
