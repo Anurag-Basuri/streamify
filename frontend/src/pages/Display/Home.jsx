@@ -329,6 +329,7 @@ const VideoGridSection = ({ videoGridContent }) => (
     </motion.div>
 );
 
+// Video Card
 const VideoCard = React.memo(
     ({ video, onAction, inWatchLater, watchLaterLoading }) => {
         const formatDuration = useCallback((seconds) => {
@@ -391,6 +392,88 @@ const VideoCard = React.memo(
         );
     }
 );
+
+// Video Info
+const VideoInfo = ({ video, onAction }) => (
+    <div className="p-4 space-y-3">
+        <Link to={`/video/${video._id}`} className="block">
+            <h3 className="font-semibold text-lg line-clamp-2 hover:text-purple-400 transition-colors">
+                {video.title}
+            </h3>
+        </Link>
+
+        <div className="flex items-center justify-between text-sm text-gray-400">
+            <div className="flex items-center gap-4">
+                <button
+                    className={`flex items-center gap-1 ${
+                        video.isLiked ? "text-red-500" : "hover:text-white"
+                    }`}
+                    onClick={() => onAction("like", video._id)}
+                >
+                    <FaHeart /> {video.likes}
+                </button>
+                <div className="flex items-center gap-1">
+                    <FaComment /> {video.commentsCount}
+                </div>
+                <div className="flex items-center gap-1">
+                    <FaEye /> {video.views?.toLocaleString()}
+                </div>
+            </div>
+            <div className="flex items-center gap-1">
+                <FaClock />
+                {new Date(video.createdAt).toLocaleDateString()}
+            </div>
+        </div>
+
+        <CreatorInfo owner={video.owner} />
+    </div>
+);
+
+// Creator Info
+const CreatorInfo = ({ owner }) => (
+    <div className="flex items-center gap-3 pt-3 border-t border-gray-700/50">
+        <div className="shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+            {owner?.avatar ? (
+                <img
+                    src={owner.avatar}
+                    alt="Creator"
+                    className="rounded-full w-full h-full object-cover"
+                />
+            ) : (
+                <FaUser className="text-gray-400" />
+            )}
+        </div>
+        <p className="text-sm truncate">
+            {owner?.username || "Unknown Creator"}
+        </p>
+    </div>
+);
+
+// Watch Later Button
+const WatchLaterButton = ({ inWatchLater, watchLaterLoading, onAction, videoId }) => (
+    <button
+        className={`p-2 rounded-full relative transition-colors ${
+            inWatchLater 
+                ? 'bg-yellow-400 text-white' 
+                : 'bg-gray-900/70 text-yellow-400 hover:bg-gray-800/70'
+        }`}
+        title={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
+        onClick={(e) => {
+            e.stopPropagation();
+            onAction("watchlater", videoId);
+        }}
+        disabled={watchLaterLoading}
+        aria-label={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
+    >
+        <FaClock className="text-lg" />
+        {watchLaterLoading && (
+            <span className="absolute inset-0 flex items-center justify-center">
+                <span className="loader" />
+            </span>
+        )}
+    </button>
+);
+
 
 VideoCard.propTypes = {
     video: PropTypes.shape({
