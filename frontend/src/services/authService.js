@@ -12,10 +12,9 @@ const apiClient = axios.create({
     },
 });
 
-// Create Axios instance with default configuration
-const baseClient = axios.create({
+// Create public Axios instance for unauthenticated requests
+const publicClient = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true,
     headers: {
         "Content-Type": "application/json",
     },
@@ -44,7 +43,7 @@ apiClient.interceptors.response.use(
             try {
                 const newToken = await refreshToken();
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                return baseClient(originalRequest); // Use base client to avoid interceptor loop
+                return apiClient(originalRequest);
             } catch (refreshError) {
                 localStorage.removeItem("accessToken");
                 localStorage.removeItem("refreshToken");
@@ -61,6 +60,10 @@ export const getCurrentUser = async () => {
         const response = await apiClient.get("/current-user");
         return response.data.data;
     } catch (error) {
+        if (error.response?.status === 401) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+        }
         throw new Error(
             error.response?.data?.message || "Failed to fetch user"
         );
@@ -69,7 +72,7 @@ export const getCurrentUser = async () => {
 
 export const refreshToken = async () => {
     try {
-        const response = await baseClient.post("/refresh-token", {
+        const response = await publicClient.post("/refresh-token", {
             refreshToken: localStorage.getItem("refreshToken"),
         });
 
@@ -87,7 +90,7 @@ export const refreshToken = async () => {
 
 export const signIn = async (credentials) => {
     try {
-        const response = await apiClient.post("/login", credentials);
+        const response = await publicClient.post("/login", credentials);
         const { accessToken, refreshToken } = response.data.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
@@ -99,7 +102,7 @@ export const signIn = async (credentials) => {
 
 export const signUp = async (userData) => {
     try {
-        const response = await apiClient.post("/register", userData);
+        const response = await publicClient.post("/register", userData);
         const { accessToken, refreshToken } = response.data.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
@@ -167,3 +170,5 @@ export const updateCoverImage = async (file) => {
 export const handleGoogleAuth = () => {
     window.location.href = `${API_BASE_URL}/auth/google`;
 };
+
+export { apiClient, publicClient };
