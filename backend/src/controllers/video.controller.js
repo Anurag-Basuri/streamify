@@ -229,44 +229,37 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         );
 });
 
-// Get random videos
-const getRandomVideos = asynchandler(async (req, res) => {
-    const videos = await Video.aggregate([
-        { $match: { isPublished: true } },
-        { $sample: { size: 10 } },
+// Get all videos
+const getAllVideos = asynchandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || '-createdAt';
+
+    const options = {
+        page,
+        limit,
+        sort,
+        populate: {
+            path: 'owner',
+            select: 'userName avatar'
+        }
+    };
+
+    const videos = await Video.paginate(
+        { isPublished: true, isDeleted: false }, 
+        options
+    );
+
+    res.status(200).json(new APIresponse(
+        200,
         {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner",
-                pipeline: [
-                    {
-                        $project: {
-                            userName: 1,
-                            avatar: 1,
-                            fullName: 1,
-                        },
-                    },
-                ],
-            },
+            videos: videos.docs,
+            totalVideos: videos.totalDocs,
+            totalPages: videos.totalPages,
+            hasNextPage: videos.hasNextPage
         },
-        { $unwind: "$owner" },
-    ]);
-
-    if (!videos.length) {
-        throw new APIerror(404, "No videos found");
-    }
-
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                { videos },
-                "Random videos fetched successfully"
-            )
-        );
+        "Videos fetched successfully"
+    ));
 });
 
 // Increment in views
@@ -319,13 +312,31 @@ const get_User_Videos = asynchandler(async (req, res) => {
     res.status(200).json(new APIresponse(200, { videos }, "Videos fetched"));
 });
 
+// Generate download URL
+const generateDownloadUrl = asynchandler(async (req, res) => {
+    const { videoID } = req.params;
+    
+    const video = await Video.findById(videoID);
+    if (!video) {
+        throw new APIerror(404, "Video not found");
+    }
+
+    // Generate signed URL (implementation depends on your storage provider)
+    const signedUrl = await generateCloudinarySignedUrl(video.videoFile.publicId);
+    
+    return res.status(200).json(
+        new APIresponse(200, { url: signedUrl }, "Download URL generated")
+    );
+});
+
 export {
     create_new_video,
     get_video_by_id,
     update_video,
     delete_video,
     togglePublishStatus,
-    getRandomVideos,
     incrementViewCount,
     get_User_Videos,
+    generateDownloadUrl,
+    getAllVideos,
 };
