@@ -94,7 +94,7 @@ const Home = () => {
 
         loadData();
         return () => controller.current.abort();
-    }, [fetchInitialData, user, watchLater.fetchWatchLater]);
+    }, [fetchInitialData, user, watchLater]);
 
     // Handle video actions
     const handleVideoAction = useCallback(
@@ -228,8 +228,9 @@ const Home = () => {
                         history={history}
                         watchLater={watchLater}
                         handleVideoAction={handleVideoAction}
-                        setSelectedVideo={setSelectedVideo}
-                        setShowPlaylistModal={setShowPlaylistModal}
+                        onAction={handleVideoAction}
+                        inWatchLater={watchLater.isInWatchLater}
+                        watchLaterLoading={watchLater.loading}
                     />
                 )}
 
@@ -237,14 +238,18 @@ const Home = () => {
                 <VideoGridSection videoGridContent={videoGridContent} />
 
                 {/* Playlist Modal */}
-                <PlaylistModal
-                    showPlaylistModal={showPlaylistModal}
-                    setShowPlaylistModal={setShowPlaylistModal}
-                    playlists={playlists}
-                    newPlaylistName={newPlaylistName}
-                    setNewPlaylistName={setNewPlaylistName}
-                    handlePlaylistOperations={handlePlaylistOperations}
-                />
+                <AnimatePresence>
+                    {showPlaylistModal && (
+                        <PlaylistModal
+                            isOpen={showPlaylistModal}
+                            onClose={() => setShowPlaylistModal(false)}
+                            playlists={playlists}
+                            newPlaylistName={newPlaylistName}
+                            setNewPlaylistName={setNewPlaylistName}
+                            onPlaylistAction={handlePlaylistOperations}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
@@ -284,7 +289,12 @@ const HeroSection = () => (
 );
 
 // History Section
-const HistorySection = ({ history, ...props }) => (
+const HistorySection = ({
+    history,
+    onAction,
+    inWatchLater,
+    watchLaterLoading,
+}) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -300,7 +310,13 @@ const HistorySection = ({ history, ...props }) => (
         {history.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {history.map((video) => (
-                    <VideoCard key={video._id} video={video} {...props} />
+                    <VideoCard
+                        key={video._id}
+                        video={video}
+                        onAction={onAction}
+                        inWatchLater={inWatchLater(video._id)}
+                        watchLaterLoading={watchLaterLoading}
+                    />
                 ))}
             </div>
         ) : (
@@ -310,6 +326,13 @@ const HistorySection = ({ history, ...props }) => (
         )}
     </motion.div>
 );
+
+HistorySection.propTypes = {
+    history: PropTypes.array.isRequired,
+    onAction: PropTypes.func.isRequired,
+    inWatchLater: PropTypes.func.isRequired,
+    watchLaterLoading: PropTypes.bool.isRequired,
+};
 
 // Video Grid Section
 const VideoGridSection = ({ videoGridContent }) => (
@@ -328,6 +351,10 @@ const VideoGridSection = ({ videoGridContent }) => (
         </div>
     </motion.div>
 );
+
+VideoGridSection.propTypes = {
+    videoGridContent: PropTypes.node.isRequired,
+};
 
 // Video Card
 const VideoCard = React.memo(
@@ -393,6 +420,29 @@ const VideoCard = React.memo(
     }
 );
 
+VideoCard.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        thumbnail: PropTypes.shape({
+            url: PropTypes.string,
+        }),
+        duration: PropTypes.number.isRequired,
+        isLiked: PropTypes.bool,
+        likes: PropTypes.oneOfType([PropTypes.number, PropTypes.array]),
+        commentsCount: PropTypes.number,
+        views: PropTypes.number,
+        createdAt: PropTypes.string.isRequired,
+        owner: PropTypes.shape({
+            avatar: PropTypes.string,
+            username: PropTypes.string,
+        }),
+    }).isRequired,
+    onAction: PropTypes.func.isRequired,
+    inWatchLater: PropTypes.bool.isRequired,
+    watchLaterLoading: PropTypes.bool.isRequired,
+};
+
 // Video Info
 const VideoInfo = ({ video, onAction }) => (
     <div className="p-4 space-y-3">
@@ -429,6 +479,20 @@ const VideoInfo = ({ video, onAction }) => (
     </div>
 );
 
+VideoInfo.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        isLiked: PropTypes.bool,
+        likes: PropTypes.oneOfType([PropTypes.number, PropTypes.array]),
+        commentsCount: PropTypes.number,
+        views: PropTypes.number,
+        createdAt: PropTypes.string.isRequired,
+        owner: PropTypes.object,
+    }).isRequired,
+    onAction: PropTypes.func.isRequired,
+};
+
 // Creator Info
 const CreatorInfo = ({ owner }) => (
     <div className="flex items-center gap-3 pt-3 border-t border-gray-700/50">
@@ -449,21 +513,35 @@ const CreatorInfo = ({ owner }) => (
     </div>
 );
 
+CreatorInfo.propTypes = {
+    owner: PropTypes.shape({
+        avatar: PropTypes.string,
+        username: PropTypes.string,
+    }),
+};
+
 // Watch Later Button
-const WatchLaterButton = ({ inWatchLater, watchLaterLoading, onAction, videoId }) => (
+const WatchLaterButton = ({
+    inWatchLater,
+    watchLaterLoading,
+    onAction,
+    videoId,
+}) => (
     <button
         className={`p-2 rounded-full relative transition-colors ${
-            inWatchLater 
-                ? 'bg-yellow-400 text-white' 
-                : 'bg-gray-900/70 text-yellow-400 hover:bg-gray-800/70'
+            inWatchLater
+                ? "bg-yellow-400 text-white"
+                : "bg-gray-900/70 text-yellow-400 hover:bg-gray-800/70"
         }`}
-        title={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
+        title={inWatchLater ? "Remove from Watch Later" : "Add to Watch Later"}
         onClick={(e) => {
             e.stopPropagation();
             onAction("watchlater", videoId);
         }}
         disabled={watchLaterLoading}
-        aria-label={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
+        aria-label={
+            inWatchLater ? "Remove from Watch Later" : "Add to Watch Later"
+        }
     >
         <FaClock className="text-lg" />
         {watchLaterLoading && (
@@ -474,28 +552,11 @@ const WatchLaterButton = ({ inWatchLater, watchLaterLoading, onAction, videoId }
     </button>
 );
 
-
-VideoCard.propTypes = {
-    video: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-        thumbnail: PropTypes.shape({
-            url: PropTypes.string,
-        }),
-        duration: PropTypes.number.isRequired,
-        isLiked: PropTypes.bool,
-        likes: PropTypes.oneOfType([PropTypes.number, PropTypes.array]),
-        commentsCount: PropTypes.number,
-        views: PropTypes.number,
-        createdAt: PropTypes.string.isRequired,
-        owner: PropTypes.shape({
-            avatar: PropTypes.string,
-            username: PropTypes.string,
-        }),
-    }).isRequired,
-    onAction: PropTypes.func.isRequired,
+WatchLaterButton.propTypes = {
     inWatchLater: PropTypes.bool.isRequired,
     watchLaterLoading: PropTypes.bool.isRequired,
+    onAction: PropTypes.func.isRequired,
+    videoId: PropTypes.string.isRequired,
 };
 
 const VideoCardSkeleton = () => (
@@ -524,7 +585,7 @@ const PlaylistModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             onClick={onClose}
         >
             <motion.div
@@ -596,10 +657,6 @@ PlaylistModal.propTypes = {
     newPlaylistName: PropTypes.string.isRequired,
     setNewPlaylistName: PropTypes.func.isRequired,
     onPlaylistAction: PropTypes.func.isRequired,
-};
-
-VideoCardSkeleton.propTypes = {
-    // No props needed for this component
 };
 
 // Add display names to components
