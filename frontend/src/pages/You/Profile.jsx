@@ -42,6 +42,24 @@ export const UserHeader = ({ user, files, setFiles, uploadState, handleFileUploa
     );
 };
 
+UserHeader.propTypes = {
+    user: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        email: PropTypes.string.isRequired,
+        avatar: PropTypes.string.isRequired,
+        isGoogleUser: PropTypes.bool
+    }).isRequired,
+    files: PropTypes.shape({
+        avatar: PropTypes.object
+    }).isRequired,
+    setFiles: PropTypes.func.isRequired,
+    uploadState: PropTypes.shape({
+        loading: PropTypes.bool.isRequired,
+        error: PropTypes.string
+    }).isRequired,
+    handleFileUpload: PropTypes.func.isRequired
+};
+
 export const UserStats = ({ stats }) => {
     if (!stats) return null;
     return (
