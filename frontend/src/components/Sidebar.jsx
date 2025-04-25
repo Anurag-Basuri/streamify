@@ -10,10 +10,10 @@ import {
     ListVideo,
     Clock,
     User,
-    MoreHorizontal,
     X,
     Sun,
     Moon,
+    Settings,
 } from "lucide-react";
 import { useContext, useState } from "react";
 import { AuthContext } from "../services/AuthContext.jsx";
@@ -33,7 +33,9 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
             }}
             animate={isOpen ? "open" : "closed"}
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className={`h-full bg-gray-900 shadow-2xl border-r border-gray-700 overflow-hidden relative transition-colors ${dark ? '' : 'bg-white text-gray-900 border-gray-200'}`}
+            className={`h-full bg-gray-900 shadow-2xl border-r border-gray-700 overflow-hidden relative transition-colors ${
+                dark ? "" : "bg-white text-gray-900 border-gray-200"
+            }`}
             style={{ height: `calc(100vh - ${isMobile ? 0 : "64px"})` }}
         >
             <div className="h-full flex flex-col p-2 overflow-y-auto">
@@ -48,22 +50,6 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                         </button>
                     </div>
                 )}
-
-                {/* User Avatar & Name */}
-                <div className="flex items-center gap-3 mb-6 mt-2 px-2">
-                    <img
-                        src={user?.avatar || "/default-avatar.png"}
-                        alt={user?.userName || "User"}
-                        className="w-10 h-10 rounded-full border-2 border-purple-500 shadow"
-                    />
-                    {isOpen && (
-                        <div className="flex flex-col">
-                            <span className="font-semibold text-white truncate max-w-[120px]">{user?.userName || "Guest"}</span>
-                            <span className="text-xs text-gray-400 truncate max-w-[120px]">{user?.email || ""}</span>
-                        </div>
-                    )}
-                </div>
-                <div className="border-b border-gray-700 mb-2" />
 
                 <div className="flex-1">
                     <SidebarSection title="You" isOpen={isOpen}>
@@ -113,9 +99,9 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                             isOpen={isOpen}
                         />
                         <NavItem
-                            to="/create"
+                            to="/uservideos"
                             icon={Download}
-                            label="Create"
+                            label="Your Videos"
                             isOpen={isOpen}
                         />
                     </SidebarSection>
@@ -124,15 +110,21 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                 <div className="border-t border-gray-700 mt-2 mb-2" />
                 <SidebarSection title="Account" isOpen={isOpen}>
                     <NavItem
+                        to="/create"
+                        icon={Download}
+                        label="Create"
+                        isOpen={isOpen}
+                    />
+                    <NavItem
                         to="/profile"
                         icon={User}
                         label="Profile"
                         isOpen={isOpen}
                     />
                     <NavItem
-                        to="/more"
-                        icon={MoreHorizontal}
-                        label="More"
+                        to="/settings"
+                        icon={Settings}
+                        label="Settings"
                         isOpen={isOpen}
                     />
                 </SidebarSection>
@@ -146,7 +138,11 @@ function Sidebar({ isOpen, toggleSidebar, isMobile }) {
                     >
                         {dark ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
-                    {isOpen && <span className="text-xs text-gray-400">{dark ? "Dark" : "Light"} Mode</span>}
+                    {isOpen && (
+                        <span className="text-xs text-gray-400">
+                            {dark ? "Dark" : "Light"} Mode
+                        </span>
+                    )}
                 </div>
             </div>
         </motion.nav>
