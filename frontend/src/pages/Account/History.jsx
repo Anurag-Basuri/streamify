@@ -1,168 +1,30 @@
-import { useState, useEffect, useContext } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../../services/AuthContext.jsx";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { formatDistanceToNow, format } from "date-fns";
 import { FaClock, FaTrash, FaPlayCircle, FaEye } from "react-icons/fa";
 import { GiHourglass } from "react-icons/gi";
-import {
-    formatDistanceToNow,
-    isToday,
-    isYesterday,
-    subDays,
-    format,
-} from "date-fns";
-import { motion } from "framer-motion";
-import PropTypes from "prop-types";
-
-// Modern gradient-based color scheme
-const colors = {
-    background: "bg-gradient-to-br from-gray-900 to-gray-800",
-    cardBg: "bg-gray-800/60 backdrop-blur-sm",
-    primary: "text-indigo-400",
-    accent: "border-indigo-400/30",
-    destructive: "text-rose-400",
-    muted: "text-gray-400",
-    highlight: "bg-indigo-400/10",
-};
-
-const ConfirmModal = ({
-    title,
-    message,
-    onCancel,
-    onConfirm,
-    confirmText = "Confirm",
-    danger = false,
-}) => (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div
-            className={`${colors.cardBg} rounded-2xl p-6 max-w-md w-full border ${colors.accent} shadow-2xl`}
-        >
-            <h3 className={`text-2xl font-bold mb-3 ${colors.primary}`}>
-                {title}
-            </h3>
-            <p className={`${colors.muted} mb-6 text-lg`}>{message}</p>
-            <div className="flex justify-end gap-3">
-                <button
-                    onClick={onCancel}
-                    className={`px-5 py-2.5 rounded-xl ${colors.muted} hover:${colors.primary} transition-colors border ${colors.accent}`}
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={onConfirm}
-                    className={`px-5 py-2.5 rounded-xl transition-colors ${
-                        danger
-                            ? "bg-rose-500/90 hover:bg-rose-400 text-white"
-                            : "bg-indigo-500/90 hover:bg-indigo-400 text-white"
-                    }`}
-                >
-                    {confirmText}
-                </button>
-            </div>
-        </div>
-    </div>
-);
-
-ConfirmModal.propTypes = {
-    title: PropTypes.string.isRequired,
-    message: PropTypes.string.isRequired,
-    onCancel: PropTypes.func.isRequired,
-    onConfirm: PropTypes.func.isRequired,
-    confirmText: PropTypes.string,
-    danger: PropTypes.bool,
-};
+import { ConfirmModal } from "../../components/Modal";
+import useHistory from "../../hooks/useHistory";
+import { colors } from "../../utils/theme";
 
 const History = () => {
     const { user } = useContext(AuthContext);
-    const [history, setHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [removingId, setRemovingId] = useState(null);
-    const [showClearModal, setShowClearModal] = useState(false);
+    const {
+        history,
+        loading,
+        error,
+        removingId,
+        showClearModal,
+        setRemovingId,
+        setShowClearModal,
+        removeFromHistory,
+        clearHistory,
+        groupHistoryByDate,
+    } = useHistory(user);
 
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const response = await fetch("/api/v1/history", {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                });
-                const data = await response.json();
-                if (!response.ok)
-                    throw new Error(data.message || "Couldn't fetch history");
-                setHistory(data.data?.videos || []);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (user) fetchHistory();
-    }, [user]);
-
-    const handleRemove = async (videoId) => {
-        try {
-            const response = await fetch(`/api/v1/history/${videoId}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${user?.token}`,
-                },
-            });
-            if (!response.ok) throw new Error("Failed to remove from history");
-            setHistory((prev) =>
-                prev.filter((item) => item.video._id !== videoId)
-            );
-            setRemovingId(null);
-        } catch (err) {
-            setError(err.message);
-            setRemovingId(null);
-        }
-    };
-
-    const groupHistoryByDate = (history) => {
-        return history.reduce((acc, item) => {
-            const date = new Date(item.watchedAt);
-            let group;
-
-            if (isToday(date)) {
-                group = "Today";
-            } else if (isYesterday(date)) {
-                group = "Yesterday";
-            } else if (date > subDays(new Date(), 7)) {
-                group = "This Week";
-            } else {
-                group = format(date, "MMMM yyyy");
-            }
-
-            if (!acc[group]) acc[group] = [];
-            acc[group].push(item);
-            return acc;
-        }, {});
-    };
-
-    const formatTime = (date) => {
-        return format(new Date(date), "h:mm a");
-    };
-
-    const groupedHistory = groupHistoryByDate(history);
-
-    const handleClearAll = async () => {
-        try {
-            const response = await fetch("/api/v1/history/clear", {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${user?.token}`,
-                },
-            });
-            if (!response.ok) throw new Error("Failed to clear history");
-            setHistory([]);
-            setShowClearModal(false);
-        } catch (err) {
-            setError(err.message);
-            setShowClearModal(false);
-        }
-    };
+    const formatTime = (date) => format(new Date(date), "h:mm a");
 
     const formatDuration = (seconds) => {
         const hours = Math.floor(seconds / 3600);
@@ -274,6 +136,8 @@ const History = () => {
             </motion.div>
         );
     }
+
+    const groupedHistory = groupHistoryByDate(history);
 
     return (
         <motion.div
@@ -413,7 +277,9 @@ const History = () => {
                                             message="This action will remove this video from your watch history."
                                             onCancel={() => setRemovingId(null)}
                                             onConfirm={() =>
-                                                handleRemove(item.video._id)
+                                                removeFromHistory(
+                                                    item.video._id
+                                                )
                                             }
                                         />
                                     )}
@@ -429,7 +295,7 @@ const History = () => {
                     title="Clear All History?"
                     message="This will permanently remove all items from your watch history."
                     onCancel={() => setShowClearModal(false)}
-                    onConfirm={handleClearAll}
+                    onConfirm={clearHistory}
                     confirmText="Clear All"
                     danger
                 />
