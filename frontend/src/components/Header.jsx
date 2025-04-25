@@ -1,18 +1,17 @@
-/* eslint-disable react/prop-types */
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { ThemeContext } from "../context/ThemeContext.jsx"; 
+import { AuthContext } from "../context/AuthContext";
+import useTheme from "../hooks/useTheme";
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
     const { isAuthenticated, user, logout } = useContext(AuthContext);
+    const { theme } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
     const [showTrending, setShowTrending] = useState(false);
 
-    // Define trending topics
     const [trendingTopics] = useState([
         "#StreamifyUpdate",
         "Tech Trends 2024",
@@ -20,7 +19,6 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         "Live Gaming",
     ]);
 
-    // Properly define isTweetPage
     const isTweetPage = pathname.startsWith("/tweet");
 
     const handleSearch = (e) => {
@@ -33,14 +31,24 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     };
 
     return (
-        <header className="fixed w-full top-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
+        <header
+            className={`fixed w-full top-0 z-50 ${
+                theme === "dark"
+                    ? "bg-gray-900 border-gray-700"
+                    : "bg-white border-gray-200"
+            } border-b shadow-lg`}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="h-16 flex items-center justify-between gap-4">
                     {/* Left Section */}
                     <div className="flex items-center gap-2">
                         <button
                             onClick={toggleSidebar}
-                            className="md:hidden text-gray-300 hover:text-purple-400 p-2 rounded-lg"
+                            className={`md:hidden ${
+                                theme === "dark"
+                                    ? "text-gray-300 hover:text-purple-400"
+                                    : "text-gray-600 hover:text-purple-600"
+                            } p-2 rounded-lg`}
                             aria-label="Toggle Sidebar"
                         >
                             {isSidebarOpen ? (
@@ -96,7 +104,13 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     opacity="0.6"
                                 />
                             </svg>
-                            <span className="hidden sm:inline text-white font-bold text-xl">
+                            <span
+                                className={`hidden sm:inline font-bold text-xl ${
+                                    theme === "dark"
+                                        ? "text-white"
+                                        : "text-gray-900"
+                                }`}
+                            >
                                 Streamify
                             </span>
                         </Link>
@@ -113,7 +127,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                             ? "Search Streamify"
                                             : "Search videos, channels..."
                                     }
-                                    className={`w-full bg-gray-800 text-gray-200 rounded-full px-4 py-2 pr-10 focus:outline-none focus:ring-2 ${
+                                    className={`w-full ${
+                                        theme === "dark"
+                                            ? "bg-gray-800 text-gray-200"
+                                            : "bg-gray-100 text-gray-900"
+                                    } rounded-full px-4 py-2 pr-10 focus:outline-none focus:ring-2 ${
                                         isTweetPage
                                             ? "focus:ring-blue-400"
                                             : "focus:ring-purple-400"
@@ -132,7 +150,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full p-1"
+                                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                                        theme === "dark"
+                                            ? "text-gray-400 hover:text-purple-400"
+                                            : "text-gray-600 hover:text-purple-600"
+                                    } focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full p-1`}
                                     aria-label="Search"
                                 >
                                     <Search size={18} />
@@ -146,17 +168,31 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
-                                        className="absolute top-full mt-2 w-full bg-gray-800 rounded-lg shadow-xl p-4 max-h-[60vh] overflow-y-auto"
+                                        className={`absolute top-full mt-2 w-full ${
+                                            theme === "dark"
+                                                ? "bg-gray-800"
+                                                : "bg-gray-100"
+                                        } rounded-lg shadow-xl p-4 max-h-[60vh] overflow-y-auto`}
                                     >
                                         <div className="space-y-3">
-                                            <h3 className="text-gray-400 font-medium">
+                                            <h3
+                                                className={`font-medium ${
+                                                    theme === "dark"
+                                                        ? "text-gray-400"
+                                                        : "text-gray-600"
+                                                }`}
+                                            >
                                                 Trending Now
                                             </h3>
                                             {trendingTopics.map(
                                                 (topic, index) => (
                                                     <div
                                                         key={index}
-                                                        className="text-gray-200 hover:bg-gray-700 p-2 rounded cursor-pointer"
+                                                        className={`hover:bg-gray-700 p-2 rounded cursor-pointer ${
+                                                            theme === "dark"
+                                                                ? "text-gray-200"
+                                                                : "text-gray-800"
+                                                        }`}
                                                     >
                                                         {topic}
                                                     </div>
@@ -175,7 +211,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             <>
                                 <Link
                                     to="/auth?mode=login"
-                                    className="hidden sm:inline px-3 py-1.5 text-sm text-gray-300 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg"
+                                    className={`hidden sm:inline px-3 py-1.5 text-sm ${
+                                        theme === "dark"
+                                            ? "text-gray-300 hover:text-purple-400"
+                                            : "text-gray-600 hover:text-purple-600"
+                                    } focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg`}
                                 >
                                     Sign In
                                 </Link>
@@ -192,7 +232,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 <motion.button
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="p-1.5 sm:p-2 text-gray-300 hover:text-purple-400 relative transition-all focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full"
+                                    className={`p-1.5 sm:p-2 relative transition-all focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full ${
+                                        theme === "dark"
+                                            ? "text-gray-300 hover:text-purple-400"
+                                            : "text-gray-600 hover:text-purple-600"
+                                    }`}
                                     aria-label="Notifications"
                                 >
                                     <Bell size={20} />
@@ -207,7 +251,13 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                         className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full"
                                         aria-label="Profile Menu"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border-2 border-purple-400 overflow-hidden">
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 overflow-hidden ${
+                                                theme === "dark"
+                                                    ? "bg-gray-800 border-purple-400"
+                                                    : "bg-gray-100 border-purple-600"
+                                            }`}
+                                        >
                                             {user?.avatar ? (
                                                 <img
                                                     src={user.avatar}
@@ -216,7 +266,11 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                                 />
                                             ) : (
                                                 <User
-                                                    className="text-gray-300"
+                                                    className={`${
+                                                        theme === "dark"
+                                                            ? "text-gray-300"
+                                                            : "text-gray-600"
+                                                    }`}
                                                     size={18}
                                                 />
                                             )}
@@ -224,23 +278,41 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                     </motion.button>
 
                                     {/* Dropdown Menu */}
-                                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                    <div
+                                        className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
+                                            theme === "dark"
+                                                ? "bg-gray-800"
+                                                : "bg-gray-100"
+                                        }`}
+                                    >
                                         <div className="py-1">
                                             <Link
                                                 to="/profile"
-                                                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                                                className={`block px-4 py-2 text-sm ${
+                                                    theme === "dark"
+                                                        ? "text-gray-300 hover:bg-gray-700"
+                                                        : "text-gray-600 hover:bg-gray-200"
+                                                }`}
                                             >
                                                 Profile
                                             </Link>
                                             <Link
                                                 to="/settings"
-                                                className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                                                className={`block px-4 py-2 text-sm ${
+                                                    theme === "dark"
+                                                        ? "text-gray-300 hover:bg-gray-700"
+                                                        : "text-gray-600 hover:bg-gray-200"
+                                                }`}
                                             >
                                                 Settings
                                             </Link>
                                             <button
                                                 onClick={logout}
-                                                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 focus:outline-none"
+                                                className={`w-full text-left px-4 py-2 text-sm focus:outline-none ${
+                                                    theme === "dark"
+                                                        ? "text-red-400 hover:bg-gray-700"
+                                                        : "text-red-600 hover:bg-gray-200"
+                                                }`}
                                             >
                                                 Sign Out
                                             </button>
