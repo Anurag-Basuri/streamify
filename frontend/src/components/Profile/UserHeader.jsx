@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { ImageUpload } from './ImageUpload';
+import { UserInfo } from './UserInfo';
 
 export const UserHeader = ({ 
     user, 
