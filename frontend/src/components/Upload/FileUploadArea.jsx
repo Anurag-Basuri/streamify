@@ -1,4 +1,4 @@
-import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { CloudUploadIcon } from "@heroicons/react/outline";
 
 export const FileUploadArea = ({ videoFile, thumbnail, onFileUpload }) => (
     <div className="space-y-6">
@@ -6,11 +6,13 @@ export const FileUploadArea = ({ videoFile, thumbnail, onFileUpload }) => (
         <div className="space-y-4">
             <h3 className="text-xl font-semibold text-white">Upload Video</h3>
             <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-600 rounded-xl p-12 cursor-pointer hover:border-purple-500 transition-colors">
-                <CloudArrowUpIcon className="w-16 h-16 text-gray-400 mb-4" />
+                <CloudUploadIcon className="w-16 h-16 text-gray-400 mb-4" />
                 <span className="text-purple-400 font-medium text-lg">
                     {videoFile ? videoFile.name : "Click to upload video"}
                 </span>
-                <span className="text-gray-400 text-sm mt-2">MP4, WebM up to 2GB</span>
+                <span className="text-gray-400 text-sm mt-2">
+                    MP4, WebM up to 2GB
+                </span>
                 <input
                     type="file"
                     accept="video/*"
@@ -33,15 +35,21 @@ export const FileUploadArea = ({ videoFile, thumbnail, onFileUpload }) => (
                         />
                     ) : (
                         <>
-                            <CloudArrowUpIcon className="w-12 h-12 text-gray-400 mb-4" />
-                            <span className="text-purple-400 font-medium">Upload Thumbnail</span>
-                            <span className="text-gray-400 text-sm mt-2">PNG, JPG up to 2MB</span>
+                            <CloudUploadIcon className="w-12 h-12 text-gray-400 mb-4" />
+                            <span className="text-purple-400 font-medium">
+                                Upload Thumbnail
+                            </span>
+                            <span className="text-gray-400 text-sm mt-2">
+                                PNG, JPG up to 2MB
+                            </span>
                         </>
                     )}
                     <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => onFileUpload("thumbnail", e.target.files[0])}
+                        onChange={(e) =>
+                            onFileUpload("thumbnail", e.target.files[0])
+                        }
                         className="hidden"
                     />
                 </label>
