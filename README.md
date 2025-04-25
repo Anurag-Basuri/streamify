@@ -1,151 +1,182 @@
-# Streamify - Video Streaming Platform
+# Streamify - Modern Video Streaming Platform
 
-Streamify is a modern video streaming platform built with React, Node.js, and MongoDB. It provides a seamless experience for users to upload, watch, and interact with video content.
+Streamify is a full-stack video streaming platform built with React and Node.js, offering a modern, responsive interface for video sharing and consumption.
 
-## Features
+## 🌟 Features
 
-- User authentication and authorization
-- Video upload and streaming
-- Video playback with React Player
-- User profile management
-- Video comments and interactions
-- Responsive design with Tailwind CSS
-- Google OAuth integration
-- Cloud storage integration (Cloudinary)
+### User Experience
+- **Dark/Light Theme Support**
+- **Responsive Design** for all devices
+- **Infinite Scroll** for video listings
+- **Real-time Video Search**
+- **Animated UI Components** using Framer Motion
 
-## Tech Stack
+### Video Features
+- Video Upload & Playback
+- Custom Video Player
+- Video Thumbnails
+- Watch History
+- Watch Later Queue
+- Like/Comment System
+
+### User Features
+- User Authentication
+- Custom User Profiles
+- Playlist Management
+- Subscription System
+- Video History Tracking
+
+### Technical Features
+- JWT Authentication
+- Cloud Media Storage
+- Responsive Image Loading
+- API Rate Limiting
+- Error Handling
+
+## 🛠️ Tech Stack
 
 ### Frontend
-- React 18
-- Vite
-- Tailwind CSS
-- React Router
-- Axios
-- Framer Motion
-- React Icons
-- React Player
-- Swiper
-- React Hot Toast
+- **React** - UI Framework
+- **Vite** - Build Tool
+- **TailwindCSS** - Styling
+- **Framer Motion** - Animations
+- **Axios** - HTTP Client
+- **React Router** - Navigation
+- **React Icons** - Icon Library
+- **React Hot Toast** - Notifications
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- JWT Authentication
-- Passport.js (Google OAuth)
-- Cloudinary (Media Storage)
-- FFmpeg (Video Processing)
-- Multer (File Upload)
-- Express Validator
-- Bcrypt (Password Hashing)
+- **Node.js** & **Express**
+- **MongoDB** & **Mongoose**
+- **JWT** - Authentication
+- **Cloudinary** - Media Storage
 
-## Project Structure
-
-```
-streamify/
-├── frontend/           # React frontend application
-│   ├── src/
-│   │   ├── components/ # Reusable UI components
-│   │   ├── pages/     # Page components
-│   │   ├── routes/    # Route configurations
-│   │   ├── services/  # API services
-│   │   └── resources/ # Static resources
-│   └── public/        # Public assets
-│
-└── backend/           # Node.js backend application
-    ├── src/
-    │   ├── config/   # Configuration files
-    │   ├── controllers/ # Request handlers
-    │   ├── database/ # Database connection
-    │   ├── middlewares/ # Custom middlewares
-    │   ├── models/   # Database models
-    │   ├── routes/   # API routes
-    │   └── utils/    # Utility functions
-    └── public/       # Public files
-```
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Node.js (v14 or higher)
-- MongoDB
-- FFmpeg
-- Cloudinary account
+```bash
+node -v >= 16.0.0
+npm -v >= 8.0.0
+```
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository**
 ```bash
 git clone https://github.com/yourusername/streamify.git
 cd streamify
 ```
 
-2. Install backend dependencies:
+2. **Install Dependencies**
 ```bash
-cd backend
+# Frontend
+cd frontend
+npm install
+
+# Backend
+cd ../backend
 npm install
 ```
 
-3. Install frontend dependencies:
+3. **Environment Setup**
 ```bash
-cd ../frontend
-npm install
-```
+# Frontend (.env)
+VITE_API_URL=http://localhost:8000
+VITE_CLOUD_NAME=your_cloudinary_cloud_name
 
-4. Create environment variables:
-   - Backend: Create a `.env` file in the backend directory
-   - Frontend: Create a `.env` file in the frontend directory
-
-### Environment Variables
-
-#### Backend (.env)
-```
+# Backend (.env)
 PORT=8000
 MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
 
-#### Frontend (.env)
-```
-VITE_API_URL=http://localhost:8000
-```
-
-### Running the Application
-
-1. Start the backend server:
+4. **Run the Application**
 ```bash
-cd backend
+# Frontend
+npm run dev
+
+# Backend
 npm run dev
 ```
 
-2. Start the frontend development server:
-```bash
-cd frontend
-npm run dev
+## 📁 Project Structure
+
+```
+streamify/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   │   ├── Account/
+│   │   │   ├── Display/
+│   │   │   └── You/
+│   │   ├── context/
+│   │   ├── services/
+│   │   └── hooks/
+│   └── public/
+└── backend/
+    ├── src/
+    │   ├── controllers/
+    │   ├── models/
+    │   ├── routes/
+    │   └── middleware/
+    └── uploads/
 ```
 
-The application will be available at:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
+## 🔑 Key Components
 
-## Contributing
+### Frontend Components
+- `Sidebar.jsx` - Navigation sidebar with theme toggle
+- `Header.jsx` - Main navigation header with search
+- `VideoCard.jsx` - Video display component
+- `PlaylistManager.jsx` - Playlist management
+- `ThemeProvider.jsx` - Theme context provider
+
+### Backend APIs
+- `/api/v1/auth` - Authentication routes
+- `/api/v1/videos` - Video management
+- `/api/v1/playlists` - Playlist operations
+- `/api/v1/users` - User management
+- `/api/v1/comments` - Comment system
+
+## 🎨 Theme Customization
+
+The application supports both light and dark themes through TailwindCSS:
+
+```css
+/* theme.css */
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --primary: #6d28d9;
+}
+
+[data-theme='dark'] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --primary: #7c3aed;
+}
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Author
+## 🙏 Acknowledgments
 
-Anurag Basuri
+- [React](https://reactjs.org/)
+- [TailwindCSS](https://tailwindcss.com/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [MongoDB](https://www.mongodb.com/)
+- [Cloudinary](https://cloudinary.com/)
