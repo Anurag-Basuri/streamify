@@ -1,16 +1,15 @@
 import {
     useState,
     useCallback,
-    useContext,
     useMemo,
     useRef,
 } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AuthContext } from "../../services/AuthContext.jsx";
 import { toast } from "react-hot-toast";
 import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
 import useUserData from "../../hooks/useUserData.js";
+import useAuth from "../../hooks/useAuth.js";
 import { VideoCard } from "../../components/Video/VideoCard.jsx";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
 import { PlaylistModal } from "../../components/Playlist/PlaylistModal.jsx";
@@ -24,10 +23,13 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 
 const Home = () => {
-    const { user, isAuthenticated, token } = useContext(AuthContext);
-    const apiConfig = useMemo(() => ({
-        headers: { Authorization: `Bearer ${token}` }
-    }), [token]);
+    const { user, isAuthenticated, token } = useAuth();
+    const apiConfig = useMemo(
+        () => ({
+            headers: { Authorization: `Bearer ${token}` },
+        }),
+        [token]
+    );
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -35,15 +37,12 @@ const Home = () => {
     const observerTarget = useRef(null);
 
     // Custom hooks
-    const {
-        videos,
-        setVideos,
-        isLoading,
-        hasMore,
-        loadingMore,
-    } = useVideos(isAuthenticated, user);
+    const { videos, setVideos, isLoading, hasMore, loadingMore } = useVideos(
+        isAuthenticated,
+        user
+    );
 
-    const { history, playlists, setPlaylists} = useUserData(
+    const { history, playlists, setPlaylists } = useUserData(
         isAuthenticated,
         apiConfig,
         watchLater
@@ -170,7 +169,13 @@ const Home = () => {
                 );
             }
         },
-        [selectedVideo, newPlaylistName, apiConfig, isAuthenticated, setPlaylists]
+        [
+            selectedVideo,
+            newPlaylistName,
+            apiConfig,
+            isAuthenticated,
+            setPlaylists,
+        ]
     );
 
     const videoGridContent = useMemo(
