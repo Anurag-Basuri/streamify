@@ -50,6 +50,7 @@ const Home = () => {
     const [loadingMore, setLoadingMore] = useState(false);
     const observerTarget = useRef(null);
 
+    // API configuration based on authentication state
     const apiConfig = useMemo(
         () => ({
             headers: isAuthenticated
@@ -64,20 +65,21 @@ const Home = () => {
         [isAuthenticated]
     );
 
-    // Fetch videos with pagination
+    // Fetch videos with pagination - available for all users
     const fetchVideos = useCallback(
         async (pageNum) => {
             try {
                 setLoadingMore(pageNum > 1);
                 const { data } = await axios.get(`/api/v1/videos`, {
-                    ...apiConfig,
+                    ...apiConfig, // Use API config without requiring auth
                     params: {
                         page: pageNum,
                         limit: 12,
-                        sort: "-createdAt", // Add sorting
+                        sort: "-createdAt",
                     },
                 });
 
+                // Format videos and handle likes for authenticated users only
                 const formattedVideos = data.data.videos.map((video) => ({
                     ...video,
                     isLiked: isAuthenticated
@@ -108,31 +110,41 @@ const Home = () => {
         [apiConfig, isAuthenticated, user?._id]
     );
 
-    // Fetch initial data
-    const fetchInitialData = useCallback(async () => {
+    // Separate function to fetch videos immediately on component mount
+    useEffect(() => {
+        // Immediately fetch videos on initial render
+        fetchVideos(1);
+    }, []);
+
+    // Fetch initial user data separately
+    const fetchUserData = useCallback(async () => {
+        if (!isAuthenticated) return;
+
         try {
             const [historyRes, playlistsRes] = await Promise.all([
-                isAuthenticated
-                    ? axios.get("/api/v1/users/history", apiConfig)
-                    : { data: { data: { history: [] } } },
-                isAuthenticated
-                    ? axios.get("/api/v1/playlists", apiConfig)
-                    : { data: { data: { playlists: [] } } },
+                axios.get("/api/v1/users/history", apiConfig),
+                axios.get("/api/v1/playlists", apiConfig),
             ]);
 
             setHistory(historyRes.data.data.history);
             setPlaylists(playlistsRes.data.data.playlists);
 
-            // Initial videos fetch
-            await fetchVideos(1);
+            // Also fetch watch later data
+            watchLater.fetchWatchLater();
         } catch (error) {
             if (!axios.isCancel(error)) {
+                console.error("Error fetching user data:", error);
                 toast.error(
-                    error.response?.data?.message || "Failed to load data"
+                    error.response?.data?.message || "Failed to load user data"
                 );
             }
         }
-    }, [apiConfig, isAuthenticated, fetchVideos]);
+    }, [apiConfig, isAuthenticated, watchLater]);
+
+    // Fetch user-specific data when authentication state changes
+    useEffect(() => {
+        fetchUserData();
+    }, [fetchUserData, isAuthenticated]);
 
     // Set up intersection observer for infinite scroll
     useEffect(() => {
@@ -169,21 +181,31 @@ const Home = () => {
         }
     }, [page, fetchVideos]);
 
-    // Fetch initial data
+    // Clean up on unmount
     useEffect(() => {
-        const loadData = async () => {
-            await fetchInitialData();
-            if (isAuthenticated) watchLater.fetchWatchLater();
-        };
-
-        loadData();
         return () => controller.current.abort();
-    }, [fetchInitialData, isAuthenticated, watchLater]);
+    }, []);
 
-    // Handle video actions
+    // Handle video actions with authentication checks
     const handleVideoAction = useCallback(
         async (action, videoId) => {
-            if (action !== "download" && !isAuthenticated) {
+            // Allow download without authentication
+            if (action === "download") {
+                try {
+                    const { data } = await axios.get(
+                        `/api/v1/videos/download/${videoId}`
+                    );
+                    window.open(data.url, "_blank");
+                } catch (error) {
+                    toast.error(
+                        error.response?.data?.message || "Download failed"
+                    );
+                }
+                return;
+            }
+
+            // All other actions require authentication
+            if (!isAuthenticated) {
                 toast.error("Please login to perform this action");
                 return;
             }
@@ -213,13 +235,6 @@ const Home = () => {
                         );
                         break;
                     }
-                    case "download": {
-                        const { data } = await axios.get(
-                            `/api/v1/videos/download/${videoId}`
-                        );
-                        window.open(data.url, "_blank");
-                        break;
-                    }
                     case "watchlater": {
                         if (watchLater.isInWatchLater(videoId)) {
                             await watchLater.removeFromWatchLater(videoId);
@@ -244,6 +259,12 @@ const Home = () => {
     // Handle playlist operations
     const handlePlaylistOperations = useCallback(
         async (operation, playlistId) => {
+            // Playlist operations always require authentication
+            if (!isAuthenticated) {
+                toast.error("Please login to manage playlists");
+                return;
+            }
+
             try {
                 switch (operation) {
                     case "add": {
@@ -286,23 +307,33 @@ const Home = () => {
                 );
             }
         },
-        [selectedVideo, newPlaylistName, apiConfig]
+        [selectedVideo, newPlaylistName, apiConfig, isAuthenticated]
     );
 
     const videoGridContent = useMemo(
         () =>
-            isLoading
-                ? [...Array(8)].map((_, i) => <VideoCardSkeleton key={i} />)
-                : videos.map((video) => (
-                      <VideoCard
-                          key={video._id}
-                          video={video}
-                          onAction={handleVideoAction}
-                          inWatchLater={watchLater.isInWatchLater(video._id)}
-                          watchLaterLoading={watchLater.loading}
-                      />
-                  )),
-        [isLoading, videos, handleVideoAction, watchLater]
+            isLoading ? (
+                [...Array(8)].map((_, i) => <VideoCardSkeleton key={i} />)
+            ) : videos.length > 0 ? (
+                videos.map((video) => (
+                    <VideoCard
+                        key={video._id}
+                        video={video}
+                        onAction={handleVideoAction}
+                        inWatchLater={
+                            isAuthenticated &&
+                            watchLater.isInWatchLater(video._id)
+                        }
+                        watchLaterLoading={watchLater.loading}
+                        isAuthenticated={isAuthenticated}
+                    />
+                ))
+            ) : (
+                <div className="col-span-full text-center py-12">
+                    <p className="text-gray-400 text-lg">No videos available</p>
+                </div>
+            ),
+        [isLoading, videos, handleVideoAction, watchLater, isAuthenticated]
     );
 
     return (
@@ -311,8 +342,8 @@ const Home = () => {
                 {/* Hero Section */}
                 <HeroSection />
 
-                {/* History Section */}
-                {isAuthenticated && (
+                {/* History Section - Only for authenticated users */}
+                {isAuthenticated && history.length > 0 && (
                     <HistorySection
                         history={history}
                         watchLater={watchLater}
@@ -322,12 +353,15 @@ const Home = () => {
                     />
                 )}
 
-                {/* Video Grid */}
-                <VideoGridSection
-                    videoGridContent={videoGridContent}
-                    hasMore={hasMore}
-                    loadingMore={loadingMore}
-                />
+                {/* Video Grid - For all users */}
+                <div className="mt-10">
+                    <h2 className="text-2xl font-bold mb-6">Latest Videos</h2>
+                    <VideoGridSection
+                        videoGridContent={videoGridContent}
+                        hasMore={hasMore}
+                        loadingMore={loadingMore}
+                    />
+                </div>
 
                 {/* Observer element for infinite scroll */}
                 {hasMore && (
@@ -343,9 +377,9 @@ const Home = () => {
                     </div>
                 )}
 
-                {/* Playlist Modal */}
+                {/* Playlist Modal - Only shown for authenticated users */}
                 <AnimatePresence>
-                    {showPlaylistModal && (
+                    {showPlaylistModal && isAuthenticated && (
                         <PlaylistModal
                             isOpen={showPlaylistModal}
                             onClose={() => setShowPlaylistModal(false)}
