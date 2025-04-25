@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -14,12 +14,15 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
-import { AuthContext } from "../services/AuthContext.jsx";
+import useAuth from "../hooks/useAuth";
+import useTheme from "../hooks/useTheme";
 
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
+    const { user } = useAuth();
+    const { theme } = useTheme();
+
     const [playlist, setPlaylist] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -140,6 +143,29 @@ const PlaylistDetail = () => {
     // Check if user is playlist owner
     const isOwner = user?._id === playlist?.owner?._id;
 
+    // Add theme-aware styles
+    const getThemeStyles = () => ({
+        container: `min-h-screen ${
+            theme === "dark" ? "bg-gray-900" : "bg-gray-50"
+        } text-${theme === "dark" ? "white" : "gray-900"} p-4 sm:p-8`,
+        card: `bg-${
+            theme === "dark" ? "gray-800" : "white"
+        } rounded-xl p-6 relative overflow-hidden`,
+        input: `w-full bg-${
+            theme === "dark" ? "gray-700" : "gray-100"
+        } rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-500 outline-none`,
+        searchResults: `bg-${
+            theme === "dark" ? "gray-700" : "gray-100"
+        } rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto`,
+        searchItem: `bg-${
+            theme === "dark" ? "gray-600" : "gray-200"
+        } hover:bg-${
+            theme === "dark" ? "gray-500" : "gray-300"
+        } rounded-lg p-4`,
+    });
+
+    const styles = getThemeStyles();
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -170,7 +196,7 @@ const PlaylistDetail = () => {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen bg-gray-900 text-white p-4 sm:p-8"
+            className={styles.container}
         >
             <div className="max-w-7xl mx-auto">
                 <button
@@ -187,7 +213,7 @@ const PlaylistDetail = () => {
                         <motion.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            className="bg-gray-800 rounded-xl p-6 relative overflow-hidden"
+                            className={styles.card}
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent" />
                             <h1 className="text-3xl font-bold mb-4 relative">
@@ -212,7 +238,7 @@ const PlaylistDetail = () => {
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.1 }}
-                                className="bg-gray-800 rounded-xl p-6 space-y-4"
+                                className={styles.card}
                             >
                                 <h2 className="text-2xl font-semibold">
                                     Add Videos
@@ -221,7 +247,7 @@ const PlaylistDetail = () => {
                                     <input
                                         type="text"
                                         placeholder="Search videos by title, description, or tags..."
-                                        className="w-full bg-gray-700 rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-500 outline-none"
+                                        className={styles.input}
                                         value={searchQuery}
                                         onChange={(e) =>
                                             setSearchQuery(e.target.value)
@@ -246,7 +272,7 @@ const PlaylistDetail = () => {
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="bg-gray-700 rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto"
+                                        className={styles.searchResults}
                                     >
                                         {isSearching ? (
                                             <div className="flex justify-center py-4">
@@ -264,7 +290,9 @@ const PlaylistDetail = () => {
                                                         opacity: 1,
                                                         x: 0,
                                                     }}
-                                                    className="flex items-center justify-between bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors"
+                                                    className={
+                                                        styles.searchItem
+                                                    }
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <img
@@ -413,6 +441,11 @@ const PlaylistDetail = () => {
             </div>
         </motion.div>
     );
+};
+
+// PropTypes if needed
+PlaylistDetail.propTypes = {
+    // Add prop types if component takes props
 };
 
 export default PlaylistDetail;
