@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import VideoCard from '../VideoCard';
+import VideoCard from '../Video/VideoCard.jsx';
 
 export const VideoGrid = ({ videos, onDelete, onTogglePublish, onEdit }) => (
     <motion.div
