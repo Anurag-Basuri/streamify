@@ -4,12 +4,13 @@ import { Header } from "../../components/Form/Header";
 import { ActionButtons } from "../../components/Form/ActionButtons";
 import { FileUploadArea } from "../../components/Upload/FileUploadArea";
 import { FormFields } from "../../components/Form/FormFields";
+import { ErrorDisplay } from "../../components/Form/ErrorDisplay";
 import useForm from "../../hooks/useForm";
 import useUpload from "../../hooks/useUpload";
 
 const Create = () => {
     const navigate = useNavigate();
-    const { formData, handleChange, errors, validateForm } = useForm({
+    const { formData, handleChange, errors } = useForm({
         title: "",
         description: "",
         tags: [],
@@ -36,7 +37,7 @@ const Create = () => {
                 <ErrorDisplay error={errors.general} />
 
                 <form onSubmit={handleSubmit} className="space-y-8">
-                    <UploadSection
+                    <FileUploadArea
                         videoFile={videoFile}
                         thumbnail={thumbnail}
                         onFileUpload={handleFileUpload}
