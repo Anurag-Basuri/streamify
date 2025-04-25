@@ -22,6 +22,17 @@ export default {
             },
         },
         extend: {
+            colors: {
+                background: "var(--background)",
+                foreground: "var(--foreground)",
+                primary: "var(--primary)",
+                "primary-foreground": "var(--primary-foreground)",
+                accent: "var(--accent)",
+                border: "var(--border)",
+                "muted-foreground": "var(--muted-foreground)",
+                popover: "var(--popover)",
+                "popover-foreground": "var(--popover-foreground)",
+            },
             borderRadius: {
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
