@@ -5,13 +5,8 @@ import {
     useMemo,
     useRef,
 } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Autoplay } from "swiper/modules";
-import axios from "axios";
-import { Link } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AuthContext } from "../../services/AuthContext.jsx";
-import { FiMoreVertical } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
@@ -29,7 +24,10 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 
 const Home = () => {
-    const { user, isAuthenticated } = useContext(AuthContext);
+    const { user, isAuthenticated, token } = useContext(AuthContext);
+    const apiConfig = useMemo(() => ({
+        headers: { Authorization: `Bearer ${token}` }
+    }), [token]);
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -41,15 +39,11 @@ const Home = () => {
         videos,
         setVideos,
         isLoading,
-        page,
-        setPage,
         hasMore,
         loadingMore,
-        fetchVideos,
-        controller,
     } = useVideos(isAuthenticated, user);
 
-    const { history, playlists, setPlaylists, fetchUserData } = useUserData(
+    const { history, playlists, setPlaylists} = useUserData(
         isAuthenticated,
         apiConfig,
         watchLater
@@ -122,7 +116,7 @@ const Home = () => {
                 toast.error(error.response?.data?.message || "Action failed");
             }
         },
-        [videos, apiConfig, watchLater, isAuthenticated]
+        [videos, apiConfig, watchLater, isAuthenticated, setVideos]
     );
 
     // Handle playlist operations
@@ -176,7 +170,7 @@ const Home = () => {
                 );
             }
         },
-        [selectedVideo, newPlaylistName, apiConfig, isAuthenticated]
+        [selectedVideo, newPlaylistName, apiConfig, isAuthenticated, setPlaylists]
     );
 
     const videoGridContent = useMemo(
