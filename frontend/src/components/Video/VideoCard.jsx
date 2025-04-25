@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import { FaPlay, FaHeart, FaShare } from "react-icons/fa";
 import { formatDistance } from "date-fns";
-import { WatchLaterButton } from "../../resources/watch-later-empty.svg";
+import { WatchLaterButton } from "./WatchLaterButton";
 
 const VideoInfo = ({ video }) => {
     return (
