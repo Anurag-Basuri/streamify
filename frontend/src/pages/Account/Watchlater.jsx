@@ -6,7 +6,7 @@ import useWatchLater from "../../hooks/useWatchLater";
 import VideoCard from "../../components/VideoCard";
 import LoadingState from "../../components/LoadingState";
 import ErrorState from "../../components/ErrorState";
-import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader";
+import WatchLaterHeader from "../../components/WatchLaterHeader";
 import emptyStateIllustration from "../../resources/watch-later-empty.svg";
 
 const EmptyState = () => (
