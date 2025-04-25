@@ -10,7 +10,7 @@ const SignInAndUp = () => {
     const navigate = useNavigate();
     const { login, register, googleLogin, user, isLoading } = useAuth();
 
-    const { formData, handleChange, errors, validateForm } = useForm({
+    const { formData, handleChange, errors } = useForm({
         fullName: "",
         userName: "",
         email: "",
