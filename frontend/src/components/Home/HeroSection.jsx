@@ -14,7 +14,21 @@ export const HeroSection = () => {
             description: "Watch, share, and create amazing videos",
             image: "/hero/slide2.jpg",
         },
-        // Add more slides as needed
+        {
+            title: "Join Our Community",
+            description: "Connect with creators and fans alike",
+            image: "/hero/slide3.jpg",
+        },
+        {
+            title: "Stream Anytime, Anywhere",
+            description: "Your favorite shows and movies on the go",
+            image: "/hero/slide4.jpg",
+        },
+        {
+            title: "Unleash Your Creativity",
+            description: "Create and share your own videos with the world",
+            image: "/hero/slide5.jpg",
+        },
     ];
 
     return (
