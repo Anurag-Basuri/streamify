@@ -3,7 +3,8 @@ import { useContext, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AuthContext } from "../services/AuthContext.jsx";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { ThemeContext } from "../context/ThemeContext.jsx"; 
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();

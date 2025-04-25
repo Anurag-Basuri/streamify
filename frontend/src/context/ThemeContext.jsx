@@ -1,29 +1,16 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import { createContext } from "react";
+import PropTypes from "prop-types";
+import useThemeSetup from "../hooks/useThemeSetup";
 
+// Create the context
 const ThemeContext = createContext();
 
+// Theme provider component
 export const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState(() => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) return savedTheme;
-        
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    });
-
-    useEffect(() => {
-        // Update document theme class
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(theme);
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-    };
+    const themeValue = useThemeSetup();
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={themeValue}>
             {children}
         </ThemeContext.Provider>
     );
@@ -33,10 +20,5 @@ ThemeProvider.propTypes = {
     children: PropTypes.node.isRequired,
 };
 
-export const useTheme = () => {
-    const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within a ThemeProvider');
-    }
-    return context;
-};
+// Export the context for direct usage if needed
+export { ThemeContext };

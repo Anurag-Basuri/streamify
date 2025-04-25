@@ -23,7 +23,7 @@ import { useTheme } from "../context/ThemeContext.jsx";
 
 const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
     const { user, isAuthenticated } = useContext(AuthContext);
-    const { theme, toggleTheme } = useTheme(); // Use theme context instead of local state
+    const { theme, toggleTheme } = useTheme();
     const [activeHover, setActiveHover] = useState(null);
 
     const handleMouseEnter = (label) => setActiveHover(label);
