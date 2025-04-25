@@ -1,5 +1,3 @@
-import { motion } from "framer-motion";
-import PropTypes from "prop-types";
 import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
 
 export const FileUploadArea = ({ videoFile, thumbnail, onFileUpload }) => (
