@@ -1,75 +1,34 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import ReactPlayer from "react-player";
 import { FaSpinner, FaClock } from "react-icons/fa";
-import { AuthContext } from "../services/AuthContext.jsx";
+import useAuth from "../hooks/useAuth";
 import useWatchLater from "../hooks/useWatchLater";
+import useVideo from "../hooks/useVideo";
 
 const VideoPlayer = () => {
-    const { user } = useContext(AuthContext);
-    const [videoID, setVideoID] = useState(useParams().videoID);
-    const [video, setVideo] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const { videoID } = useParams();
+    const { user } = useAuth();
     const watchLater = useWatchLater(user);
+    const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
+        useVideo(videoID, user);
 
-    // Get video ID from URL parameters
+    // Initial fetch
     useEffect(() => {
-        const fetchVideo = async () => {
-            try {
-                const response = await axios.get(
-                    `http://localhost:8000/api/v1/videos/${videoID}`
-                );
-                if (!response.data.success) {
-                    throw new Error("Failed to fetch video details");
-                }
-                setVideo(response.data.data);
-                setVideoID(response.data.data._id);
-            } catch (err) {
-                setError(err.message || "Failed to load video");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchVideo();
         watchLater.fetchWatchLater();
-    }, [videoID]);
+    }, [videoID, fetchVideo, watchLater]);
 
-    // Handle video play event to increment view count and add to history
+    // Handle video play event
     const handlePlay = async () => {
-        const viewedKey = `viewed_${videoID}`;
-        if (!localStorage.getItem(viewedKey)) {
-            try {
-                // Increment view count
-                await fetch(
-                    `api/v1/videos/${videoID}/views`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-                localStorage.setItem(viewedKey, true);
-            } catch (err) {
-                console.error("Error updating video stats:", err);
-            }
-        }
-
-        // Add to history if user is logged in
-        await axios.post(`/api/v1/history/add/${videoID}`, {
-            headers: {
-                Authorization: `Bearer ${user.token}`,
-            },
-        });
-        
+        await incrementViews();
+        await addToHistory();
     };
 
-    // Handle Watch Later button click
+    // Handle Watch Later
     const handleWatchLater = async () => {
         if (!video?._id) return;
+
         if (watchLater.isInWatchLater(video._id)) {
             await watchLater.removeFromWatchLater(video._id);
         } else {
@@ -77,7 +36,6 @@ const VideoPlayer = () => {
         }
     };
 
-    // Handle video ID from URL parameters
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -86,7 +44,6 @@ const VideoPlayer = () => {
         );
     }
 
-    //check if video is not found
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -112,24 +69,35 @@ const VideoPlayer = () => {
                             config={{
                                 file: {
                                     attributes: {
-                                        controlsList: "nodownload", // Disable download option
+                                        controlsList: "nodownload",
                                     },
                                 },
                             }}
                         />
                     )}
-                    {/* Watch Later Button Overlay */}
-                    <button
-                        className={`absolute top-4 right-4 z-10 p-3 rounded-full shadow-lg transition-colors text-lg ${inWatchLater ? 'bg-yellow-400 text-white' : 'bg-gray-900/80 text-yellow-400 hover:bg-yellow-500'}`}
-                        title={inWatchLater ? 'Remove from Watch Later' : 'Add to Watch Later'}
-                        onClick={handleWatchLater}
-                        disabled={watchLater.loading}
-                    >
-                        <FaClock />
-                        {watchLater.loading && (
-                            <span className="ml-2 animate-spin"><FaSpinner /></span>
-                        )}
-                    </button>
+                    {user && (
+                        <button
+                            className={`absolute top-4 right-4 z-10 p-3 rounded-full shadow-lg transition-colors text-lg ${
+                                inWatchLater
+                                    ? "bg-yellow-400 text-white"
+                                    : "bg-gray-900/80 text-yellow-400 hover:bg-yellow-500"
+                            }`}
+                            title={
+                                inWatchLater
+                                    ? "Remove from Watch Later"
+                                    : "Add to Watch Later"
+                            }
+                            onClick={handleWatchLater}
+                            disabled={watchLater.loading}
+                        >
+                            <FaClock />
+                            {watchLater.loading && (
+                                <span className="ml-2 animate-spin">
+                                    <FaSpinner />
+                                </span>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 <div className="mt-8 space-y-4">
