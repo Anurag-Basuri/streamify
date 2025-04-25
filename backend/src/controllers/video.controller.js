@@ -249,22 +249,63 @@ const togglePublishStatus = asynchandler(async (req, res) => {
 const getAllVideos = asynchandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const sort = req.query.sort || "-createdAt";
+    const sortField = req.query.sort || "-createdAt";
+
+    // Create the aggregate pipeline
+    const aggregatePipeline = [
+        // Match only published and non-deleted videos
+        {
+            $match: {
+                isPublished: true,
+                isDeleted: false,
+            },
+        },
+        // Lookup to get owner information
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+            },
+        },
+        // Unwind the owner array to get a single document
+        {
+            $unwind: "$owner",
+        },
+        // Project only the fields we need
+        {
+            $project: {
+                title: 1,
+                description: 1,
+                videoFile: 1,
+                thumbnail: 1,
+                duration: 1,
+                views: 1,
+                createdAt: 1,
+                slug: 1,
+                tags: 1,
+                "owner._id": 1,
+                "owner.userName": 1,
+                "owner.avatar": 1,
+            },
+        },
+        // Sort the results
+        {
+            $sort: sortField.startsWith("-")
+                ? { [sortField.substring(1)]: -1 }
+                : { [sortField]: 1 },
+        },
+    ];
+
+    const videoAggregate = Video.aggregate(aggregatePipeline);
 
     const options = {
         page,
         limit,
-        sort,
-        populate: {
-            path: "owner",
-            select: "userName avatar",
-        },
     };
 
-    const videos = await Video.paginate(
-        { isPublished: true, isDeleted: false },
-        options
-    );
+    const videos = await Video.aggregatePaginate(videoAggregate, options);
 
     res.status(200).json(
         new APIresponse(
@@ -274,6 +315,9 @@ const getAllVideos = asynchandler(async (req, res) => {
                 totalVideos: videos.totalDocs,
                 totalPages: videos.totalPages,
                 hasNextPage: videos.hasNextPage,
+                hasPrevPage: videos.hasPrevPage,
+                page: videos.page,
+                limit: videos.limit,
             },
             "Videos fetched successfully"
         )
