@@ -1,7 +1,5 @@
-import { useState, useEffect, useContext } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../services/AuthContext.jsx";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import {
@@ -11,68 +9,41 @@ import {
     ExclamationTriangleIcon,
     ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import useAuth from "../../hooks/useAuth";
+import useVideoEdit from "../../hooks/useVideoEdit";
 
 const EditVideo = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
-
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        tags: "",
-    });
-    const [thumbnail, setThumbnail] = useState(null);
-    const [currentThumbnail, setCurrentThumbnail] = useState("");
-    const [video, setVideo] = useState(null); // Added video state
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const { user } = useAuth();
+    const {
+        formData,
+        setFormData,
+        thumbnail,
+        setThumbnail,
+        currentThumbnail,
+        setCurrentThumbnail,
+        video,
+        loading,
+        error,
+        fetchVideo,
+        handleSubmit,
+    } = useVideoEdit(videoID, user);
 
     useEffect(() => {
-        const fetchVideo = async () => {
-            try {
-                const response = await axios.get(`/api/v1/videos/${videoID}`, {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`, // Added Authorization header
-                    },
-                });
-                const video = response.data.data;
-
-                if (video.owner._id !== user._id.toString()) {
-                    console.error("Unauthorized access");
-                    navigate("/uservideos");
-                    toast.error("Unauthorized access");
-                    return;
-                }
-
-                setFormData({
-                    title: video.title,
-                    description: video.description || "",
-                    tags: video.tags.join(", "),
-                });
-                setCurrentThumbnail(video.thumbnail?.url || "");
-                setVideo(video); // Store video details
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || err.message);
-                setLoading(false);
-            }
-        };
-
         fetchVideo();
-    }, [videoID, user._id, user.token, navigate]);
+    }, [fetchVideo]);
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
+        setFormData((prev) => ({
+            ...prev,
             [e.target.name]: e.target.value,
-        });
+        }));
     };
 
     const handleThumbnailChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file type and size
             if (!file.type.startsWith("image/")) {
                 toast.error("Please upload a valid image file");
                 return;
@@ -87,40 +58,9 @@ const EditVideo = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const formPayload = new FormData();
-            formPayload.append("title", formData.title);
-            formPayload.append("description", formData.description);
-            formPayload.append(
-                "tags",
-                JSON.stringify(
-                    formData.tags
-                        .split(",")
-                        .map((tag) => tag.trim())
-                        .filter((tag) => tag)
-                )
-            );
-            if (thumbnail) {
-                formPayload.append("thumbnail", thumbnail);
-            }
-
-            await axios.patch(`/api/v1/videos/update/${videoID}`, formPayload, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${user.token}`,
-                },
-            });
-
-            toast.success("Video updated successfully");
-            navigate("/uservideos"); // Ensure the correct route
-        } catch (err) {
-            setError(err.response?.data?.message || "Failed to update video");
-            toast.error(
-                err.response?.data?.message || "Failed to update video"
-            );
-        }
+        await handleSubmit(formData, thumbnail);
     };
 
     if (loading) {
@@ -173,7 +113,7 @@ const EditVideo = () => {
                     animate="visible"
                     className="bg-white rounded-2xl shadow-lg p-6 sm:p-8"
                 >
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form onSubmit={onSubmit} className="space-y-8">
                         {/* Video Preview Section */}
                         <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
                             {currentThumbnail && (
