@@ -4,12 +4,97 @@ import { motion } from "framer-motion";
 import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import useAuth from "../../hooks/useAuth.js";
 import axios from "axios";
-import {
-    UserHeader,
-    UserStats,
-    UserContent,
-    ImageUpload,
-} from "../../components/Profile";
+import { Fragment } from 'react';
+
+export const UserHeader = ({ user, files, setFiles, uploadState, handleFileUpload }) => {
+    return (
+        <div className="flex items-center gap-8 mb-8">
+            <div className="relative">
+                <img
+                    src={files.avatar ? URL.createObjectURL(files.avatar) : user.avatar}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full object-cover"
+                />
+                {!user.isGoogleUser && (
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setFiles(prev => ({ ...prev, avatar: e.target.files[0] }))}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                )}
+            </div>
+            <div>
+                <h1 className="text-2xl font-bold">{user.name}</h1>
+                <p className="text-gray-600">{user.email}</p>
+                {files.avatar && (
+                    <button
+                        onClick={() => handleFileUpload('avatar')}
+                        disabled={uploadState.loading}
+                        className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-md"
+                    >
+                        {uploadState.loading ? 'Uploading...' : 'Update Avatar'}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export const UserStats = ({ stats }) => {
+    if (!stats) return null;
+    return (
+        <div className="grid grid-cols-3 gap-4 mb-8">
+            {Object.entries(stats).map(([key, value]) => (
+                <div key={key} className="text-center p-4 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold capitalize">{key}</h3>
+                    <p className="text-xl">{value}</p>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export const UserContent = ({ content }) => {
+    if (!content) return null;
+    return (
+        <div className="space-y-6">
+            {/* Add your content sections here based on your dashboard data structure */}
+            <p className="text-gray-600">User content will be displayed here</p>
+        </div>
+    );
+};
+
+export const ImageUpload = ({ type, image, file, setFiles, handleUpload, uploadState, isGoogleUser }) => {
+    return (
+        <div className="relative h-64 bg-gray-100">
+            <img
+                src={file ? URL.createObjectURL(file) : image}
+                alt={type}
+                className="w-full h-full object-cover"
+            />
+            {!isGoogleUser && (
+                <Fragment>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setFiles(prev => ({ ...prev, [type]: e.target.files[0] }))}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {file && (
+                        <button
+                            onClick={() => handleUpload(type)}
+                            disabled={uploadState.loading}
+                            className="absolute bottom-4 right-4 px-4 py-2 bg-blue-500 text-white rounded-md"
+                        >
+                            {uploadState.loading ? 'Uploading...' : `Update ${type}`}
+                        </button>
+                    )}
+                </Fragment>
+            )}
+        </div>
+    );
+};
 import { LoadingSpinner } from "../../components/Common/LoadingSpinner.jsx";
 
 const useAxios = () => {
