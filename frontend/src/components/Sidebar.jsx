@@ -17,12 +17,12 @@ import {
     DownloadCloud,
     ThumbsUp,
 } from "lucide-react";
-import { useContext, useState } from "react";
-import { AuthContext } from "../context/AuthContext.jsx";
-import { useTheme } from "../context/ThemeContext.jsx";
+import { useState } from "react";
+import useAuth from "../hooks/useAuth";
+import useTheme from "../hooks/useTheme";
 
 const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
-    const { user, isAuthenticated } = useContext(AuthContext);
+    const { user, isAuthenticated } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [activeHover, setActiveHover] = useState(null);
 
