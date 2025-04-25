@@ -5,6 +5,7 @@ import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import useAuth from "../../hooks/useAuth.js";
 import axios from "axios";
 import { Fragment } from 'react';
+import PropTypes from 'prop-types';
 
 export const UserHeader = ({ user, files, setFiles, uploadState, handleFileUpload }) => {
     return (
@@ -95,6 +96,20 @@ export const ImageUpload = ({ type, image, file, setFiles, handleUpload, uploadS
         </div>
     );
 };
+
+ImageUpload.propTypes = {
+    type: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    file: PropTypes.object,
+    setFiles: PropTypes.func.isRequired,
+    handleUpload: PropTypes.func.isRequired,
+    uploadState: PropTypes.shape({
+        loading: PropTypes.bool.isRequired,
+        error: PropTypes.string
+    }).isRequired,
+    isGoogleUser: PropTypes.bool
+};
+
 import { LoadingSpinner } from "../../components/Common/LoadingSpinner.jsx";
 
 const useAxios = () => {
