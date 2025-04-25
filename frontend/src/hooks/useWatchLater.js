@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import PropTypes from "prop-types";
 
 const useWatchLater = (user) => {
     const [videos, setVideos] = useState([]);
@@ -105,6 +106,13 @@ const useWatchLater = (user) => {
         remindLater,
         setReminder,
     };
+};
+
+useWatchLater.propTypes = {
+    user: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        token: PropTypes.string.isRequired,
+    }),
 };
 
 export default useWatchLater;

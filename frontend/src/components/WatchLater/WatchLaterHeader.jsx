@@ -1,13 +1,53 @@
 import { Link } from "react-router-dom";
+import { ClockIcon, TrashIcon, PlayIcon, BellIcon } from "@heroicons/react/24/outline";
+import { PlayCircleIcon, DocumentMagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { motion } from "framer-motion";
-import { PlayCircleIcon } from "@heroicons/react/24/solid";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
+import { timeAgo } from "../../utils/dateUtils";
+import emptyStateIllustration from "../../resources/watch-later-empty.svg";
 import VideoCard from "../../components/VideoCard";
 import LoadingState from "../../components/LoadingState";
 import ErrorState from "../../components/ErrorState";
-import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader";
-import emptyStateIllustration from "../../resources/watch-later-empty.svg";
+import PropTypes from "prop-types";
+
+const WatchLaterHeader = ({ videoCount, filter, setFilter, sortBy, setSortBy }) => (
+    <div className="flex items-center gap-4 mb-8">
+        <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
+            <ClockIcon className="w-8 h-8 text-white" />
+        </div>
+        <div>
+            <h1 className="text-4xl font-bold text-gray-900">Watch Later</h1>
+            <p className="text-gray-500 mt-1">{videoCount} saved videos</p>
+        </div>
+        <div className="ml-auto flex gap-3">
+            <select
+                className="rounded-lg px-2 py-1 border text-gray-700"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+            >
+                <option value="all">All</option>
+                <option value="today">Added Today</option>
+                <option value="week">This Week</option>
+            </select>
+            <select
+                className="rounded-lg px-2 py-1 border text-gray-700"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+            >
+                <option value="recent">Recently Added</option>
+            </select>
+        </div>
+    </div>
+);
+
+WatchLaterHeader.propTypes = {
+    videoCount: PropTypes.number.isRequired,
+    filter: PropTypes.string.isRequired,
+    setFilter: PropTypes.func.isRequired,
+    sortBy: PropTypes.string.isRequired,
+    setSortBy: PropTypes.func.isRequired,
+};
 
 const EmptyState = () => (
     <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
@@ -20,8 +60,8 @@ const EmptyState = () => (
             Your Time Capsule Awaits
         </h2>
         <p className="text-gray-500 max-w-md mx-auto mb-8">
-            Save videos you want to watch later and they'll appear here. Curate
-            your perfect viewing experience!
+            Save videos you want to watch later and they&apos;ll appear here.
+            Curate your perfect viewing experience!
         </p>
         <Link
             to="/videos"
@@ -48,7 +88,7 @@ const Watchlater = () => {
         filter,
         setFilter,
         remindLater,
-        setReminder,
+        setReminder
     } = useWatchLater(user);
 
     if (loading) return <LoadingState />;
@@ -61,14 +101,15 @@ const Watchlater = () => {
             className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8"
         >
             <div className="max-w-7xl mx-auto">
-                <WatchLaterHeader
+                {/* Header Section */}
+                <WatchLaterHeader 
                     videoCount={videos.length}
                     filter={filter}
                     setFilter={setFilter}
                     sortBy={sortBy}
                     setSortBy={setSortBy}
                 />
-
+                {/* Content Section */}
                 {videos.length === 0 ? (
                     <EmptyState />
                 ) : (
@@ -78,9 +119,7 @@ const Watchlater = () => {
                                 key={video._id}
                                 video={video}
                                 onRemove={() => setRemovingVideo(video._id)}
-                                onConfirmRemove={() =>
-                                    removeFromWatchLater(video._id)
-                                }
+                                onConfirmRemove={() => removeFromWatchLater(video._id)}
                                 onRemindLater={() => setReminder(video._id)}
                                 isRemoving={removingVideo === video._id}
                                 hasReminder={remindLater[video._id]}
