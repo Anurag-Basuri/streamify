@@ -41,7 +41,7 @@ VideoInfo.propTypes = {
 };
 
 
-export const VideoCard = ({
+const VideoCard = ({
     video,
     onAction,
     inWatchLater,
@@ -140,3 +140,5 @@ VideoCard.propTypes = {
     isAuthenticated: PropTypes.bool,
     progress: PropTypes.number,
 };
+
+export default VideoCard;
