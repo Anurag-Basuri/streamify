@@ -3,11 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import useVideo from "../../hooks/useVideo";
-import {
-    EmptyState,
-    LoadingState,
-    ErrorState,
-} from "../../components/Video";
+import { EmptyState, LoadingState, ErrorState } from "../../components/Video";
 import {
     VideoHeader,
     SearchFilterBar,
