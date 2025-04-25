@@ -1,7 +1,7 @@
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import PropTypes from 'prop-types';
 
-export const EmptyState = ({ title, description, actionLabel, onAction }) => (
+const EmptyState = ({ title, description, actionLabel, onAction }) => (
     <div className="text-center py-12">
         <div className="rounded-full bg-gray-100 p-4 w-20 h-20 mx-auto mb-6">
             <PlusCircleIcon className="w-12 h-12 text-gray-400" />
@@ -23,3 +23,5 @@ EmptyState.propTypes = {
     actionLabel: PropTypes.string.isRequired,
     onAction: PropTypes.func.isRequired
 };
+
+export default EmptyState;
