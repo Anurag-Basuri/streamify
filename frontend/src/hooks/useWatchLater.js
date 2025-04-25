@@ -1,92 +1,110 @@
-import { useState, useCallback } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
-export default function useWatchLater(user) {
-    const [loading, setLoading] = useState(false);
+const useWatchLater = (user) => {
+    const [videos, setVideos] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [watchLaterIds, setWatchLaterIds] = useState([]);
+    const [removingVideo, setRemovingVideo] = useState(null);
+    const [sortBy, setSortBy] = useState("recent");
+    const [filter, setFilter] = useState("all");
+    const [remindLater, setRemindLater] = useState({});
 
-    // Fetch user's current Watch Later list (IDs only)
-    const fetchWatchLater = useCallback(async () => {
-        if (!user?.token) return;
+    const fetchWatchLater = async () => {
         try {
-            setLoading(true);
-            const res = await axios.get("/api/v1/watchlater", {
-                headers: { Authorization: `Bearer ${user.token}` },
+            const response = await fetch("/api/v1/watchlater", {
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
             });
-            const ids = (res.data?.data?.videos || []).map(v => v.video?._id || v.video);
-            setWatchLaterIds(ids);
+            const data = await response.json();
+            if (!response.ok)
+                throw new Error(data.message || "Couldn't fetch watch later");
+
+            const flat = (data.data?.videos || []).map((item) => ({
+                ...item.video,
+                addedAt: item.addedAt,
+                remindAt: item.remindAt,
+                _watchlaterId: item._id,
+            }));
+            setVideos(flat);
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to fetch Watch Later");
+            setError(err.message);
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    };
 
-    // Add video to Watch Later
-    const addToWatchLater = useCallback(async (videoId) => {
-        if (!user?.token) {
-            toast.error("You must be logged in to add to Watch Later.");
-            return false;
-        }
+    const removeFromWatchLater = async (videoId) => {
         try {
-            setLoading(true);
-            await axios.post(
-                `/api/v1/watchlater/${videoId}`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${user.token}` },
-                }
-            );
-            setWatchLaterIds(prev => [...prev, videoId]);
-            toast.success("Added to Watch Later!");
-            return true;
+            const response = await fetch(`/api/v1/watchlater/${videoId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+            if (!response.ok) throw new Error("Failed to remove video");
+            setVideos((prev) => prev.filter((video) => video._id !== videoId));
+            setRemovingVideo(null);
+            toast.success("Video removed from Watch Later");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to add to Watch Later");
-            setError(err.response?.data?.message || "Failed to add to Watch Later");
-            return false;
-        } finally {
-            setLoading(false);
+            setError(err.message);
+            toast.error(err.message);
+            setRemovingVideo(null);
         }
-    }, [user]);
+    };
 
-    // Remove video from Watch Later
-    const removeFromWatchLater = useCallback(async (videoId) => {
-        if (!user?.token) {
-            toast.error("You must be logged in to remove from Watch Later.");
-            return false;
+    const setReminder = async (videoId) => {
+        setRemindLater((prev) => ({ ...prev, [videoId]: true }));
+        toast.success("Reminder set successfully");
+    };
+
+    const getFilteredVideos = () => {
+        let filteredVideos = videos;
+
+        if (filter === "today") {
+            filteredVideos = filteredVideos.filter((v) => {
+                const d = new Date(v.addedAt);
+                const now = new Date();
+                return d.toDateString() === now.toDateString();
+            });
+        } else if (filter === "week") {
+            filteredVideos = filteredVideos.filter((v) => {
+                const d = new Date(v.addedAt);
+                const now = new Date();
+                const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                return d >= weekAgo;
+            });
         }
-        try {
-            setLoading(true);
-            await axios.delete(
-                `/api/v1/watchlater/${videoId}`,
-                {
-                    headers: { Authorization: `Bearer ${user.token}` },
-                }
+
+        if (sortBy === "recent") {
+            filteredVideos = [...filteredVideos].sort(
+                (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
             );
-            setWatchLaterIds(prev => prev.filter(id => id !== videoId));
-            toast.success("Removed from Watch Later");
-            return true;
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to remove from Watch Later");
-            setError(err.response?.data?.message || "Failed to remove from Watch Later");
-            return false;
-        } finally {
-            setLoading(false);
         }
-    }, [user]);
 
-    // Check if a video is in Watch Later
-    const isInWatchLater = useCallback((videoId) => watchLaterIds.includes(videoId), [watchLaterIds]);
+        return filteredVideos;
+    };
+
+    useEffect(() => {
+        if (user) fetchWatchLater();
+    }, [user]);
 
     return {
+        videos: getFilteredVideos(),
         loading,
         error,
-        watchLaterIds,
-        fetchWatchLater,
-        addToWatchLater,
+        removingVideo,
+        setRemovingVideo,
         removeFromWatchLater,
-        isInWatchLater,
+        sortBy,
+        setSortBy,
+        filter,
+        setFilter,
+        remindLater,
+        setReminder,
     };
-}
+};
+
+export default useWatchLater;
