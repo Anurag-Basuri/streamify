@@ -1,12 +1,18 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 import useVideo from "../../hooks/useVideo";
-import { VideoCard, EmptyState, LoadingState, ErrorState } from "../../components/Video";
-import { SearchBar, SortSelect } from "../../components/Filters";
-import { VideoHeader, SearchFilterBar, VideoGrid } from "../../components/Account";
+import {
+    EmptyState,
+    LoadingState,
+    ErrorState,
+} from "../../components/Video";
+import {
+    VideoHeader,
+    SearchFilterBar,
+    VideoGrid,
+} from "../../components/Account";
 
 const YourVideos = () => {
     const navigate = useNavigate();
@@ -25,14 +31,23 @@ const YourVideos = () => {
     } = useVideo(user);
 
     useEffect(() => {
-        if (user) fetchVideos();
-    }, [user, sortBy, searchQuery]);
+        if (!user) {
+            navigate("/signin?redirect=/videos");
+            return;
+        }
+        fetchVideos();
+    }, [user, fetchVideos, navigate]);
 
     if (loading) return <LoadingState />;
     if (error) return <ErrorState error={error} onRetry={fetchVideos} />;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8"
+        >
             <div className="max-w-7xl mx-auto space-y-8">
                 <VideoHeader
                     videoCount={videos.length}
@@ -41,24 +56,37 @@ const YourVideos = () => {
 
                 <SearchFilterBar
                     searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
+                    onSearchChange={setSearchQuery}
                     sortBy={sortBy}
-                    setSortBy={setSortBy}
+                    onSortChange={setSortBy}
+                    options={[
+                        { value: "recent", label: "Recently Added" },
+                        { value: "popular", label: "Most Viewed" },
+                        { value: "oldest", label: "Oldest First" },
+                    ]}
                 />
 
                 <AnimatePresence mode="popLayout">
                     {videos.length === 0 ? (
-                        <EmptyState />
+                        <EmptyState
+                            title="No Videos Yet"
+                            description="Start uploading videos to build your collection"
+                            actionLabel="Upload Video"
+                            onAction={() => navigate("/upload")}
+                        />
                     ) : (
                         <VideoGrid
                             videos={videos}
                             onDelete={deleteVideo}
                             onTogglePublish={togglePublish}
+                            onEdit={(videoId) =>
+                                navigate(`/videos/edit/${videoId}`)
+                            }
                         />
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

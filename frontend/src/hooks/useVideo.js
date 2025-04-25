@@ -1,58 +1,83 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useCallback } from "react";
+import { toast } from "react-hot-toast";
+import axios from "axios";
 
-const useVideo = (videoId, user) => {
-    const [video, setVideo] = useState(null);
+const useVideo = (user) => {
+    const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState("recent");
 
-    const fetchVideo = async () => {
+    const fetchVideos = useCallback(async () => {
+        if (!user) return;
         try {
-            const response = await axios.get(`/api/v1/videos/${videoId}`);
-            if (!response.data.success) {
-                throw new Error("Failed to fetch video details");
-            }
-            setVideo(response.data.data);
-            setError('');
+            setLoading(true);
+            const response = await axios.get(
+                `/api/v1/videos/user/${user._id}`,
+                {
+                    headers: { Authorization: `Bearer ${user.token}` },
+                    params: { search: searchQuery, sort: sortBy },
+                }
+            );
+            setVideos(response.data.data);
+            setError(null);
         } catch (err) {
-            setError(err.message || "Failed to load video");
+            setError(err.response?.data?.message || "Failed to fetch videos");
+            toast.error("Could not load your videos");
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, searchQuery, sortBy]);
 
-    const incrementViews = async () => {
-        const viewedKey = `viewed_${videoId}`;
-        if (!localStorage.getItem(viewedKey)) {
-            try {
-                await axios.post(`/api/v1/videos/${videoId}/views`);
-                localStorage.setItem(viewedKey, true);
-            } catch (err) {
-                console.error("Error updating view count:", err);
-            }
+    const deleteVideo = async (videoId) => {
+        try {
+            await axios.delete(`/api/v1/videos/${videoId}`, {
+                headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setVideos((prev) => prev.filter((v) => v._id !== videoId));
+            toast.success("Video deleted successfully");
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to delete video"
+            );
         }
     };
 
-    const addToHistory = async () => {
-        if (!user) return;
+    const togglePublish = async (videoId) => {
         try {
-            await axios.post(`/api/v1/history/add/${videoId}`, null, {
-                headers: {
-                    Authorization: `Bearer ${user.token}`,
-                },
-            });
+            const video = videos.find((v) => v._id === videoId);
+            const response = await axios.patch(
+                `/api/v1/videos/${videoId}/publish`,
+                { isPublished: !video.isPublished },
+                { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            setVideos((prev) =>
+                prev.map((v) => (v._id === videoId ? response.data.data : v))
+            );
+            toast.success(
+                `Video ${
+                    video.isPublished ? "unpublished" : "published"
+                } successfully`
+            );
         } catch (err) {
-            console.error("Error updating history:", err);
+            toast.error(
+                err.response?.data?.message || "Failed to update video status"
+            );
         }
     };
 
     return {
-        video,
+        videos,
         loading,
         error,
-        fetchVideo,
-        incrementViews,
-        addToHistory,
+        fetchVideos,
+        deleteVideo,
+        togglePublish,
+        searchQuery,
+        setSearchQuery,
+        sortBy,
+        setSortBy,
     };
 };
 
