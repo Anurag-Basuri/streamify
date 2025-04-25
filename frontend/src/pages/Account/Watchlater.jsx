@@ -6,7 +6,7 @@ import {
     PlayCircleIcon,
     DocumentMagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-import emptyStateIllustration from "../../assets/watch-later-empty.svg";
+import emptyStateIllustration from "";
 
 // Helper to format "time ago"
 function timeAgo(dateString) {
