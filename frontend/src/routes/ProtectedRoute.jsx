@@ -1,26 +1,56 @@
-import { memo, useContext } from "react";
+import { memo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { AuthContext } from "../services/AuthContext";
+import PropTypes from "prop-types";
+import useAuth from "../hooks/useAuth";
 import Spinner from "../components/Spinner";
 
-const ProtectedRoute = memo(({ children }) => {
-    const { isAuthenticated, isLoading, user } = useContext(AuthContext);
-    const location = useLocation();
+const ProtectedRoute = memo(
+    ({
+        children,
+        requireAuth = true,
+        allowedRoles = [],
+        redirectPath = "/auth",
+    }) => {
+        const { isAuthenticated, isLoading, user } = useAuth();
+        const location = useLocation();
 
-    if (isLoading) return <Spinner />;
+        if (isLoading) {
+            return (
+                <div className="min-h-screen flex items-center justify-center">
+                    <Spinner size="lg" />
+                </div>
+            );
+        }
 
-    // Wait for user initialization to complete
-    if (!user && !isAuthenticated) {
-        return (
-            <Navigate
-                to={`/auth?redirect=${encodeURIComponent(location.pathname)}`}
-                replace
-            />
-        );
+        // Handle authentication check
+        if (requireAuth && !isAuthenticated) {
+            const redirectUrl = `${redirectPath}?redirect=${encodeURIComponent(
+                location.pathname
+            )}`;
+            return <Navigate to={redirectUrl} replace />;
+        }
+
+        // Handle role-based access
+        if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
+            return <Navigate to="/unauthorized" replace />;
+        }
+
+        // Handle already authenticated users trying to access auth pages
+        if (!requireAuth && isAuthenticated) {
+            return <Navigate to="/dashboard" replace />;
+        }
+
+        return children;
     }
+);
 
-    return children;
-});
+ProtectedRoute.propTypes = {
+    children: PropTypes.node.isRequired,
+    requireAuth: PropTypes.bool,
+    allowedRoles: PropTypes.arrayOf(PropTypes.string),
+    redirectPath: PropTypes.string,
+};
 
 ProtectedRoute.displayName = "ProtectedRoute";
+
 export default ProtectedRoute;
