@@ -1,5 +1,5 @@
-import { EmptyState } from './EmptyState';
-import { LoadingState } from './LoadingState';
-import { ErrorState } from './ErrorState';
+import { EmptyState } from './EmptyState.jsx';
+import { LoadingState } from './LoadingState.jsx';
+import { ErrorState } from "./ErrorState.jsx";
 
 export { EmptyState, LoadingState, ErrorState };
