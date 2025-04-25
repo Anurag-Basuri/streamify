@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
 import useAuth from "../hooks/useAuth";
 import useTheme from "../hooks/useTheme";
+import usePlaylist from "../hooks/usePlaylist";
 
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
@@ -23,43 +24,28 @@ const PlaylistDetail = () => {
     const { user } = useAuth();
     const { theme } = useTheme();
 
-    const [playlist, setPlaylist] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    // Use the custom playlist hook
+    const {
+        playlist,
+        loading,
+        error,
+        fetchPlaylist,
+        addVideo,
+        removeVideo,
+        setPlaylist,
+    } = usePlaylist(playlistID, user);
+
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
 
-    // Fetch playlist details
+    // Use fetchPlaylist from the hook
     useEffect(() => {
-        const fetchPlaylist = async () => {
-            try {
-                const { data } = await axios.get(
-                    `/api/v1/playlists/${playlistID}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${user?.token}`,
-                        },
-                    }
-                );
-                setPlaylist(data.data);
-                setError("");
-            } catch (err) {
-                setError(
-                    err.response?.data?.message || "Failed to load playlist"
-                );
-                toast.error(
-                    err.response?.data?.message || "Failed to load playlist"
-                );
-            } finally {
-                setLoading(false);
-            }
-        };
         if (user) fetchPlaylist();
-    }, [playlistID, user]);
+    }, [playlistID, user, fetchPlaylist]);
 
-    // Debounced video search
+    // Debounced video search - keeping this in component as it's UI specific
     const searchVideos = debounce(async (query) => {
         if (!query.trim()) {
             setSearchResults([]);
@@ -91,53 +77,17 @@ const PlaylistDetail = () => {
         return () => searchVideos.cancel();
     }, [searchQuery]);
 
-    // Add video to playlist
+    // Update handlers to use hook methods
     const handleAddVideo = async (videoId) => {
-        try {
-            const { data } = await axios.post(
-                `/api/v1/playlists/${playlistID}/videos/${videoId}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }
-            );
-
-            setPlaylist((prev) => ({
-                ...prev,
-                videos: [...prev.videos, data.data],
-            }));
-            toast.success("Video added to playlist");
+        const success = await addVideo(videoId);
+        if (success) {
             setSearchQuery("");
             setShowSearchResults(false);
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to add video");
         }
     };
 
-    // Remove video from playlist
     const handleRemoveVideo = async (videoId) => {
-        try {
-            await axios.delete(
-                `/api/v1/playlists/remove/${playlistID}/videos/${videoId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                }
-            );
-
-            setPlaylist((prev) => ({
-                ...prev,
-                videos: prev.videos.filter((v) => v._id !== videoId),
-            }));
-            toast.success("Video removed from playlist");
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to remove video"
-            );
-        }
+        await removeVideo(videoId);
     };
 
     // Check if user is playlist owner
