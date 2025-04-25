@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import PropTypes from "prop-types";
 import { updateAvatar, updateCoverImage } from "../../services/authService.js";
 import useAuth from "../../hooks/useAuth.js";
-import { useAxios } from "../../hooks/useAxios.js";
+import axios from "axios";
 import {
     UserHeader,
     UserStats,
@@ -12,6 +11,31 @@ import {
     ImageUpload,
 } from "../../components/Profile";
 import { LoadingSpinner } from "../../components/Common/LoadingSpinner.jsx";
+
+const useAxios = () => {
+    const instance = axios.create();
+
+    instance.interceptors.request.use((config) => {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    });
+
+    instance.interceptors.response.use(
+        (response) => response,
+        async (error) => {
+            if (error.response?.status === 401) {
+                localStorage.removeItem("accessToken");
+                window.location.href = "/auth";
+            }
+            return Promise.reject(error);
+        }
+    );
+
+    return instance;
+};
 
 const Profile = () => {
     const { user, logout, isLoading, updateUser } = useAuth();
