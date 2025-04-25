@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
-import { VideoCard } from "../Video/VideoCard";
+import { VideoCard } from "../Video/VideoCard.jsx";
 
 export const HistorySection = ({
     history,
