@@ -1,15 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
-import useAuth from "../../hooks/useAuth";
-import { HistoryHeader } from "../../components/History/HistoryHeader";
-import { HistoryItem } from "../../components/History/HistoryItem";
-import { EmptyState } from "../../components/History/EmptyState";
-import { LoadingState } from "../../components/History/LoadingState";
-import { ErrorState } from "../../components/History/ErrorState";
-import { GroupHeader } from "../../components/History/GroupHeader";
-import { ConfirmModal } from "../../components/Modal";
-import useHistory from "../../hooks/useHistory";
-import { formatDuration, formatTime } from "../../utils/formatters";
-import { colors } from "../../utils/theme";
+import useAuth from "../../hooks/useAuth.js";
+import { HistoryHeader } from "../../components/History/HistoryHeader.jsx";
+import { HistoryItem } from "../../components/History/HistoryItem.jsx";
+import { EmptyState } from "../../components/History/EmptyState.jsx";
+import { LoadingState } from "../../components/History/LoadingState.jsx";
+import { ErrorState } from "../../components/History/ErrorState.jsx";
+import { GroupHeader } from "../../components/History/GroupHeader.jsx";
+import { ConfirmModal } from "../../components/Modal.jsx";
+import useHistory from "../../hooks/useHistory.js";
+import { formatDuration, formatTime } from "../../utils/formatters.js";
+import { colors } from "../../utils/theme.js";
 
 const History = () => {
     const { user } = useAuth();
