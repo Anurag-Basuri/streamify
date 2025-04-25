@@ -16,7 +16,7 @@ import {
     logout,
     refreshToken,
     handleGoogleAuth,
-} from "./authService.js";
+} from "../services/authService";
 
 const AuthContext = createContext();
 
