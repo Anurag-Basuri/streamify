@@ -18,8 +18,8 @@ import {
     ThumbsUp,
 } from "lucide-react";
 import { useContext, useState } from "react";
-import { AuthContext } from "../services/AuthContext.jsx";
-import { useTheme } from "../context/ThemeContext";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 
 const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
     const { user, isAuthenticated } = useContext(AuthContext);
