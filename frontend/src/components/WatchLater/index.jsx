@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
-import useWatchLater from "../../hooks/useWatchLater";
-import VideoCard from "../VideoCard";
-import LoadingState from "../LoadingState";
-import ErrorState from "../ErrorState";
-import WatchLaterHeader from "./WatchLaterHeader";
-import { EmptyState } from "./EmptyState";
+import useWatchLater from "../../hooks/useWatchLater.js";
+import VideoCard from "../Video/VideoCard.jsx";
+import LoadingState from "../Video/LoadingState.jsx";
+import ErrorState from "../Video/ErrorState.jsx";
+import WatchLaterHeader from "./WatchLaterHeader.jsx";
+import { FilterSelect } from "./FilterSelect.jsx";
+import { EmptyState } from "./EmptyState.jsx";
 import PropTypes from "prop-types";
 import { ErrorBoundary } from "react-error-boundary";
 
