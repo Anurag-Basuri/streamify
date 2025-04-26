@@ -9,6 +9,7 @@ import {
     useMemo,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import jwt_decode from "jwt-decode";
 import {
     getCurrentUser,
     signIn,
@@ -46,17 +47,26 @@ const AuthProvider = ({ children }) => {
     const handleTokenRefresh = useCallback(async () => {
         if (isTokenRefreshing) return;
         setIsTokenRefreshing(true);
+
         try {
-            const newToken = await refreshToken();
-            localStorage.setItem('accessToken', newToken);
+            const { accessToken, refreshToken: newRefreshToken } =
+                await refreshToken();
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", newRefreshToken);
+
             const profile = await getCurrentUser();
             setUser(profile);
+            return true;
         } catch (error) {
-            // ... existing error handling
+            console.error("Token refresh failed:", error);
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            navigate("/auth", { state: { sessionExpired: true } });
+            return false;
         } finally {
             setIsTokenRefreshing(false);
         }
-    }, [isTokenRefreshing]);
+    }, [isTokenRefreshing, navigate]);
 
     useEffect(() => {
         let isMounted = true;
@@ -86,15 +96,18 @@ const AuthProvider = ({ children }) => {
     }, [navigate, loadUserProfile]);
 
     useEffect(() => {
-        if (user) {
-            intervalRef.current = setInterval(handleTokenRefresh, 300000);
-        }
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
+        const checkAuth = async () => {
+                const tokenExp = jwt_decode(
+                    localStorage.getItem("accessToken")
+                )?.exp;
+                )?.exp;
+                if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
+                    await handleTokenRefresh();
+                }
             }
         };
-    }, [user, handleTokenRefresh]);
+        checkAuth();
+    }, [user, handleTokenRefresh, isTokenRefreshing]);
 
     useEffect(() => {
         const handleOAuthCallback = async () => {
