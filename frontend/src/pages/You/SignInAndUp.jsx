@@ -131,16 +131,44 @@ const SignInAndUp = () => {
     const navigate = useNavigate();
     const { login, register, googleLogin, user, isLoading } = useAuth();
 
-    // Default to 'login' if no mode specified
     const mode = searchParams.get("mode") || "login";
     const redirect = searchParams.get("redirect") || "/profile";
 
-    const { formData, handleChange, errors, validateForm } = useForm({
-        fullName: "",
-        userName: "",
-        email: "",
-        password: "",
-    });
+    const validationRules = {
+        fullName: {
+            required: mode === "signup",
+            minLength: 2,
+            pattern: /^[a-zA-Z\s]*$/,
+            message: "Full name can only contain letters and spaces",
+        },
+        userName: {
+            required: mode === "signup",
+            minLength: 3,
+            pattern: /^[a-zA-Z0-9_]*$/,
+            message:
+                "Username can only contain letters, numbers and underscores",
+        },
+        email: {
+            required: true,
+            pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            message: "Please enter a valid email address",
+        },
+        password: {
+            required: true,
+            minLength: 6,
+            message: "Password must be at least 6 characters",
+        },
+    };
+
+    const { formData, handleChange, errors, validateForm } = useForm(
+        {
+            fullName: "",
+            userName: "",
+            email: "",
+            password: "",
+        },
+        validationRules
+    );
 
     useEffect(() => {
         if (user) navigate(redirect);
@@ -149,15 +177,18 @@ const SignInAndUp = () => {
     const handleSubmit = async (data) => {
         if (!validateForm()) return;
 
-        const success = await (mode === "signup"
-            ? register(data)
-            : login(data));
-        if (success) {
-            navigate(redirect);
+        try {
+            const success = await (mode === "signup"
+                ? register(data)
+                : login(data));
+            if (success) {
+                navigate(redirect);
+            }
+        } catch (error) {
+            console.error("Auth error:", error);
         }
     };
 
-    // Redirect if invalid mode
     if (mode !== "login" && mode !== "signup") {
         return <Navigate to="/auth?mode=login" replace />;
     }
