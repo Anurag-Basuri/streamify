@@ -1,6 +1,6 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Search, Menu, X, Bell, User } from "lucide-react";
+import { Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../hooks/useAuth.js";
 import useTheme from "../hooks/useTheme.js";
@@ -8,8 +8,75 @@ import useTheme from "../hooks/useTheme.js";
 // Import components
 import { Logo } from "./Logo.jsx";
 import { SearchBar } from "./SearchBar.jsx";
-import { NotificationBell } from "./NotificationBell.jsx";
-import { ProfileDropdown } from "./ProfileDropdown.jsx";
+
+// Notification Bell Component
+const NotificationBell = ({ theme }) => (
+    <button
+        className={`p-2 rounded-lg ${
+            theme === "dark"
+                ? "text-gray-300 hover:text-purple-400"
+                : "text-gray-600 hover:text-purple-600"
+        } transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400`}
+        aria-label="Notifications"
+    >
+        <Bell className="w-6 h-6" />
+    </button>
+);
+
+// Profile Dropdown Component
+const ProfileDropdown = ({ user, theme, onLogout }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={`p-2 rounded-lg ${
+                    theme === "dark"
+                        ? "text-gray-300 hover:text-purple-400"
+                        : "text-gray-600 hover:text-purple-600"
+                } transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400`}
+                aria-label="User menu"
+            >
+                <User className="w-6 h-6" />
+            </button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-1 ${
+                            theme === "dark" ? "bg-gray-800" : "bg-white"
+                        }`}
+                    >
+                        <Link
+                            to="/profile"
+                            className={`block px-4 py-2 text-sm ${
+                                theme === "dark"
+                                    ? "text-gray-300 hover:bg-gray-700"
+                                    : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                        >
+                            Profile
+                        </Link>
+                        <button
+                            onClick={onLogout}
+                            className={`block w-full text-left px-4 py-2 text-sm ${
+                                theme === "dark"
+                                    ? "text-gray-300 hover:bg-gray-700"
+                                    : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                        >
+                            Sign out
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
