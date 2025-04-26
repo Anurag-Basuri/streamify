@@ -1,32 +1,37 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Search, Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AuthContext } from "../context/AuthContext";
-import useTheme from "../hooks/useTheme";
+import useAuth from "../hooks/useAuth.js";
+import useTheme from "../hooks/useTheme.js";
+
+// Import components
+import { Logo } from "./Logo.jsx";
+import { SearchBar } from "./SearchBar.jsx";
+import { NotificationBell } from "./NotificationBell.jsx";
+import { ProfileDropdown } from "./ProfileDropdown.jsx";
 
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
-    const { isAuthenticated, user, logout } = useContext(AuthContext);
+    const { isAuthenticated, user, logout } = useAuth();
     const { theme } = useTheme();
     const [searchQuery, setSearchQuery] = useState("");
     const [showTrending, setShowTrending] = useState(false);
 
-    const [trendingTopics] = useState([
+    const trendingTopics = [
         "#StreamifyUpdate",
         "Tech Trends 2024",
         "Music Videos",
         "Live Gaming",
-    ]);
+    ];
 
     const isTweetPage = pathname.startsWith("/tweet");
 
     const handleSearch = (e) => {
         e.preventDefault();
+        // Add search functionality here
         console.log(
-            isTweetPage
-                ? `Searching tweets for: ${searchQuery}`
-                : `Searching videos for: ${searchQuery}`
+            `Searching ${isTweetPage ? "tweets" : "videos"} for: ${searchQuery}`
         );
     };
 
@@ -48,277 +53,44 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                                 theme === "dark"
                                     ? "text-gray-300 hover:text-purple-400"
                                     : "text-gray-600 hover:text-purple-600"
-                            } p-2 rounded-lg`}
-                            aria-label="Toggle Sidebar"
+                            } p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400`}
+                            aria-label={
+                                isSidebarOpen ? "Close Sidebar" : "Open Sidebar"
+                            }
                         >
                             {isSidebarOpen ? (
-                                <X size={24} />
+                                <X className="w-6 h-6" />
                             ) : (
-                                <Menu size={24} />
+                                <Menu className="w-6 h-6" />
                             )}
                         </button>
-
-                        <Link to="/" className="flex items-center gap-2">
-                            <svg
-                                width="32"
-                                height="32"
-                                viewBox="0 0 100 100"
-                                fill="none"
-                                className="shrink-0"
-                            >
-                                <defs>
-                                    <linearGradient
-                                        id="gradient"
-                                        x1="0%"
-                                        y1="0%"
-                                        x2="100%"
-                                        y2="100%"
-                                    >
-                                        <stop offset="0%" stopColor="#ff6b6b" />
-                                        <stop
-                                            offset="100%"
-                                            stopColor="#6b6bff"
-                                        />
-                                    </linearGradient>
-                                </defs>
-                                <polygon
-                                    points="35,25 70,50 35,75"
-                                    fill="url(#gradient)"
-                                    stroke="white"
-                                    strokeWidth="2"
-                                    strokeLinejoin="round"
-                                />
-                                <path
-                                    d="M15 50 Q25 30, 35 50 T55 50"
-                                    stroke="url(#gradient)"
-                                    strokeWidth="4"
-                                    fill="none"
-                                    strokeLinecap="round"
-                                />
-                                <path
-                                    d="M10 50 Q20 20, 35 50 T60 50"
-                                    stroke="url(#gradient)"
-                                    strokeWidth="3"
-                                    fill="none"
-                                    strokeLinecap="round"
-                                    opacity="0.6"
-                                />
-                            </svg>
-                            <span
-                                className={`hidden sm:inline font-bold text-xl ${
-                                    theme === "dark"
-                                        ? "text-white"
-                                        : "text-gray-900"
-                                }`}
-                            >
-                                Streamify
-                            </span>
-                        </Link>
+                        <Logo theme={theme} />
                     </div>
 
                     {/* Center Section - Search Bar */}
-                    <div className="flex-1 max-w-2xl mx-2">
-                        <form onSubmit={handleSearch} className="relative">
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder={
-                                        isTweetPage
-                                            ? "Search Streamify"
-                                            : "Search videos, channels..."
-                                    }
-                                    className={`w-full ${
-                                        theme === "dark"
-                                            ? "bg-gray-800 text-gray-200"
-                                            : "bg-gray-100 text-gray-900"
-                                    } rounded-full px-4 py-2 pr-10 focus:outline-none focus:ring-2 ${
-                                        isTweetPage
-                                            ? "focus:ring-blue-400"
-                                            : "focus:ring-purple-400"
-                                    } text-sm sm:text-base`}
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    onFocus={() => setShowTrending(true)}
-                                    onBlur={() =>
-                                        setTimeout(
-                                            () => setShowTrending(false),
-                                            100
-                                        )
-                                    }
-                                />
-                                <button
-                                    type="submit"
-                                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                                        theme === "dark"
-                                            ? "text-gray-400 hover:text-purple-400"
-                                            : "text-gray-600 hover:text-purple-600"
-                                    } focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full p-1`}
-                                    aria-label="Search"
-                                >
-                                    <Search size={18} />
-                                </button>
-                            </div>
-
-                            {/* Trending Suggestions */}
-                            <AnimatePresence>
-                                {showTrending && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className={`absolute top-full mt-2 w-full ${
-                                            theme === "dark"
-                                                ? "bg-gray-800"
-                                                : "bg-gray-100"
-                                        } rounded-lg shadow-xl p-4 max-h-[60vh] overflow-y-auto`}
-                                    >
-                                        <div className="space-y-3">
-                                            <h3
-                                                className={`font-medium ${
-                                                    theme === "dark"
-                                                        ? "text-gray-400"
-                                                        : "text-gray-600"
-                                                }`}
-                                            >
-                                                Trending Now
-                                            </h3>
-                                            {trendingTopics.map(
-                                                (topic, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className={`hover:bg-gray-700 p-2 rounded cursor-pointer ${
-                                                            theme === "dark"
-                                                                ? "text-gray-200"
-                                                                : "text-gray-800"
-                                                        }`}
-                                                    >
-                                                        {topic}
-                                                    </div>
-                                                )
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </form>
-                    </div>
+                    <SearchBar
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        showTrending={showTrending}
+                        setShowTrending={setShowTrending}
+                        trendingTopics={trendingTopics}
+                        handleSearch={handleSearch}
+                        isTweetPage={isTweetPage}
+                        theme={theme}
+                    />
 
                     {/* Right Section - Auth State */}
                     <div className="flex items-center gap-2 sm:gap-4">
                         {!isAuthenticated ? (
-                            <>
-                                <Link
-                                    to="/auth?mode=login"
-                                    className={`hidden sm:inline px-3 py-1.5 text-sm ${
-                                        theme === "dark"
-                                            ? "text-gray-300 hover:text-purple-400"
-                                            : "text-gray-600 hover:text-purple-600"
-                                    } focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg`}
-                                >
-                                    Sign In
-                                </Link>
-                                <Link
-                                    to="/auth?mode=signup"
-                                    className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                                >
-                                    Sign Up
-                                </Link>
-                            </>
+                            <AuthButtons theme={theme} />
                         ) : (
                             <>
-                                {/* Notification Button */}
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className={`p-1.5 sm:p-2 relative transition-all focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full ${
-                                        theme === "dark"
-                                            ? "text-gray-300 hover:text-purple-400"
-                                            : "text-gray-600 hover:text-purple-600"
-                                    }`}
-                                    aria-label="Notifications"
-                                >
-                                    <Bell size={20} />
-                                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                                </motion.button>
-
-                                {/* Profile Dropdown */}
-                                <div className="relative group">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-full"
-                                        aria-label="Profile Menu"
-                                    >
-                                        <div
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 overflow-hidden ${
-                                                theme === "dark"
-                                                    ? "bg-gray-800 border-purple-400"
-                                                    : "bg-gray-100 border-purple-600"
-                                            }`}
-                                        >
-                                            {user?.avatar ? (
-                                                <img
-                                                    src={user.avatar}
-                                                    className="w-full h-full object-cover"
-                                                    alt="Profile"
-                                                />
-                                            ) : (
-                                                <User
-                                                    className={`${
-                                                        theme === "dark"
-                                                            ? "text-gray-300"
-                                                            : "text-gray-600"
-                                                    }`}
-                                                    size={18}
-                                                />
-                                            )}
-                                        </div>
-                                    </motion.button>
-
-                                    {/* Dropdown Menu */}
-                                    <div
-                                        className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
-                                            theme === "dark"
-                                                ? "bg-gray-800"
-                                                : "bg-gray-100"
-                                        }`}
-                                    >
-                                        <div className="py-1">
-                                            <Link
-                                                to="/profile"
-                                                className={`block px-4 py-2 text-sm ${
-                                                    theme === "dark"
-                                                        ? "text-gray-300 hover:bg-gray-700"
-                                                        : "text-gray-600 hover:bg-gray-200"
-                                                }`}
-                                            >
-                                                Profile
-                                            </Link>
-                                            <Link
-                                                to="/settings"
-                                                className={`block px-4 py-2 text-sm ${
-                                                    theme === "dark"
-                                                        ? "text-gray-300 hover:bg-gray-700"
-                                                        : "text-gray-600 hover:bg-gray-200"
-                                                }`}
-                                            >
-                                                Settings
-                                            </Link>
-                                            <button
-                                                onClick={logout}
-                                                className={`w-full text-left px-4 py-2 text-sm focus:outline-none ${
-                                                    theme === "dark"
-                                                        ? "text-red-400 hover:bg-gray-700"
-                                                        : "text-red-600 hover:bg-gray-200"
-                                                }`}
-                                            >
-                                                Sign Out
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <NotificationBell theme={theme} />
+                                <ProfileDropdown
+                                    user={user}
+                                    theme={theme}
+                                    onLogout={logout}
+                                />
                             </>
                         )}
                     </div>
@@ -327,5 +99,26 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         </header>
     );
 };
+
+const AuthButtons = ({ theme }) => (
+    <>
+        <Link
+            to="/auth?mode=login"
+            className={`hidden sm:inline px-3 py-1.5 text-sm ${
+                theme === "dark"
+                    ? "text-gray-300 hover:text-purple-400"
+                    : "text-gray-600 hover:text-purple-600"
+            } transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg`}
+        >
+            Sign In
+        </Link>
+        <Link
+            to="/auth?mode=signup"
+            className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
+        >
+            Sign Up
+        </Link>
+    </>
+);
 
 export default Header;
