@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
-import { XIcon } from "@heroicons/react/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
-export const Modal = ({ isOpen, onClose, children, title }) => (
-    <AnimatePresence>
+const Modal = ({ isOpen, onClose, children, title }) => (
+    <AnimatePresence mode="wait">
         {isOpen && (
             <motion.div
                 initial={{ opacity: 0 }}
@@ -16,17 +16,20 @@ export const Modal = ({ isOpen, onClose, children, title }) => (
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="w-full max-w-lg bg-gray-800 rounded-xl shadow-xl overflow-hidden"
                 >
                     {title && (
                         <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-white">{title}</h3>
+                            <h3 className="text-xl font-semibold text-white">
+                                {title}
+                            </h3>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                                aria-label="Close modal"
                             >
-                                <XIcon className="w-5 h-5 text-gray-400" />
+                                <XMarkIcon className="w-5 h-5 text-gray-400" />
                             </button>
                         </div>
                     )}
@@ -37,7 +40,7 @@ export const Modal = ({ isOpen, onClose, children, title }) => (
     </AnimatePresence>
 );
 
-export const ConfirmModal = ({
+const ConfirmModal = ({
     title,
     message,
     onCancel,
@@ -52,16 +55,16 @@ export const ConfirmModal = ({
             <div className="flex justify-end gap-4">
                 <button
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                    className="px-4 py-2 text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                 >
                     Cancel
                 </button>
                 <button
                     onClick={onConfirm}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 text-white rounded-lg transition-colors ${
                         danger
                             ? "bg-red-600 hover:bg-red-500"
-                            : "bg-purple-600 hover:bg-purple-500"
+                            : "bg-blue-600 hover:bg-blue-500"
                     }`}
                 >
                     {confirmText}
@@ -88,4 +91,5 @@ ConfirmModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
 };
 
-export default Modal;
+// Export both components
+export { Modal as default, ConfirmModal };
