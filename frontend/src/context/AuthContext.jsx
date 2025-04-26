@@ -9,7 +9,7 @@ import {
     useMemo,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import {
     getCurrentUser,
     signIn,
@@ -97,7 +97,7 @@ const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
-            const tokenExp = jwt_decode(
+            const tokenExp = jwtDecode(
                 localStorage.getItem("accessToken")
             )?.exp;
             if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
