@@ -1,29 +1,53 @@
 import { useState } from 'react';
 
-const useForm = (initialState = {}) => {
+const useForm = (initialState = {}, validationRules = {}) => {
     const [formData, setFormData] = useState(initialState);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        setErrors(prev => ({ ...prev, [name]: '' }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        // Clear error when field changes
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: "" }));
+        }
     };
 
-    const validateForm = (validationRules) => {
+    const validateForm = () => {
         const newErrors = {};
-        Object.keys(validationRules).forEach(key => {
+
+        // Basic validation for required fields
+        Object.keys(formData).forEach((key) => {
             const value = formData[key];
-            const rules = validationRules[key];
-            
+            const rules = validationRules[key] || {};
+
             if (rules.required && !value) {
                 newErrors[key] = `${key} is required`;
-            } else if (rules.pattern && !rules.pattern.test(value)) {
+            }
+
+            if (rules.minLength && value.length < rules.minLength) {
+                newErrors[
+                    key
+                ] = `${key} must be at least ${rules.minLength} characters`;
+            }
+
+            if (rules.pattern && !rules.pattern.test(value)) {
                 newErrors[key] = rules.message || `Invalid ${key}`;
-            } else if (rules.custom) {
-                const customError = rules.custom(value, formData);
-                if (customError) newErrors[key] = customError;
+            }
+
+            // Email validation
+            if (
+                key === "email" &&
+                value &&
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+            ) {
+                newErrors[key] = "Please enter a valid email address";
+            }
+
+            // Password validation
+            if (key === "password" && value && value.length < 6) {
+                newErrors[key] = "Password must be at least 6 characters";
             }
         });
 
@@ -39,7 +63,7 @@ const useForm = (initialState = {}) => {
         loading,
         setLoading,
         handleChange,
-        validateForm
+        validateForm,
     };
 };
 
