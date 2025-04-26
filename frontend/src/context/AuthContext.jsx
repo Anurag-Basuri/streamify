@@ -97,13 +97,11 @@ const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
-                const tokenExp = jwt_decode(
-                    localStorage.getItem("accessToken")
-                )?.exp;
-                )?.exp;
-                if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
-                    await handleTokenRefresh();
-                }
+            const tokenExp = jwt_decode(
+                localStorage.getItem("accessToken")
+            )?.exp;
+            if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
+                await handleTokenRefresh();
             }
         };
         checkAuth();
