@@ -67,7 +67,7 @@ const userSchema = new Schema(
             type: String,
         },
         googleId: {
-            type: String, // For Google OAuth
+            type: String,
             unique: true,
             sparse: true,
         },
