@@ -27,3 +27,58 @@
         --popover-foreground: #f8fafc;
     }
 }
+
+.password-strength {
+    display: flex;
+    gap: 2px;
+    height: 4px;
+    margin-top: 8px;
+}
+
+.strength-bar {
+    flex: 1;
+    background: #e0e0e0;
+    transform-origin: bottom;
+}
+
+.strength-bar.active {
+    background: #4CAF50;
+}
+
+.error-banner {
+    background: #ffe3e3;
+    color: #d32f2f;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.google-auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.google-auth-btn:hover {
+    background: #f8f9fa;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 16px;
+    color: #666;
+}
+
+.auth-switch a {
+    color: #6c63ff;
+    font-weight: 500;
+    text-decoration: none;
+}
