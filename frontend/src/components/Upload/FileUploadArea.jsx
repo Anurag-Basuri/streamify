@@ -1,4 +1,5 @@
-import { CloudUploadIcon } from "@heroicons/react/outline";
+import PropTypes from 'prop-types';
+import { CloudArrowUpIcon as CloudUploadIcon } from "@heroicons/react/24/outline";
 
 export const FileUploadArea = ({ videoFile, thumbnail, onFileUpload }) => (
     <div className="space-y-6">
