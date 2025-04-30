@@ -6,29 +6,52 @@ import useAuth from "../../hooks/useAuth";
 import useForm from "../../hooks/useForm";
 
 const PasswordStrength = ({ password }) => {
-    const strength = useMemo(() => {
+    const { strength, label } = useMemo(() => {
         let score = 0;
         if (password.length >= 8) score++;
         if (/[A-Z]/.test(password)) score++;
         if (/[a-z]/.test(password)) score++;
         if (/\d/.test(password)) score++;
         if (/[^A-Za-z0-9]/.test(password)) score++;
-        return score;
+
+        const labels = ["Very Weak", "Weak", "Good", "Strong", "Very Strong"];
+        return {
+            strength: score,
+            label: labels[Math.min(score - 1, 4)] || "Very Weak",
+        };
     }, [password]);
 
+    const getColor = (index) => {
+        if (strength <= 1) return "bg-red-500";
+        if (strength <= 3)
+            return index < strength ? "bg-yellow-500" : "bg-gray-200";
+        return index < strength ? "bg-green-500" : "bg-gray-200";
+    };
+
     return (
-        <div className="flex gap-1 mt-1">
-            {[...Array(5)].map((_, i) => (
-                <motion.div
-                    key={i}
-                    className={`h-1 w-full rounded ${
-                        i < strength ? "bg-purple-600" : "bg-gray-200"
-                    }`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 0.2, delay: i * 0.1 }}
-                />
-            ))}
+        <div className="mt-2 space-y-2">
+            <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className={`h-2 w-full rounded-full ${getColor(i)}`}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.3, delay: i * 0.1 }}
+                    />
+                ))}
+            </div>
+            <span
+                className={`text-sm font-medium ${
+                    strength <= 1
+                        ? "text-red-500"
+                        : strength <= 3
+                        ? "text-yellow-500"
+                        : "text-green-500"
+                }`}
+            >
+                {label}
+            </span>
         </div>
     );
 };
@@ -40,25 +63,32 @@ PasswordStrength.propTypes = {
 const AnimatedErrorMessage = ({ error }) => (
     <AnimatePresence>
         {error && (
-            <motion.p
-                className="text-red-500 text-sm"
+            <motion.div
+                className="flex items-center gap-1 mt-1"
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
             >
-                {error}
-            </motion.p>
+                <svg
+                    className="w-4 h-4 text-red-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                >
+                    <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                    />
+                </svg>
+                <span className="text-red-500 text-sm">{error}</span>
+            </motion.div>
         )}
     </AnimatePresence>
 );
 
-AnimatedErrorMessage.propTypes = {
-    error: PropTypes.string,
-};
-
 const AuthForm = ({
-    mode = "login",
+    mode,
     formData,
     isLoading,
     onSubmit,
@@ -67,71 +97,100 @@ const AuthForm = ({
     errors,
 }) => {
     return (
-        <form
+        <motion.form
             onSubmit={(e) => {
                 e.preventDefault();
                 onSubmit(formData);
             }}
-            className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-8 w-full max-w-md shadow-xl border border-purple-100"
         >
-            <h2 className="text-2xl font-bold mb-6">
-                {mode === "signup" ? "Create Account" : "Sign In"}
-            </h2>
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    {mode === "signup" ? "Create Account" : "Welcome Back"}
+                </h2>
+                <p className="text-gray-500">
+                    {mode === "signup"
+                        ? "Get started with your free account"
+                        : "Sign in to continue to your account"}
+                </p>
+            </div>
 
-            {mode === "signup" && (
-                <div className="space-y-4">
-                    <div>
-                        <input
-                            type="text"
-                            name="fullName"
-                            placeholder="Full Name"
-                            value={formData.fullName}
-                            onChange={onChange}
-                            onBlur={onBlur}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
-                        <AnimatedErrorMessage error={errors?.fullName} />
-                    </div>
+            <div className="space-y-5">
+                {mode === "signup" && (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Full Name
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={onChange}
+                                    onBlur={onBlur}
+                                    className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <AnimatedErrorMessage error={errors?.fullName} />
+                        </div>
 
-                    <div>
-                        <input
-                            type="text"
-                            name="userName"
-                            placeholder="Username"
-                            value={formData.userName}
-                            onChange={onChange}
-                            onBlur={onBlur}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none"
-                        />
-                        <AnimatedErrorMessage error={errors?.userName} />
-                    </div>
-                </div>
-            )}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Username
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    name="userName"
+                                    value={formData.userName}
+                                    onChange={onChange}
+                                    onBlur={onBlur}
+                                    className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                                    placeholder="johndoe123"
+                                />
+                            </div>
+                            <AnimatedErrorMessage error={errors?.userName} />
+                        </div>
+                    </>
+                )}
 
-            <div className="space-y-4 mt-4">
                 <div>
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Email"
-                        value={formData.email}
-                        onChange={onChange}
-                        onBlur={onBlur}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                    </label>
+                    <div className="relative">
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={onChange}
+                            onBlur={onBlur}
+                            className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                            placeholder="john@example.com"
+                        />
+                    </div>
                     <AnimatedErrorMessage error={errors?.email} />
                 </div>
 
                 <div>
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Password"
-                        value={formData.password}
-                        onChange={onChange}
-                        onBlur={onBlur}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-500 outline-none"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Password
+                    </label>
+                    <div className="relative">
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={onChange}
+                            onBlur={onBlur}
+                            className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                            placeholder="••••••••"
+                        />
+                    </div>
                     {mode === "signup" && (
                         <PasswordStrength password={formData.password} />
                     )}
@@ -142,40 +201,23 @@ const AuthForm = ({
             <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-6 bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors disabled:opacity-50"
+                className="w-full mt-8 bg-gradient-to-r from-purple-600 to-purple-500 text-white p-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
             >
                 {isLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                        <svg
-                            className="animate-spin h-5 w-5"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                            />
-                            <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                        </svg>
-                        Processing...
-                    </span>
+                    <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 rounded-full bg-white animate-bounce" />
+                        <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-100" />
+                        <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-200" />
+                    </div>
                 ) : mode === "signup" ? (
-                    "Sign Up"
+                    "Create Account"
                 ) : (
                     "Sign In"
                 )}
             </motion.button>
-        </form>
+        </motion.form>
     );
 };
 
@@ -187,6 +229,10 @@ AuthForm.propTypes = {
     onSubmit: PropTypes.func.isRequired,
     onChange: PropTypes.func.isRequired,
     onBlur: PropTypes.func.isRequired,
+};
+
+AnimatedErrorMessage.propTypes = {
+    error: PropTypes.string,
 };
 
 const SignInAndUp = () => {
@@ -270,9 +316,9 @@ const SignInAndUp = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"
+            className="fixed inset-0 bg-gradient-to-br from-purple-600 to-indigo-900 flex items-center justify-center p-4 backdrop-blur-sm"
         >
-            <div className="w-full max-w-md space-y-4">
+            <div className="w-full max-w-md space-y-6">
                 <AuthForm
                     mode={mode}
                     formData={formData}
@@ -285,18 +331,40 @@ const SignInAndUp = () => {
 
                 {submissionError && (
                     <motion.div
-                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
+                        className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        {submissionError}
+                        <svg
+                            className="w-5 h-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
+                        <span>{submissionError}</span>
                     </motion.div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-6">
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white text-gray-500">
+                                Or continue with
+                            </span>
+                        </div>
+                    </div>
+
                     <motion.button
                         onClick={googleLogin}
-                        className="w-full bg-white text-gray-700 px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+                        className="w-full bg-white text-gray-700 px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
@@ -308,15 +376,15 @@ const SignInAndUp = () => {
                         Continue with Google
                     </motion.button>
 
-                    <div className="text-center text-white">
+                    <p className="text-center text-white/90">
                         {mode === "login" ? (
                             <>
                                 Don't have an account?{" "}
                                 <Link
                                     to="/auth?mode=signup"
-                                    className="text-purple-400 hover:text-purple-300"
+                                    className="text-white font-semibold hover:text-purple-200 transition-colors"
                                 >
-                                    Sign Up
+                                    Sign up
                                 </Link>
                             </>
                         ) : (
@@ -324,13 +392,13 @@ const SignInAndUp = () => {
                                 Already have an account?{" "}
                                 <Link
                                     to="/auth?mode=login"
-                                    className="text-purple-400 hover:text-purple-300"
+                                    className="text-white font-semibold hover:text-purple-200 transition-colors"
                                 >
-                                    Sign In
+                                    Sign in
                                 </Link>
                             </>
                         )}
-                    </div>
+                    </p>
                 </div>
             </div>
         </motion.div>
