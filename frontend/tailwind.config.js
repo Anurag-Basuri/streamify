@@ -63,6 +63,10 @@ export default {
                     from: { transform: "translateX(0)" },
                     to: { transform: "translateX(-100%)" },
                 },
+                float: {
+                    "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+                    "50%": { transform: "translateY(-20px) rotate(5deg)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
@@ -71,6 +75,8 @@ export default {
                 "fade-out": "fade-out 0.2s ease-out",
                 "slide-in": "slide-in 0.2s ease-out",
                 "slide-out": "slide-out 0.2s ease-out",
+                float: "float 6s ease-in-out infinite",
+                "float-delay": "float 6s ease-in-out infinite 1.5s",
             },
             transitionProperty: {
                 width: "width",
@@ -103,16 +109,6 @@ export default {
                 modal: "300",
                 toast: "400",
                 tooltip: "500",
-            },
-            animation: {
-                float: "float 6s ease-in-out infinite",
-                "float-delay": "float 6s ease-in-out infinite 1.5s",
-            },
-            keyframes: {
-                float: {
-                    "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
-                    "50%": { transform: "translateY(-20px) rotate(5deg)" },
-                },
             },
         },
     },
