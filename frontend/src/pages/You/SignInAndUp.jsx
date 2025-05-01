@@ -56,10 +56,6 @@ const PasswordStrength = ({ password }) => {
     );
 };
 
-PasswordStrength.propTypes = {
-    password: PropTypes.string.isRequired,
-};
-
 const AnimatedErrorMessage = ({ error }) => (
     <AnimatePresence>
         {error && (
@@ -87,159 +83,13 @@ const AnimatedErrorMessage = ({ error }) => (
     </AnimatePresence>
 );
 
-const AuthForm = ({
-    mode,
-    formData,
-    isLoading,
-    onSubmit,
-    onChange,
-    onBlur,
-    errors,
-}) => {
-    return (
-        <motion.form
-            onSubmit={(e) => {
-                e.preventDefault();
-                onSubmit(formData);
-            }}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-white to-purple-50 rounded-2xl p-8 w-full max-w-md shadow-xl border border-purple-100"
-        >
-            <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                    {mode === "signup" ? "Create Account" : "Welcome Back"}
-                </h2>
-                <p className="text-gray-500">
-                    {mode === "signup"
-                        ? "Get started with your free account"
-                        : "Sign in to continue to your account"}
-                </p>
-            </div>
-
-            <div className="space-y-5">
-                {mode === "signup" && (
-                    <>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Full Name
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    value={formData.fullName}
-                                    onChange={onChange}
-                                    onBlur={onBlur}
-                                    className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                                    placeholder="John Doe"
-                                />
-                            </div>
-                            <AnimatedErrorMessage error={errors?.fullName} />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Username
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    name="userName"
-                                    value={formData.userName}
-                                    onChange={onChange}
-                                    onBlur={onBlur}
-                                    className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                                    placeholder="johndoe123"
-                                />
-                            </div>
-                            <AnimatedErrorMessage error={errors?.userName} />
-                        </div>
-                    </>
-                )}
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={onChange}
-                            onBlur={onBlur}
-                            className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                            placeholder="john@example.com"
-                        />
-                    </div>
-                    <AnimatedErrorMessage error={errors?.email} />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Password
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={onChange}
-                            onBlur={onBlur}
-                            className="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                            placeholder="••••••••"
-                        />
-                    </div>
-                    {mode === "signup" && (
-                        <PasswordStrength password={formData.password} />
-                    )}
-                    <AnimatedErrorMessage error={errors?.password} />
-                </div>
-            </div>
-
-            <motion.button
-                type="submit"
-                disabled={isLoading}
-                className="w-full mt-8 bg-gradient-to-r from-purple-600 to-purple-500 text-white p-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-            >
-                {isLoading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                        <div className="w-4 h-4 rounded-full bg-white animate-bounce" />
-                        <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-100" />
-                        <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-200" />
-                    </div>
-                ) : mode === "signup" ? (
-                    "Create Account"
-                ) : (
-                    "Sign In"
-                )}
-            </motion.button>
-        </motion.form>
-    );
-};
-
-AuthForm.propTypes = {
-    mode: PropTypes.oneOf(["login", "signup"]),
-    formData: PropTypes.object.isRequired,
-    errors: PropTypes.object,
-    isLoading: PropTypes.bool.isRequired,
-    onSubmit: PropTypes.func.isRequired,
-    onChange: PropTypes.func.isRequired,
-    onBlur: PropTypes.func.isRequired,
-};
-
-AnimatedErrorMessage.propTypes = {
-    error: PropTypes.string,
-};
-
 const SignInAndUp = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { login, register, googleLogin, user, isLoading } = useAuth();
     const [submissionError, setSubmissionError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const mode = searchParams.get("mode") || "login";
     const redirect = searchParams.get("redirect") || "/profile";
@@ -268,6 +118,11 @@ const SignInAndUp = () => {
             minLength: 6,
             message: "Password must be at least 6 characters",
         },
+        confirmPassword: {
+            required: mode === "signup",
+            validate: (value, formData) => value === formData.password,
+            message: "Passwords do not match",
+        },
     };
 
     const { formData, handleChange, errors, validateForm, handleBlur } =
@@ -277,6 +132,7 @@ const SignInAndUp = () => {
                 userName: "",
                 email: "",
                 password: "",
+                confirmPassword: "",
             },
             validationRules
         );
@@ -316,47 +172,209 @@ const SignInAndUp = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gradient-to-br from-purple-600 to-indigo-900 flex items-center justify-center p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            style={{ paddingTop: "4rem" }} // Adjust based on header height
         >
-            <div className="w-full max-w-md space-y-6">
-                <AuthForm
-                    mode={mode}
-                    formData={formData}
-                    errors={errors}
-                    isLoading={isLoading}
-                    onSubmit={handleSubmit}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                />
+            {/* Floating Particles */}
+            <div className="absolute w-4 h-4 bg-purple-500/20 rounded-full blur-[2px] top-1/4 left-1/4 animate-float" />
+            <div className="absolute w-4 h-4 bg-blue-500/20 rounded-full blur-[2px] top-3/4 left-3/4 animate-float-delay" />
 
-                {submissionError && (
-                    <motion.div
-                        className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl"
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
+            <motion.div
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                className="bg-gradient-to-br from-white/5 to-purple-500/10 rounded-2xl p-8 w-full max-w-md backdrop-blur-xl border border-white/10 shadow-2xl"
+            >
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-3xl font-bold text-white">
+                        {mode === "signup" ? "Create Account" : "Welcome Back"}
+                    </h2>
+                    <Link
+                        to={`/auth?mode=${
+                            mode === "login" ? "signup" : "login"
+                        }`}
+                        className="text-purple-400 hover:text-purple-300 text-sm"
                     >
-                        <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                        <span>{submissionError}</span>
-                    </motion.div>
-                )}
+                        Switch to {mode === "login" ? "Sign Up" : "Login"}
+                    </Link>
+                </div>
 
-                <div className="space-y-6">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSubmit(formData);
+                    }}
+                    className="space-y-6"
+                >
+                    {mode === "signup" && (
+                        <>
+                            <div>
+                                <label className="block text-sm text-gray-300 mb-2">
+                                    Full Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className="w-full px-4 py-3 bg-white/5 rounded-lg border-2 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all"
+                                    placeholder="John Doe"
+                                />
+                                <AnimatedErrorMessage
+                                    error={errors?.fullName}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-300 mb-2">
+                                    Username
+                                </label>
+                                <input
+                                    type="text"
+                                    name="userName"
+                                    value={formData.userName}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className="w-full px-4 py-3 bg-white/5 rounded-lg border-2 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all"
+                                    placeholder="johndoe123"
+                                />
+                                <AnimatedErrorMessage
+                                    error={errors?.userName}
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    <div>
+                        <label className="block text-sm text-gray-300 mb-2">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            className="w-full px-4 py-3 bg-white/5 rounded-lg border-2 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all"
+                            placeholder="john@example.com"
+                        />
+                        <AnimatedErrorMessage error={errors?.email} />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-gray-300 mb-2">
+                            Password
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                className="w-full px-4 py-3 bg-white/5 rounded-lg border-2 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all pr-12"
+                                placeholder="••••••••"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                            >
+                                {showPassword ? "👁️" : "👁️🗨️"}
+                            </button>
+                        </div>
+                        {mode === "signup" && (
+                            <PasswordStrength password={formData.password} />
+                        )}
+                        <AnimatedErrorMessage error={errors?.password} />
+                    </div>
+
+                    {mode === "signup" && (
+                        <div>
+                            <label className="block text-sm text-gray-300 mb-2">
+                                Confirm Password
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={
+                                        showConfirmPassword
+                                            ? "text"
+                                            : "password"
+                                    }
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    className="w-full px-4 py-3 bg-white/5 rounded-lg border-2 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all pr-12"
+                                    placeholder="••••••••"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowConfirmPassword(
+                                            !showConfirmPassword
+                                        )
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                >
+                                    {showConfirmPassword ? "👁️" : "👁️🗨️"}
+                                </button>
+                            </div>
+                            <AnimatedErrorMessage
+                                error={errors?.confirmPassword}
+                            />
+                        </div>
+                    )}
+
+                    <motion.button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-500 text-white p-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {isLoading ? (
+                            <div className="flex items-center justify-center space-x-2">
+                                <div className="w-4 h-4 rounded-full bg-white animate-bounce" />
+                                <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-100" />
+                                <div className="w-4 h-4 rounded-full bg-white animate-bounce delay-200" />
+                            </div>
+                        ) : mode === "signup" ? (
+                            "Create Account"
+                        ) : (
+                            "Sign In"
+                        )}
+                    </motion.button>
+                </form>
+
+                <div className="mt-8 space-y-6">
+                    {submissionError && (
+                        <motion.div
+                            className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl"
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <svg
+                                className="w-5 h-5"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                            <span>{submissionError}</span>
+                        </motion.div>
+                    )}
+
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-200" />
+                            <div className="w-full border-t border-white/20" />
                         </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-gray-500">
+                        <div className="relative flex justify-center">
+                            <span className="px-4 bg-transparent text-sm text-white/50">
                                 Or continue with
                             </span>
                         </div>
@@ -364,43 +382,36 @@ const SignInAndUp = () => {
 
                     <motion.button
                         onClick={googleLogin}
-                        className="w-full bg-white text-gray-700 px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
+                        className="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl transition-all"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
-                        <img
-                            src="/google-icon.svg"
-                            alt="Google"
-                            className="w-5 h-5"
-                        />
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 48 48"
+                            className="w-6 h-6"
+                        >
+                            <path
+                                fill="#EA4335"
+                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                            />
+                            <path
+                                fill="#4285F4"
+                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                            />
+                            <path
+                                fill="#FBBC05"
+                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                            />
+                            <path
+                                fill="#34A853"
+                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                            />
+                        </svg>
                         Continue with Google
                     </motion.button>
-
-                    <p className="text-center text-white/90">
-                        {mode === "login" ? (
-                            <>
-                                Don't have an account?{" "}
-                                <Link
-                                    to="/auth?mode=signup"
-                                    className="text-white font-semibold hover:text-purple-200 transition-colors"
-                                >
-                                    Sign up
-                                </Link>
-                            </>
-                        ) : (
-                            <>
-                                Already have an account?{" "}
-                                <Link
-                                    to="/auth?mode=login"
-                                    className="text-white font-semibold hover:text-purple-200 transition-colors"
-                                >
-                                    Sign in
-                                </Link>
-                            </>
-                        )}
-                    </p>
                 </div>
-            </div>
+            </motion.div>
         </motion.div>
     );
 };
