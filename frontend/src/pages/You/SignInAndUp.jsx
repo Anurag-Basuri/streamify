@@ -109,12 +109,7 @@ const SignInAndUp = () => {
 
     return (
         <div className="min-h-screen pt-20 px-4 flex items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
-            {/* Animated Spotlight Effect */}
-            <div className="absolute top-0 left-0 w-full h-full">
-                <div className="absolute inset-0 bg-grid-white/10 bg-grid animate-spotlight" />
-            </div>
-
-            {/* Floating Particles */}
+            {/* Enhanced Particles Background */}
             <ParticlesBackground />
 
             <motion.div
@@ -129,12 +124,11 @@ const SignInAndUp = () => {
                         variants={containerVariants}
                         initial="hidden"
                         animate="show"
-                        className="bg-white/10 backdrop-filter backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-white/20 relative overflow-hidden"
+                        className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-2xl border border-white/20 relative overflow-hidden"
                     >
-                        {/* Shimmer effect */}
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 opacity-20 animate-shimmer" />
+                        {/* Improved Shimmer Effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/30 to-indigo-500/30 opacity-30 animate-shimmer" />
 
-                        {/* Content */}
                         <motion.div variants={itemVariants}>
                             <LogoAnimation mode={mode} />
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,6 +142,7 @@ const SignInAndUp = () => {
                                             onChange={handleChange}
                                             onBlur={handleBlur}
                                             error={errors.fullName}
+                                            icon={<FiUser />}
                                         />
                                         <FormField
                                             label="Username"
@@ -157,6 +152,7 @@ const SignInAndUp = () => {
                                             onChange={handleChange}
                                             onBlur={handleBlur}
                                             error={errors.userName}
+                                            icon={<FiUser />}
                                         />
                                     </>
                                 )}
@@ -169,6 +165,7 @@ const SignInAndUp = () => {
                                     onChange={handleChange}
                                     onBlur={handleBlur}
                                     error={errors.email}
+                                    icon={<FiMail />}
                                 />
 
                                 <PasswordField
@@ -205,7 +202,7 @@ const SignInAndUp = () => {
                                     <motion.p
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="text-red-400 text-sm text-center"
+                                        className="text-red-400 text-sm text-center px-4 py-2 bg-red-900/20 rounded-lg"
                                     >
                                         {submissionError}
                                     </motion.p>
@@ -215,32 +212,15 @@ const SignInAndUp = () => {
                                     type="submit"
                                     disabled={isLoading}
                                     className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold 
-                                         hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 transform hover:scale-[1.02]
-                                         disabled:opacity-50 disabled:cursor-not-allowed"
+                                         hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 relative overflow-hidden"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     {isLoading ? (
-                                        <span className="flex items-center justify-center">
-                                            <svg
-                                                className="animate-spin h-5 w-5 mr-3"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                />
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                />
-                                            </svg>
-                                            Processing...
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce-delay" />
+                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce-double-delay" />
                                         </span>
                                     ) : mode === "signup" ? (
                                         "Create Account"
@@ -296,7 +276,10 @@ const SignInAndUp = () => {
 };
 
 const ParticlesBackground = () => {
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [dimensions, setDimensions] = useState({
+        width: typeof window !== "undefined" ? window.innerWidth : 0,
+        height: typeof window !== "undefined" ? window.innerHeight : 0,
+    });
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -308,29 +291,30 @@ const ParticlesBackground = () => {
 
         updateDimensions();
         window.addEventListener("resize", updateDimensions);
-
         return () => window.removeEventListener("resize", updateDimensions);
     }, []);
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(30)].map((_, i) => (
                 <motion.div
                     key={i}
-                    className="absolute w-2 h-2 bg-white/10 rounded-full"
+                    className="absolute w-1.5 h-1.5 bg-white/10 rounded-full"
                     initial={{
                         x: Math.random() * dimensions.width,
                         y: Math.random() * dimensions.height,
+                        scale: 0,
                     }}
                     animate={{
-                        y: [0, -20, 0],
-                        scale: [1, 1.2, 1],
-                        x: Math.random() * dimensions.width,
+                        y: [0, -100, 0],
+                        scale: [0, 1, 0],
+                        opacity: [0, 1, 0],
                     }}
                     transition={{
-                        duration: 2 + Math.random() * 2,
+                        duration: 4 + Math.random() * 4,
                         repeat: Infinity,
                         delay: Math.random() * 2,
+                        ease: "easeInOut",
                     }}
                 />
             ))}
@@ -368,13 +352,16 @@ LogoAnimation.propTypes = {
     mode: PropTypes.oneOf(["login", "signup"]).isRequired,
 };
 
-const FormField = ({ label, type, name, value, onChange, onBlur, error }) => {
-    const icons = {
-        email: <FiMail />,
-        password: <FiLock />,
-        text: <FiUser />,
-    };
-
+const FormField = ({
+    label,
+    type,
+    name,
+    value,
+    onChange,
+    onBlur,
+    error,
+    icon,
+}) => {
     return (
         <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -382,14 +369,16 @@ const FormField = ({ label, type, name, value, onChange, onBlur, error }) => {
             transition={{ duration: 0.3 }}
             className="group"
         >
-            <label className="block text-gray-300 mb-1 text-sm">{label}</label>
+            <label className="block text-gray-300 mb-1 text-sm font-medium">
+                {label}
+            </label>
             <motion.div
                 className="relative"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
             >
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-white">
-                    {icons[type]}
+                    {icon}
                 </span>
                 <input
                     type={type}
@@ -397,9 +386,10 @@ const FormField = ({ label, type, name, value, onChange, onBlur, error }) => {
                     value={value}
                     onChange={onChange}
                     onBlur={onBlur}
-                    className="w-full bg-white/10 text-white pl-10 pr-4 py-2 rounded-lg border border-gray-300/20 
-                             focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300
-                             hover:bg-white/[0.15] transform"
+                    className="w-full bg-white/10 text-white pl-10 pr-4 py-3 rounded-lg border border-white/20 
+                            focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300
+                            placeholder-gray-400 hover:bg-white/15"
+                    placeholder={`Enter your ${label.toLowerCase()}`}
                 />
             </motion.div>
             <AnimatePresence>
@@ -408,7 +398,7 @@ const FormField = ({ label, type, name, value, onChange, onBlur, error }) => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="text-red-400 text-sm mt-1"
+                        className="text-red-400 text-xs mt-1 ml-1"
                     >
                         {error}
                     </motion.p>
@@ -426,6 +416,7 @@ FormField.propTypes = {
     onChange: PropTypes.func.isRequired,
     onBlur: PropTypes.func.isRequired,
     error: PropTypes.string,
+    icon: PropTypes.element.isRequired,
 };
 
 const PasswordField = ({

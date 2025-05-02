@@ -97,6 +97,10 @@ export default {
                         transform: "translate(-50%,-40%) scale(1)",
                     },
                 },
+                bounce: {
+                    "0%, 100%": { transform: "translateY(0)" },
+                    "50%": { transform: "translateY(-6px)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
@@ -109,11 +113,14 @@ export default {
                 "float-delay": "float 6s ease-in-out infinite 1.5s",
                 "slide-up": "slideUp 0.5s ease-out",
                 "fade-in-up": "fadeInUp 0.5s ease-out",
-                shimmer: "shimmer 2s linear infinite",
+                shimmer: "shimmer 3s linear infinite",
                 scaleIn: "scaleIn 0.2s ease-out",
                 slideInBottom: "slideInBottom 0.3s ease-out",
                 spotlight: "spotlight 2s ease .75s 1 forwards",
                 "shimmer-once": "shimmer 2s ease-in-out 1",
+                bounce: "bounce 1.5s infinite",
+                "bounce-delay": "bounce 1.5s infinite 0.2s",
+                "bounce-double-delay": "bounce 1.5s infinite 0.4s",
             },
             transitionProperty: {
                 width: "width",
