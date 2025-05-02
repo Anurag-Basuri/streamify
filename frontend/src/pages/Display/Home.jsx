@@ -4,6 +4,7 @@ import {
     useMemo,
     useRef,
 } from "react";
+import axios from "axios";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import useWatchLater from "../../hooks/useWatchLater.js";
