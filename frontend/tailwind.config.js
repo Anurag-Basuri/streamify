@@ -64,8 +64,8 @@ export default {
                     to: { transform: "translateX(-100%)" },
                 },
                 float: {
-                    "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
-                    "50%": { transform: "translateY(-20px) rotate(5deg)" },
+                    "0%, 100%": { transform: "translateY(0) scale(1)" },
+                    "50%": { transform: "translateY(-10px) scale(1.01)" },
                 },
                 slideUp: {
                     "0%": { transform: "translateY(100px)", opacity: "0" },
@@ -77,7 +77,7 @@ export default {
                 },
                 shimmer: {
                     "0%": { backgroundPosition: "-500px 0" },
-                    "100%": { backgroundPosition: "500px 0" },
+                    "100%": { transform: "translateX(100%)" },
                 },
                 scaleIn: {
                     "0%": { transform: "scale(0.9)", opacity: "0" },
@@ -87,6 +87,16 @@ export default {
                     "0%": { transform: "translateY(30px)", opacity: "0" },
                     "100%": { transform: "translateY(0)", opacity: "1" },
                 },
+                spotlight: {
+                    "0%": {
+                        opacity: 0,
+                        transform: "translate(-72%, -62%) scale(0.5)",
+                    },
+                    "100%": {
+                        opacity: 1,
+                        transform: "translate(-50%,-40%) scale(1)",
+                    },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
@@ -95,13 +105,15 @@ export default {
                 "fade-out": "fade-out 0.2s ease-out",
                 "slide-in": "slide-in 0.2s ease-out",
                 "slide-out": "slide-out 0.2s ease-out",
-                float: "float 6s ease-in-out infinite",
+                float: "float 4s ease-in-out infinite",
                 "float-delay": "float 6s ease-in-out infinite 1.5s",
                 "slide-up": "slideUp 0.5s ease-out",
                 "fade-in-up": "fadeInUp 0.5s ease-out",
                 shimmer: "shimmer 2s linear infinite",
                 scaleIn: "scaleIn 0.2s ease-out",
                 slideInBottom: "slideInBottom 0.3s ease-out",
+                spotlight: "spotlight 2s ease .75s 1 forwards",
+                "shimmer-once": "shimmer 2s ease-in-out 1",
             },
             transitionProperty: {
                 width: "width",
