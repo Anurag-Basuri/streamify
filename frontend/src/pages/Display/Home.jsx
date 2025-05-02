@@ -29,7 +29,6 @@ const Home = () => {
         [token]
     );
     const [selectedVideo, setSelectedVideo] = useState(null);
-    const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState("");
     const watchLater = useWatchLater(user);
     const observerTarget = useRef(null);

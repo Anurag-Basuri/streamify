@@ -25,6 +25,8 @@ const useVideos = (isAuthenticated, user) => {
                 }
             });
 
+            console.log('Fetched videos:', data);
+
             const formattedVideos = data.data.videos.map(video => ({
                 ...video,
                 isLiked: isAuthenticated ? video.likes?.includes(user?._id) : false
