@@ -1,11 +1,6 @@
-import {
-    useState,
-    useCallback,
-    useMemo,
-    useRef,
-} from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
@@ -22,13 +17,20 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 
 const Home = () => {
-    const { user, isAuthenticated} = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const apiConfig = useMemo(
         () => ({
-            headers: { Authorization: isAuthenticated ? `Bearer ${localStorage.getItem("accessToken")}` : '' },
+            headers: {
+                Authorization: isAuthenticated
+                    ? `Bearer ${localStorage.getItem("accessToken")}`
+                    : "",
+            },
         }),
         [isAuthenticated]
     );
+
+    // State for playlist modal
+    const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [newPlaylistName, setNewPlaylistName] = useState("");
     const watchLater = useWatchLater(user);
@@ -39,17 +41,11 @@ const Home = () => {
         isAuthenticated,
         user
     );
-
-    const { history, playlists, setPlaylists } = useUserData(
-        isAuthenticated,
-        apiConfig,
-        watchLater
-    );
+    const { playlists, setPlaylists } = useUserData(isAuthenticated, apiConfig);
 
     // Handle video actions with authentication checks
     const handleVideoAction = useCallback(
         async (action, videoId) => {
-            // Allow download without authentication
             if (action === "download") {
                 try {
                     const { data } = await axios.get(
@@ -64,7 +60,6 @@ const Home = () => {
                 return;
             }
 
-            // All other actions require authentication
             if (!isAuthenticated) {
                 toast.error("Please login to perform this action");
                 return;
@@ -73,6 +68,15 @@ const Home = () => {
             try {
                 const video = videos.find((v) => v._id === videoId);
                 if (!video) return;
+
+                // Add to history when video is viewed
+                if (action === "view") {
+                    await axios.post(
+                        `/api/v1/history/${videoId}`,
+                        {},
+                        apiConfig
+                    );
+                }
 
                 switch (action) {
                     case "like": {
@@ -105,6 +109,7 @@ const Home = () => {
                     }
                     case "playlist": {
                         setSelectedVideo(video);
+                        setShowPlaylistModal(true);
                         break;
                     }
                 }
@@ -118,7 +123,6 @@ const Home = () => {
     // Handle playlist operations
     const handlePlaylistOperations = useCallback(
         async (operation, playlistId) => {
-            // Playlist operations always require authentication
             if (!isAuthenticated) {
                 toast.error("Please login to manage playlists");
                 return;
@@ -126,27 +130,6 @@ const Home = () => {
 
             try {
                 switch (operation) {
-                    case "add": {
-                        if (!selectedVideo) return;
-                        await axios.post(
-                            `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
-                            {},
-                            apiConfig
-                        );
-                        toast.success("Added to playlist!");
-                        break;
-                    }
-                    case "delete": {
-                        await axios.delete(
-                            `/api/v1/playlists/${playlistId}`,
-                            apiConfig
-                        );
-                        setPlaylists((prev) =>
-                            prev.filter((p) => p._id !== playlistId)
-                        );
-                        toast.success("Playlist deleted!");
-                        break;
-                    }
                     case "create": {
                         const { data } = await axios.post(
                             "/api/v1/playlists/create",
@@ -155,7 +138,18 @@ const Home = () => {
                         );
                         setPlaylists((prev) => [data.data, ...prev]);
                         setNewPlaylistName("");
-                        toast.success("Playlist created!");
+                        // Add video to newly created playlist
+                        await handlePlaylistOperations("add", data.data._id);
+                        break;
+                    }
+                    case "add": {
+                        if (!selectedVideo) return;
+                        await axios.post(
+                            `/api/v1/playlists/${playlistId}/videos/${selectedVideo._id}`,
+                            {},
+                            apiConfig
+                        );
+                        toast.success("Added to playlist!");
                         break;
                     }
                 }
@@ -205,7 +199,7 @@ const Home = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 pt-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <HeroSection />
-                
+
                 <div className="mt-10">
                     <h2 className="text-2xl font-bold mb-6">Latest Videos</h2>
                     <VideoGridSection
@@ -214,6 +208,73 @@ const Home = () => {
                         loadingMore={loadingMore}
                     />
                 </div>
+
+                {/* Playlist Modal */}
+                <AnimatePresence>
+                    {showPlaylistModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                            onClick={() => setShowPlaylistModal(false)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0.95 }}
+                                className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <h3 className="text-xl font-bold mb-4">
+                                    Add to Playlist
+                                </h3>
+
+                                {/* Create New Playlist */}
+                                <div className="mb-4">
+                                    <input
+                                        type="text"
+                                        value={newPlaylistName}
+                                        onChange={(e) =>
+                                            setNewPlaylistName(e.target.value)
+                                        }
+                                        placeholder="New playlist name"
+                                        className="w-full p-2 rounded bg-gray-700"
+                                    />
+                                    <button
+                                        onClick={() =>
+                                            handlePlaylistOperations("create")
+                                        }
+                                        className="mt-2 w-full bg-purple-600 hover:bg-purple-700 p-2 rounded"
+                                    >
+                                        Create & Add
+                                    </button>
+                                </div>
+
+                                {/* Existing Playlists */}
+                                <div className="space-y-2">
+                                    <h4 className="font-medium mb-2">
+                                        Existing Playlists
+                                    </h4>
+                                    {playlists.map((playlist) => (
+                                        <button
+                                            key={playlist._id}
+                                            onClick={() =>
+                                                handlePlaylistOperations(
+                                                    "add",
+                                                    playlist._id
+                                                )
+                                            }
+                                            className="w-full text-left p-2 hover:bg-gray-700 rounded"
+                                        >
+                                            {playlist.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {hasMore && (
                     <div
