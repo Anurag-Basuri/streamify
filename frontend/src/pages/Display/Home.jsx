@@ -21,13 +21,12 @@ import "swiper/css/navigation";
 import "swiper/css/autoplay";
 
 const Home = () => {
-    const { user, isAuthenticated, token } = useAuth();
-    console.log();
+    const { user, isAuthenticated} = useAuth();
     const apiConfig = useMemo(
         () => ({
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: isAuthenticated ? `Bearer ${localStorage.getItem("accessToken")}` : '' },
         }),
-        [token]
+        [isAuthenticated]
     );
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [newPlaylistName, setNewPlaylistName] = useState("");
