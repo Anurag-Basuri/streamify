@@ -12,9 +12,7 @@ import useUserData from "../../hooks/useUserData.js";
 import useAuth from "../../hooks/useAuth.js";
 import VideoCard from "../../components/Video/VideoCard.jsx";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
-import { PlaylistModal } from "../../components/Playlist/PlaylistModal.jsx";
 import { HeroSection } from "../../components/Home/HeroSection.jsx";
-import { HistorySection } from "../../components/Home/HistorySection.jsx";
 import { VideoGridSection } from "../../components/Home/VideoGridSection.jsx";
 
 // Import styles
@@ -24,7 +22,6 @@ import "swiper/css/autoplay";
 
 const Home = () => {
     const { user, isAuthenticated, token } = useAuth();
-    console.log(isAuthenticated);
     const apiConfig = useMemo(
         () => ({
             headers: { Authorization: `Bearer ${token}` },
@@ -209,16 +206,6 @@ const Home = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 pt-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <HeroSection />
-
-                {isAuthenticated && history.length > 0 && (
-                    <HistorySection
-                        history={history}
-                        watchLater={watchLater}
-                        onAction={handleVideoAction}
-                        inWatchLater={watchLater.isInWatchLater}
-                        watchLaterLoading={watchLater.loading}
-                    />
-                )}
                 
                 <div className="mt-10">
                     <h2 className="text-2xl font-bold mb-6">Latest Videos</h2>
@@ -241,19 +228,6 @@ const Home = () => {
                         )}
                     </div>
                 )}
-
-                <AnimatePresence>
-                    {showPlaylistModal && isAuthenticated && (
-                        <PlaylistModal
-                            isOpen={showPlaylistModal}
-                            onClose={() => setShowPlaylistModal(false)}
-                            playlists={playlists}
-                            newPlaylistName={newPlaylistName}
-                            setNewPlaylistName={setNewPlaylistName}
-                            onPlaylistAction={handlePlaylistOperations}
-                        />
-                    )}
-                </AnimatePresence>
             </div>
         </div>
     );
