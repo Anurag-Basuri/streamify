@@ -105,7 +105,6 @@ const Home = () => {
                     }
                     case "playlist": {
                         setSelectedVideo(video);
-                        setShowPlaylistModal(true);
                         break;
                     }
                 }
