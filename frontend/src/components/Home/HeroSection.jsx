@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { EffectFade, Autoplay, Controller } from "swiper/modules";
 import {
@@ -8,6 +8,7 @@ import {
     animate,
     useSpring,
     useAnimationControls,
+    AnimatePresence,
 } from "framer-motion";
 import {
     Play,
@@ -24,7 +25,9 @@ import {
     Music,
     Globe,
     Crown,
+    ChevronLeft,
 } from "lucide-react";
+import PropTypes from "prop-types";
 
 // Import necessary Swiper styles
 import "swiper/css";
@@ -82,6 +85,11 @@ const AudioVisualizer = ({ active, color }) => {
                 ))}
         </motion.div>
     );
+};
+
+AudioVisualizer.propTypes = {
+    active: PropTypes.bool.isRequired,
+    color: PropTypes.string.isRequired,
 };
 
 // Advanced particle field with directed flow
@@ -528,21 +536,26 @@ const FeatureCard = ({ icon: Icon, text, delay, active }) => {
 // Glitch effect for text
 const GlitchText = ({ text, active, delay = 0 }) => {
     const [glitching, setGlitching] = useState(false);
+    const intervalRef = useRef(null);
+    const timeoutRef = useRef(null);
 
     useEffect(() => {
-        if (!active) return;
+        if (!active) {
+            setGlitching(false);
+            return;
+        }
 
-        const timeout = setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
             setGlitching(true);
-
-            const interval = setInterval(() => {
+            intervalRef.current = setInterval(() => {
                 setGlitching((prev) => !prev);
             }, 2000);
-
-            return () => clearInterval(interval);
         }, delay * 1000);
 
-        return () => clearTimeout(timeout);
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
     }, [active, delay]);
 
     return (
@@ -573,6 +586,12 @@ const GlitchText = ({ text, active, delay = 0 }) => {
     );
 };
 
+GlitchText.propTypes = {
+    text: PropTypes.string.isRequired,
+    active: PropTypes.bool.isRequired,
+    delay: PropTypes.number,
+};
+
 // Enhanced hero slide with interactive elements
 const HeroSlide = ({ title, description, colors, features, active, index }) => {
     const slideRef = useRef(null);
@@ -594,21 +613,33 @@ const HeroSlide = ({ title, description, colors, features, active, index }) => {
     const springContentX = useSpring(contentX, springConfig);
     const springContentY = useSpring(contentY, springConfig);
 
-    const handleMouseMove = (e) => {
-        if (!slideRef.current) return;
-        const rect = slideRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        mouseX.set(x);
-        mouseY.set(y);
-        setMousePosition({ x, y });
-    };
+    const handleMouseMove = useCallback(
+        (e) => {
+            if (!slideRef.current) return;
+
+            const rect = slideRef.current.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+
+            mouseX.set(x);
+            mouseY.set(y);
+            setMousePosition({ x, y });
+        },
+        [mouseX, mouseY]
+    );
+
+    useEffect(() => {
+        const element = slideRef.current;
+        if (!element) return;
+
+        element.addEventListener("mousemove", handleMouseMove);
+        return () => element.removeEventListener("mousemove", handleMouseMove);
+    }, [handleMouseMove]);
 
     return (
         <div
             ref={slideRef}
             className="relative h-screen w-full overflow-hidden"
-            onMouseMove={handleMouseMove}
         >
             <div className="absolute inset-0 bg-black/50" />
 
@@ -731,27 +762,55 @@ const HeroSlide = ({ title, description, colors, features, active, index }) => {
             </motion.div>
 
             {/* Interactive cursor follower */}
-            <motion.div
-                className="fixed w-20 h-20 rounded-full pointer-events-none z-20 hidden md:block"
-                style={{
-                    x: mouseX.get() * window.innerWidth,
-                    y: mouseY.get() * window.innerHeight,
-                    backgroundColor: `${colors[0]}22`,
-                    boxShadow: `0 0 20px 5px ${colors[0]}11`,
-                    mixBlendMode: "plus-lighter",
-                }}
-                animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.2, 0.3, 0.2],
-                }}
-                transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                }}
-            />
+            <AnimatePresence>
+                {typeof window !== "undefined" && (
+                    <motion.div
+                        className="fixed w-20 h-20 rounded-full pointer-events-none z-20 hidden md:block"
+                        style={{
+                            x:
+                                mouseX.get() *
+                                (typeof window !== "undefined"
+                                    ? window.innerWidth
+                                    : 0),
+                            y:
+                                mouseY.get() *
+                                (typeof window !== "undefined"
+                                    ? window.innerHeight
+                                    : 0),
+                            backgroundColor: `${colors[0]}22`,
+                            boxShadow: `0 0 20px 5px ${colors[0]}11`,
+                            mixBlendMode: "plus-lighter",
+                        }}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{
+                            opacity: [0.2, 0.3, 0.2],
+                            scale: [1, 1.2, 1],
+                        }}
+                        exit={{ opacity: 0, scale: 0 }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
+};
+
+HeroSlide.propTypes = {
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    colors: PropTypes.arrayOf(PropTypes.string).isRequired,
+    features: PropTypes.arrayOf(
+        PropTypes.shape({
+            icon: PropTypes.elementType.isRequired,
+            text: PropTypes.string.isRequired,
+        })
+    ).isRequired,
+    active: PropTypes.bool.isRequired,
+    index: PropTypes.number.isRequired,
 };
 
 // Custom slide indicator component
@@ -777,6 +836,13 @@ const SlideIndicator = ({ index, active, total, onClick }) => {
             />
         </motion.button>
     );
+};
+
+SlideIndicator.propTypes = {
+    index: PropTypes.number.isRequired,
+    active: PropTypes.bool.isRequired,
+    total: PropTypes.number.isRequired,
+    onClick: PropTypes.func.isRequired,
 };
 
 // Enhanced hero section with advanced interactions
@@ -931,4 +997,29 @@ export const HeroSection = () => {
             </motion.div>
         </div>
     );
+};
+
+// Particles background component
+const ParticlesBackground = () => {
+    const [dimensions, setDimensions] = useState(() => ({
+        width: typeof window !== "undefined" ? window.innerWidth : 0,
+        height: typeof window !== "undefined" ? window.innerHeight : 0,
+    }));
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const updateDimensions = () => {
+            setDimensions({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+
+        updateDimensions();
+        window.addEventListener("resize", updateDimensions);
+        return () => window.removeEventListener("resize", updateDimensions);
+    }, []);
+
+    return null; // Placeholder for the return content
 };
