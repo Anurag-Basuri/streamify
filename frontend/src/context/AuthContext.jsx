@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
 import {
     createContext,
     useState,
@@ -8,6 +6,7 @@ import {
     useRef,
     useMemo,
 } from "react";
+import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -224,6 +223,9 @@ const AuthProvider = ({ children }) => {
             {children}
         </AuthContext.Provider>
     );
+};
+AuthProvider.propTypes = {
+    children: PropTypes.node.isRequired
 };
 
 export { AuthProvider, AuthContext };

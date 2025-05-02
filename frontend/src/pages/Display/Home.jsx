@@ -22,6 +22,7 @@ import "swiper/css/autoplay";
 
 const Home = () => {
     const { user, isAuthenticated, token } = useAuth();
+    console.log();
     const apiConfig = useMemo(
         () => ({
             headers: { Authorization: `Bearer ${token}` },

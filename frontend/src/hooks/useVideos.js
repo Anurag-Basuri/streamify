@@ -11,16 +11,16 @@ const useVideos = (isAuthenticated, user) => {
     const controller = useRef(new AbortController());
 
     const fetchVideos = useCallback(async (pageNum) => {
+        console.log('Fetching videos for page:', pageNum);
         try {
             setLoadingMore(pageNum > 1);
             const { data } = await axios.get(`/api/v1/videos`, {
                 headers: isAuthenticated ? {
                     Authorization: `Bearer ${localStorage.getItem('accessToken')}`
                 } : {},
-                signal: controller.current.signal,
                 params: {
                     page: pageNum,
-                    limit: 12,
+                    limit: 10,
                     sort: '-createdAt'
                 }
             });
