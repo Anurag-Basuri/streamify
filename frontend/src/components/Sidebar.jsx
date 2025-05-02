@@ -31,21 +31,21 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
 
     const commonLinks = [
         { to: "/", icon: Home, label: "Home" },
-        { to: "/trending", icon: ThumbsUp, label: "Trending" },
-        { to: "/subscriptions", icon: Bell, label: "Subscriptions" },
+        { to: "/tweet", icon: ThumbsUp, label: "Tweets" },
+        { to: "/subscription", icon: Bell, label: "Subscriptions" },
     ];
 
     const authLinks = [
         { to: "/history", icon: History, label: "History" },
-        { to: "/playlists", icon: ListVideo, label: "Playlists" },
-        { to: "/watch-later", icon: Clock, label: "Watch Later" },
-        { to: "/your-videos", icon: Film, label: "Your Videos" },
-        { to: "/uploads", icon: PlusSquare, label: "Upload Video" },
+        { to: "/playlist", icon: ListVideo, label: "Playlists" },
+        { to: "/watchlater", icon: Clock, label: "Watch Later" },
+        { to: "/uservideos", icon: Film, label: "Your Videos" },
         { to: "/downloads", icon: DownloadCloud, label: "Downloads" },
     ];
 
     const accountLinks = [
         { to: "/profile", icon: User, label: "Profile" },
+        { to: "/create", icon: PlusSquare, label: "Create" },
         { to: "/settings", icon: Settings, label: "Settings" },
     ];
 
