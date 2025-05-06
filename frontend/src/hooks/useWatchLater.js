@@ -99,6 +99,7 @@ const useWatchLater = (user) => {
     return {
         videos: getFilteredVideos(),
         loading,
+        fetchWatchLater,
         error,
         removingVideo,
         setRemovingVideo,

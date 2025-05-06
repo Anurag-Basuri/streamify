@@ -10,14 +10,14 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
     const watchLater = useWatchLater(user);
-    const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
+    const { video, loading, error, fetchVideos, incrementViews, addToHistory } =
         useVideo(videoID, user);
 
     // Initial fetch
     useEffect(() => {
-        fetchVideo();
+        fetchVideos();
         watchLater.fetchWatchLater();
-    }, [videoID, fetchVideo, watchLater]);
+    }, [videoID, fetchVideos, watchLater]);
 
     // Handle video play event
     const handlePlay = async () => {
