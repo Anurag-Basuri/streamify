@@ -1,45 +1,9 @@
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import PropTypes from 'prop-types';
-import { FaPlay, FaHeart, FaShare } from "react-icons/fa";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaHeart, FaEllipsisV } from "react-icons/fa";
 import { formatDistance } from "date-fns";
-import { WatchLaterButton } from "./WatchLaterButton";
-
-const VideoInfo = ({ video }) => {
-    return (
-        <div>
-            <h3 className="text-lg font-semibold text-white truncate">
-                {video.title}
-            </h3>
-            <div className="flex items-center gap-2 mt-2">
-                <img
-                    src={video.owner.avatar}
-                    alt={video.owner.username}
-                    className="w-6 h-6 rounded-full"
-                />
-                <span className="text-sm text-gray-400">
-                    {video.owner.username}
-                </span>
-                <span className="text-sm text-gray-400">•</span>
-                <span className="text-sm text-gray-400">
-                    {video.views} views
-                </span>
-            </div>
-        </div>
-    );
-};
-
-VideoInfo.propTypes = {
-    video: PropTypes.shape({
-        title: PropTypes.string.isRequired,
-        owner: PropTypes.shape({
-            avatar: PropTypes.string.isRequired,
-            username: PropTypes.string.isRequired,
-        }).isRequired,
-        views: PropTypes.number.isRequired,
-    }).isRequired,
-};
-
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
 
 const VideoCard = ({
     video,
@@ -47,8 +11,22 @@ const VideoCard = ({
     inWatchLater,
     watchLaterLoading,
     isAuthenticated,
-    progress,
 }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     return (
         <motion.div
             layout
@@ -67,20 +45,33 @@ const VideoCard = ({
                     to={`/video/${video._id}`}
                     className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                    <FaPlay className="w-12 h-12 text-white" />
-                </Link>
-                {progress && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
-                        <div
-                            className="h-full bg-purple-500"
-                            style={{ width: `${progress}%` }}
-                        />
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg
+                            className="w-6 h-6 text-white"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
                     </div>
-                )}
+                </Link>
             </div>
 
             <div className="p-4">
-                <VideoInfo video={video} />
+                <div>
+                    <h3 className="text-lg font-semibold text-white truncate">
+                        {video.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm text-gray-400">
+                            {video.owner?.username}
+                        </span>
+                        <span className="text-sm text-gray-400">•</span>
+                        <span className="text-sm text-gray-400">
+                            {video.views} views
+                        </span>
+                    </div>
+                </div>
 
                 <div className="mt-4 flex items-center justify-between">
                     <div className="text-sm text-gray-400">
@@ -90,32 +81,79 @@ const VideoCard = ({
                     </div>
                     <div className="flex items-center gap-2">
                         {isAuthenticated && (
-                            <>
-                                <WatchLaterButton
-                                    inWatchLater={inWatchLater}
-                                    loading={watchLaterLoading}
-                                    onClick={() =>
-                                        onAction("watchlater", video._id)
-                                    }
+                            <button
+                                onClick={() => onAction("like", video._id)}
+                                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <FaHeart
+                                    className={`w-5 h-5 ${
+                                        video.isLiked ? "text-red-500" : ""
+                                    }`}
                                 />
-                                <button
-                                    onClick={() => onAction("like", video._id)}
-                                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                    <FaHeart
-                                        className={`w-5 h-5 ${
-                                            video.isLiked ? "text-red-500" : ""
-                                        }`}
-                                    />
-                                </button>
-                            </>
+                            </button>
                         )}
-                        <button
-                            onClick={() => onAction("share", video._id)}
-                            className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
-                        >
-                            <FaShare className="w-5 h-5" />
-                        </button>
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                            >
+                                <FaEllipsisV className="w-5 h-5" />
+                            </button>
+                            <AnimatePresence>
+                                {isMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg z-10 overflow-hidden"
+                                    >
+                                        {isAuthenticated && (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        onAction(
+                                                            "watchlater",
+                                                            video._id
+                                                        );
+                                                        setIsMenuOpen(false);
+                                                    }}
+                                                    disabled={watchLaterLoading}
+                                                    className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 flex items-center justify-between disabled:opacity-50"
+                                                >
+                                                    {inWatchLater
+                                                        ? "Remove from Watch Later"
+                                                        : "Add to Watch Later"}
+                                                    {watchLaterLoading && (
+                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        onAction(
+                                                            "playlist",
+                                                            video._id
+                                                        );
+                                                        setIsMenuOpen(false);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700"
+                                                >
+                                                    Add to Playlist
+                                                </button>
+                                            </>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                onAction("share", video._id);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700"
+                                        >
+                                            Share
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,21 +162,11 @@ const VideoCard = ({
 };
 
 VideoCard.propTypes = {
-    video: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-        thumbnail: PropTypes.string.isRequired,
-        duration: PropTypes.number,
-        views: PropTypes.number,
-        createdAt: PropTypes.string.isRequired,
-        isLiked: PropTypes.bool,
-        owner: PropTypes.object.isRequired,
-    }).isRequired,
+    video: PropTypes.object.isRequired,
     onAction: PropTypes.func.isRequired,
     inWatchLater: PropTypes.bool,
     watchLaterLoading: PropTypes.bool,
     isAuthenticated: PropTypes.bool,
-    progress: PropTypes.number,
 };
 
 export default VideoCard;
