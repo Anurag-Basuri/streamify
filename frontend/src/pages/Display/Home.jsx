@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { FaEllipsisV } from "react-icons/fa";
 import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
 import useUserData from "../../hooks/useUserData.js";
@@ -10,11 +11,6 @@ import VideoCard from "../../components/Video/VideoCard.jsx";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
 import { HeroSection } from "../../components/Home/HeroSection.jsx";
 import { VideoGridSection } from "../../components/Home/VideoGridSection.jsx";
-
-// Import styles
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/autoplay";
 
 const Home = () => {
     const { user, isAuthenticated } = useAuth();
@@ -29,7 +25,6 @@ const Home = () => {
         [isAuthenticated]
     );
 
-    // State for playlist modal
     const [showPlaylistModal, setShowPlaylistModal] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -37,14 +32,16 @@ const Home = () => {
     const observerTarget = useRef(null);
     const [page, setPage] = useState(1);
 
-    // Custom hooks
     const { videos, setVideos, isLoading, hasMore, loadingMore } = useVideos(
         isAuthenticated,
         user
     );
-    const { playlists, setPlaylists } = useUserData(isAuthenticated, apiConfig);
+    const { playlists, setPlaylists } = useUserData(
+        isAuthenticated,
+        apiConfig,
+        watchLater
+    );
 
-    // Add intersection observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
@@ -62,14 +59,12 @@ const Home = () => {
         return () => observer.disconnect();
     }, [hasMore, loadingMore]);
 
-    // Add fetch next page function
     const fetchNextPage = () => {
         if (!loadingMore) {
             setPage((prev) => prev + 1);
         }
     };
 
-    // Handle video actions with authentication checks
     const handleVideoAction = useCallback(
         async (action, videoId) => {
             if (action === "download") {
@@ -95,7 +90,6 @@ const Home = () => {
                 const video = videos.find((v) => v._id === videoId);
                 if (!video) return;
 
-                // Add to history when video is viewed
                 if (action === "view") {
                     await axios.post(
                         `/api/v1/history/${videoId}`,
@@ -106,6 +100,7 @@ const Home = () => {
 
                 switch (action) {
                     case "like": {
+                        const originalVideos = [...videos];
                         const updatedVideos = videos.map((v) =>
                             v._id === videoId
                                 ? {
@@ -118,11 +113,16 @@ const Home = () => {
                                 : v
                         );
                         setVideos(updatedVideos);
-                        await axios.post(
-                            `/api/v1/likes/video/${videoId}`,
-                            {},
-                            apiConfig
-                        );
+                        try {
+                            await axios.post(
+                                `/api/v1/likes/video/${videoId}`,
+                                {},
+                                apiConfig
+                            );
+                        } catch (error) {
+                            setVideos(originalVideos);
+                            throw error;
+                        }
                         break;
                     }
                     case "watchlater": {
@@ -146,7 +146,6 @@ const Home = () => {
         [videos, apiConfig, watchLater, isAuthenticated, setVideos]
     );
 
-    // Handle playlist operations
     const handlePlaylistOperations = useCallback(
         async (operation, playlistId) => {
             if (!isAuthenticated) {
@@ -164,7 +163,6 @@ const Home = () => {
                         );
                         setPlaylists((prev) => [data.data, ...prev]);
                         setNewPlaylistName("");
-                        // Add video to newly created playlist
                         await handlePlaylistOperations("add", data.data._id);
                         break;
                     }
@@ -235,7 +233,6 @@ const Home = () => {
                     />
                 </div>
 
-                {/* Playlist Modal */}
                 <AnimatePresence>
                     {showPlaylistModal && (
                         <motion.div
@@ -256,7 +253,6 @@ const Home = () => {
                                     Add to Playlist
                                 </h3>
 
-                                {/* Create New Playlist */}
                                 <div className="mb-4">
                                     <input
                                         type="text"
@@ -277,7 +273,6 @@ const Home = () => {
                                     </button>
                                 </div>
 
-                                {/* Existing Playlists */}
                                 <div className="space-y-2">
                                     <h4 className="font-medium mb-2">
                                         Existing Playlists
