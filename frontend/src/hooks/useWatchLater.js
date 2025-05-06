@@ -11,6 +11,10 @@ const useWatchLater = (user) => {
     const [filter, setFilter] = useState("all");
     const [remindLater, setRemindLater] = useState({});
 
+    const isInWatchLater = (videoId) => {
+        return videos.some((video) => video._id === videoId);
+    };
+
     const fetchWatchLater = async () => {
         try {
             const response = await fetch("/api/v1/watchlater", {
@@ -105,6 +109,7 @@ const useWatchLater = (user) => {
         setFilter,
         remindLater,
         setReminder,
+        isInWatchLater,
     };
 };
 
