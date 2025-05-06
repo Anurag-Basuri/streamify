@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-hot-toast";
@@ -35,6 +35,7 @@ const Home = () => {
     const [newPlaylistName, setNewPlaylistName] = useState("");
     const watchLater = useWatchLater(user);
     const observerTarget = useRef(null);
+    const [page, setPage] = useState(1);
 
     // Custom hooks
     const { videos, setVideos, isLoading, hasMore, loadingMore } = useVideos(
@@ -42,6 +43,31 @@ const Home = () => {
         user
     );
     const { playlists, setPlaylists } = useUserData(isAuthenticated, apiConfig);
+
+    // Add intersection observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loadingMore]);
+
+    // Add fetch next page function
+    const fetchNextPage = () => {
+        if (!loadingMore) {
+            setPage((prev) => prev + 1);
+        }
+    };
 
     // Handle video actions with authentication checks
     const handleVideoAction = useCallback(
