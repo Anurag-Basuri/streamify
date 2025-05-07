@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
-import { FaSpinner, FaClock } from "react-icons/fa";
+import { FaSpinner, FaClock, FaUser } from "react-icons/fa";
 import useAuth from "../hooks/useAuth";
 import useWatchLater from "../hooks/useWatchLater";
 import useVideo from "../hooks/useVideo";
@@ -21,18 +21,26 @@ const VideoPlayer = () => {
 
     // Handle video play event
     const handlePlay = async () => {
-        await incrementViews();
-        await addToHistory();
+        try {
+            await incrementViews();
+            await addToHistory();
+        } catch (err) {
+            console.error("Error tracking video play:", err);
+        }
     };
 
     // Handle Watch Later
     const handleWatchLater = async () => {
         if (!video?._id) return;
 
-        if (watchLater.isInWatchLater(video._id)) {
-            await watchLater.removeFromWatchLater(video._id);
-        } else {
-            await watchLater.addToWatchLater(video._id);
+        try {
+            if (watchLater.isInWatchLater(video._id)) {
+                await watchLater.removeFromWatchLater(video._id);
+            } else {
+                await watchLater.addToWatchLater(video._id);
+            }
+        } catch (err) {
+            console.error("Error updating Watch Later:", err);
         }
     };
 
@@ -52,13 +60,14 @@ const VideoPlayer = () => {
         );
     }
 
-    const inWatchLater = watchLater.isInWatchLater(video._id);
+    const inWatchLater = watchLater.isInWatchLater(video?._id);
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
             <div className="max-w-7xl mx-auto">
+                {/* Video Player Section */}
                 <div className="aspect-video bg-black rounded-xl overflow-hidden relative">
-                    {video?.videoFile?.url && (
+                    {video?.videoFile?.url ? (
                         <ReactPlayer
                             onPlay={handlePlay}
                             url={video.videoFile.url}
@@ -74,6 +83,10 @@ const VideoPlayer = () => {
                                 },
                             }}
                         />
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <p className="text-gray-400">Video not available</p>
+                        </div>
                     )}
                     {user && (
                         <button
@@ -100,21 +113,26 @@ const VideoPlayer = () => {
                     )}
                 </div>
 
+                {/* Video Metadata Section */}
                 <div className="mt-8 space-y-4">
-                    <h1 className="text-3xl font-bold">{video?.title}</h1>
-                    <p className="text-gray-400">{video?.description}</p>
+                    <h1 className="text-3xl font-bold">
+                        {video?.title || "Untitled Video"}
+                    </h1>
+                    <p className="text-gray-400">
+                        {video?.description || "No description available."}
+                    </p>
                     <div className="flex items-center gap-4">
                         <img
                             src={video?.owner?.avatar || "/default-avatar.png"}
-                            alt={video?.owner?.userName}
+                            alt={video?.owner?.userName || "Unknown User"}
                             className="w-10 h-10 rounded-full"
                         />
                         <div>
                             <p className="font-medium">
-                                {video?.owner?.userName}
+                                {video?.owner?.userName || "Unknown User"}
                             </p>
                             <p className="text-sm text-gray-400">
-                                {video?.views?.toLocaleString()} views
+                                {video?.views?.toLocaleString() || 0} views
                             </p>
                         </div>
                     </div>
