@@ -10,4 +10,9 @@ router.use(verifyAccessToken);
 // Route to get dashboard data
 router.get("/", getDashboard);
 
+// Handle invalid routes under /dashboard
+router.use((req, res) => {
+    res.status(404).json({ success: false, message: "Route not found" });
+});
+
 export default router;
