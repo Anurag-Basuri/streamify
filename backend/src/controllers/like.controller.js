@@ -183,37 +183,14 @@ const getLikedEntities = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid or missing entity type");
     }
 
-    // Determine the fields to populate based on entity type
-    let populateFields = "";
-    switch (entityType) {
-        case "Video":
-            populateFields = "title description thumbnail";
-            break;
-        case "Comment":
-            populateFields = "content createdAt";
-            break;
-        case "Tweet":
-            populateFields = "content createdAt";
-            break;
-        default:
-            throw new APIerror(400, "Unsupported entity type");
-    }
-
-    const likes = await Like.find({
-        likedBy: req.user._id,
-        entityType,
-    })
-        .populate("likedEntity", populateFields)
-        .sort({ createdAt: -1 });
+    const likes = await Like.find({ entityType })
+        .populate(entityType.toLowerCase()) // Dynamically populate based on entityType
+        .exec();
 
     return res
         .status(200)
         .json(
-            new APIresponse(
-                200,
-                likes,
-                `Liked ${entityType}s fetched successfully`
-            )
+            new APIresponse(200, likes, "Liked entities fetched successfully")
         );
 });
 
