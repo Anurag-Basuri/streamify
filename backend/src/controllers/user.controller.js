@@ -131,6 +131,8 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
         return next(new APIerror(401, "unauthorized request"));
     }
 
+    console.log("incoming refresh token:", incoming);
+
     try {
         const decodedToken = jwt.verify(
             incoming,

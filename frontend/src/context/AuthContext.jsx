@@ -6,9 +6,9 @@ import {
     useRef,
     useMemo,
 } from "react";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import { useNavigate, useLocation } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import {
     getCurrentUser,
     signIn,
@@ -29,6 +29,7 @@ const AuthProvider = ({ children }) => {
     const location = useLocation();
     const intervalRef = useRef(null);
 
+    // Load user profile
     const loadUserProfile = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -36,6 +37,7 @@ const AuthProvider = ({ children }) => {
             setUser(profile);
             return profile;
         } catch (error) {
+            console.error("Failed to load user profile:", error);
             setUser(null);
             throw error;
         } finally {
@@ -43,6 +45,7 @@ const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    // Refresh access token
     const handleTokenRefresh = useCallback(async () => {
         if (isTokenRefreshing) return;
         setIsTokenRefreshing(true);
@@ -53,7 +56,7 @@ const AuthProvider = ({ children }) => {
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("refreshToken", newRefreshToken);
 
-            const profile = await getCurrentUser();
+            const profile = await loadUserProfile();
             setUser(profile);
             return true;
         } catch (error) {
@@ -65,19 +68,28 @@ const AuthProvider = ({ children }) => {
         } finally {
             setIsTokenRefreshing(false);
         }
-    }, [isTokenRefreshing, navigate]);
+    }, [isTokenRefreshing, navigate, loadUserProfile]);
 
+    // Initialize authentication
     useEffect(() => {
         let isMounted = true;
+
         const initializeAuth = async () => {
             try {
-                if (localStorage.getItem("accessToken")) {
-                    await loadUserProfile();
+                const accessToken = localStorage.getItem("accessToken");
+                if (accessToken) {
+                    const tokenExp = jwtDecode(accessToken)?.exp;
+                    if (tokenExp && tokenExp * 1000 > Date.now()) {
+                        await loadUserProfile();
+                    } else {
+                        await handleTokenRefresh();
+                    }
                 } else {
                     setIsLoading(false);
                 }
             } catch (error) {
                 if (isMounted) {
+                    console.error("Initialization error:", error);
                     setUser(null);
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
@@ -89,23 +101,29 @@ const AuthProvider = ({ children }) => {
         };
 
         initializeAuth();
+
         return () => {
             isMounted = false;
         };
-    }, [navigate, loadUserProfile]);
+    }, [navigate, loadUserProfile, handleTokenRefresh]);
 
+    // Periodically check token expiration
     useEffect(() => {
         const checkAuth = async () => {
-            const tokenExp = jwtDecode(
-                localStorage.getItem("accessToken")
-            )?.exp;
-            if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
-                await handleTokenRefresh();
+            const accessToken = localStorage.getItem("accessToken");
+            if (accessToken) {
+                const tokenExp = jwtDecode(accessToken)?.exp;
+                if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
+                    await handleTokenRefresh();
+                }
             }
         };
-        checkAuth();
-    }, [user, handleTokenRefresh, isTokenRefreshing]);
 
+        const interval = setInterval(checkAuth, 300000); // Check every 5 minutes
+        return () => clearInterval(interval);
+    }, [handleTokenRefresh]);
+
+    // Handle OAuth callback
     useEffect(() => {
         const handleOAuthCallback = async () => {
             const params = new URLSearchParams(window.location.search);
@@ -124,6 +142,7 @@ const AuthProvider = ({ children }) => {
                         window.location.pathname
                     );
                 } catch (error) {
+                    console.error("OAuth callback error:", error);
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
                     navigate("/auth");
@@ -134,16 +153,18 @@ const AuthProvider = ({ children }) => {
         handleOAuthCallback();
     }, [navigate, location, loadUserProfile]);
 
+    // Login user
     const login = useCallback(
         async (credentials) => {
             try {
                 const { accessToken, refreshToken } = await signIn(credentials);
                 localStorage.setItem("accessToken", accessToken);
                 localStorage.setItem("refreshToken", refreshToken);
-                const profile = await getCurrentUser();
+                const profile = await loadUserProfile();
                 setUser(profile);
                 return true;
             } catch (error) {
+                console.error("Login error:", error);
                 setUser(null);
                 localStorage.removeItem("accessToken");
                 localStorage.removeItem("refreshToken");
@@ -153,6 +174,7 @@ const AuthProvider = ({ children }) => {
         [loadUserProfile]
     );
 
+    // Register user
     const register = useCallback(
         async (userData) => {
             try {
@@ -162,12 +184,14 @@ const AuthProvider = ({ children }) => {
                 await loadUserProfile();
                 return true;
             } catch (error) {
+                console.error("Registration error:", error);
                 return false;
             }
         },
         [loadUserProfile]
     );
 
+    // Logout user
     const logoutUser = useCallback(async () => {
         try {
             await logout();
@@ -183,6 +207,7 @@ const AuthProvider = ({ children }) => {
         }
     }, [navigate]);
 
+    // Google login
     const googleLogin = useCallback(async () => {
         try {
             await handleGoogleAuth();
@@ -191,10 +216,12 @@ const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    // Update user in context
     const updateUserInContext = useCallback((newUserData) => {
         setUser((prev) => ({ ...prev, ...newUserData }));
     }, []);
 
+    // Memoized context value
     const authContextValue = useMemo(
         () => ({
             user,
@@ -226,7 +253,7 @@ const AuthProvider = ({ children }) => {
 };
 
 AuthProvider.propTypes = {
-    children: PropTypes.node.isRequired
+    children: PropTypes.node.isRequired,
 };
 
 export { AuthProvider, AuthContext };
