@@ -1,25 +1,26 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const commentSchema = new Schema(
+const commentSchema = new mongoose.Schema(
     {
+        owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
         content: {
             type: String,
             required: true,
         },
-        owner: {
-            type: Schema.Types.ObjectId,
-            ref: "User", // Reference to the User model
-            required: true,
-        },
         tweet: {
-            type: Schema.Types.ObjectId,
-            ref: "Tweet", // Reference to the Tweet model
-            required: true,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Tweet", // Ensure this matches the Tweet model
+        },
+        video: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Video", // Ensure this matches the Video model
         },
     },
-    {
-        timestamps: true, // Adds `createdAt` and `updatedAt` fields
-    }
+    { timestamps: true }
 );
 
 export const Comment = mongoose.model("Comment", commentSchema);
