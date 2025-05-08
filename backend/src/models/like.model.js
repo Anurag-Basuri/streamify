@@ -1,34 +1,22 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const likeSchema = new Schema(
+const likeSchema = new mongoose.Schema(
     {
-        likedBy: {
-            type: Schema.Types.ObjectId,
-            ref: "User", // Reference to the User model
+        owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
             required: true,
         },
-        likedEntity: {
-            type: Schema.Types.ObjectId,
-            refPath: "entityType", // Dynamic reference based on entityType
-            required: true,
+        tweet: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Tweet", // Ensure this matches the Tweet model
         },
-        entityType: {
-            type: String,
-            enum: ["Tweet", "Comment", "Video"], // Supported entity types
-            required: true,
+        video: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Video", // Ensure this matches the Video model
         },
     },
-    {
-        timestamps: true, // Adds `createdAt` and `updatedAt` fields
-    }
+    { timestamps: true }
 );
-
-// Add a virtual field for populating tweets
-likeSchema.virtual("tweet", {
-    ref: "Tweet", // Reference to the Tweet model
-    localField: "likedEntity",
-    foreignField: "_id",
-    justOne: true,
-});
 
 export const Like = mongoose.model("Like", likeSchema);
