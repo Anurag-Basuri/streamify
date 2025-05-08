@@ -4,23 +4,17 @@ const commentSchema = new Schema(
     {
         content: {
             type: String,
-            required: true, // Content of the comment is mandatory
-            trim: true,
+            required: true,
         },
         owner: {
             type: Schema.Types.ObjectId,
-            ref: "User", // Reference to the user who made the comment
+            ref: "User", // Reference to the User model
             required: true,
         },
-        entity: {
+        tweet: {
             type: Schema.Types.ObjectId,
-            required: true, // Reference to the entity being commented on
-            refPath: "entityType", // Dynamic reference based on `entityType`
-        },
-        entityType: {
-            type: String,
+            ref: "Tweet", // Reference to the Tweet model
             required: true,
-            enum: ["Video", "Tweet"], // Specifies valid entity types
         },
     },
     {
