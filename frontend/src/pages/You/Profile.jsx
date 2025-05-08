@@ -23,6 +23,7 @@ const useAxios = () => {
         (response) => response,
         async (error) => {
             if (error.response?.status === 401) {
+                console.error("Unauthorized access. Redirecting to login...");
                 localStorage.removeItem("accessToken");
                 window.location.href = "/auth";
             }
@@ -61,14 +62,17 @@ const Profile = () => {
 
             setUploadState({ loading: true, error: null });
             try {
+                console.log(`Uploading ${type}...`);
                 const response =
                     type === "avatar"
                         ? await updateAvatar(files[type])
                         : await updateCoverImage(files[type]);
 
+                console.log(`${type} uploaded successfully:`, response.data);
                 updateUser({ [type]: response.data[type] });
                 setFiles((prev) => ({ ...prev, [type]: null }));
             } catch (error) {
+                console.error(`Failed to upload ${type}:`, error);
                 setUploadState((prev) => ({
                     ...prev,
                     error: error.message || "Failed to update image",
@@ -84,18 +88,22 @@ const Profile = () => {
     useEffect(() => {
         const fetchDashboard = async (retries = 3) => {
             try {
+                console.log("Fetching dashboard data...");
                 const { data } = await axios.get("/api/v1/dashboard");
+                console.log("Dashboard data fetched successfully:", data);
                 setDashboard({
                     data: data.data,
                     loading: false,
                     error: null,
                 });
             } catch (error) {
+                console.error("Error fetching dashboard:", error);
                 if (retries > 0) {
-                    console.warn("Retrying fetchDashboard...");
+                    console.warn(
+                        `Retrying fetchDashboard... (${retries} retries left)`
+                    );
                     fetchDashboard(retries - 1);
                 } else {
-                    console.error("Failed to fetch dashboard:", error);
                     setDashboard({
                         data: null,
                         loading: false,
@@ -112,16 +120,21 @@ const Profile = () => {
 
     // Redirect to auth if user is not logged in
     useEffect(() => {
-        if (!isLoading && !user) navigate("/auth");
+        if (!isLoading && !user) {
+            console.warn("User not logged in. Redirecting to login...");
+            navigate("/auth");
+        }
     }, [user, isLoading, navigate]);
 
     // Render loading spinner if data is still loading
     if (!user || dashboard.loading) {
+        console.log("Loading user or dashboard data...");
         return <LoadingSpinner />;
     }
 
     // Render error message if dashboard fetch fails
     if (dashboard.error) {
+        console.error("Dashboard fetch error:", dashboard.error);
         return (
             <div className="text-center py-8">
                 <p className="text-red-500">{dashboard.error}</p>
@@ -137,6 +150,7 @@ const Profile = () => {
 
     // Render error message if user data is incomplete
     if (!user.name) {
+        console.warn("User data is incomplete.");
         return (
             <div className="text-center py-8">
                 <p className="text-red-500">
