@@ -203,8 +203,6 @@ const Profile = () => {
 
     useEffect(() => {
         const fetchDashboard = async () => {
-            if (!user || !localStorage.getItem("accessToken")) return;
-
             try {
                 const { data } = await axios.get("/api/v1/dashboard");
                 setDashboard({
@@ -213,6 +211,7 @@ const Profile = () => {
                     error: null,
                 });
             } catch (error) {
+                console.error("Failed to fetch dashboard:", error);
                 setDashboard({
                     data: null,
                     loading: false,
@@ -222,7 +221,7 @@ const Profile = () => {
         };
 
         fetchDashboard();
-    }, [user, axios]);
+    }, [axios]);
 
     useEffect(() => {
         if (!isLoading && !user) navigate("/auth");
