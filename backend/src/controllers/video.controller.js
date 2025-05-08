@@ -84,6 +84,7 @@ const create_new_video = asynchandler(async (req, res) => {
 
 // Get a single video by ID
 const get_video_by_id = asynchandler(async (req, res) => {
+    console.log(req);
     const { videoID } = req.params;
 
     if (!mongoose.isValidObjectId(videoID)) {

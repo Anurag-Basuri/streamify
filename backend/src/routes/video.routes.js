@@ -60,15 +60,7 @@ const createVideoRules = [
 
 // Route to upload the video
 router.route("/upload").post(
-    (req, res, next) => {
-        console.log("Upload route hit");
-        next();
-    },
     uploadFields,
-    (req, res, next) => {
-        console.log("Files uploaded to server:", req.files);
-        next();
-    },
     createVideoRules,
     validateResult,
     create_new_video
