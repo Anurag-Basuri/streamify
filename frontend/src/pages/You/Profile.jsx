@@ -232,6 +232,16 @@ const Profile = () => {
         return <LoadingSpinner />;
     }
 
+    if (!user.name) {
+        return (
+            <div className="text-center py-8">
+                <p className="text-red-500">
+                    User data is incomplete. Please try again later.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
