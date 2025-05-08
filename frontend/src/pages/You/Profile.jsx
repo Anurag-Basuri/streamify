@@ -95,7 +95,9 @@ const Profile = () => {
                 setDashboard({
                     data: null,
                     loading: false,
-                    error: error.message || "Failed to load dashboard",
+                    error:
+                        error.response?.data?.message ||
+                        "Failed to load dashboard",
                 });
             }
         };
@@ -111,6 +113,15 @@ const Profile = () => {
     // Render loading spinner if data is still loading
     if (!user || dashboard.loading) {
         return <LoadingSpinner />;
+    }
+
+    // Render error message if dashboard fetch fails
+    if (dashboard.error) {
+        return (
+            <div className="text-center py-8">
+                <p className="text-red-500">{dashboard.error}</p>
+            </div>
+        );
     }
 
     // Render error message if user data is incomplete
