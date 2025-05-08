@@ -125,6 +125,12 @@ const Profile = () => {
         return (
             <div className="text-center py-8">
                 <p className="text-red-500">{dashboard.error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md"
+                >
+                    Retry
+                </button>
             </div>
         );
     }
