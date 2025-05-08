@@ -82,7 +82,7 @@ const Profile = () => {
 
     // Fetch dashboard data
     useEffect(() => {
-        const fetchDashboard = async () => {
+        const fetchDashboard = async (retries = 3) => {
             try {
                 const { data } = await axios.get("/api/v1/dashboard");
                 setDashboard({
@@ -91,14 +91,19 @@ const Profile = () => {
                     error: null,
                 });
             } catch (error) {
-                console.error("Failed to fetch dashboard:", error);
-                setDashboard({
-                    data: null,
-                    loading: false,
-                    error:
-                        error.response?.data?.message ||
-                        "Failed to load dashboard",
-                });
+                if (retries > 0) {
+                    console.warn("Retrying fetchDashboard...");
+                    fetchDashboard(retries - 1);
+                } else {
+                    console.error("Failed to fetch dashboard:", error);
+                    setDashboard({
+                        data: null,
+                        loading: false,
+                        error:
+                            error.response?.data?.message ||
+                            "Failed to load dashboard",
+                    });
+                }
             }
         };
 
