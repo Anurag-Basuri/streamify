@@ -12,6 +12,7 @@ import { asynchandler } from "../utils/asynchandler.js";
 const getDashboard = asynchandler(async (req, res) => {
     const userId = req.user._id;
 
+    // Validate user ID
     if (!mongoose.isValidObjectId(userId)) {
         throw new APIerror(400, "Invalid user ID");
     }
@@ -22,67 +23,73 @@ const getDashboard = asynchandler(async (req, res) => {
         throw new APIerror(404, "User not found");
     }
 
-    // Fetch user's tweets and tweet count
-    const tweets = await Tweet.find({ owner: userId })
-        .sort({ createdAt: -1 })
-        .select("content createdAt");
-    const tweetCount = await Tweet.countDocuments({ owner: userId });
-
-    // Fetch user's videos and video count
-    const videos = await Video.find({ owner: userId })
-        .sort({ createdAt: -1 })
-        .select("title description views createdAt");
-    const videoCount = await Video.countDocuments({ owner: userId });
-
-    // Fetch watch later list and count
-    const watchLater = await WatchLater.findOne({ owner: userId }).populate(
-        "videos",
-        "title description"
-    );
-    const watchLaterCount = watchLater ? watchLater.videos.length : 0;
-
-    // Fetch user's likes and like count
-    const likes = await Like.find({ owner: userId })
-        .populate("tweet", "content")
-        .populate("video", "title");
-    const likeCount = await Like.countDocuments({ owner: userId });
-
-    // Fetch user's comments and comment count
-    const comments = await Comment.find({ owner: userId })
-        .sort({ createdAt: -1 })
-        .populate("tweet", "content")
-        .populate("video", "title")
-        .select("content createdAt");
-    const commentCount = await Comment.countDocuments({ owner: userId });
-
-    // Aggregate data for dashboard
-    const dashboardData = {
-        user,
-        stats: {
+    try {
+        // Fetch data in parallel
+        const [
+            tweets,
             tweetCount,
+            videos,
             videoCount,
-            watchLaterCount,
+            watchLater,
+            likes,
             likeCount,
+            comments,
             commentCount,
-        },
-        tweets,
-        videos,
-        watchLater: watchLater ? watchLater.videos : [],
-        likes,
-        comments,
-    };
+        ] = await Promise.all([
+            Tweet.find({ owner: userId })
+                .sort({ createdAt: -1 })
+                .select("content createdAt"),
+            Tweet.countDocuments({ owner: userId }),
+            Video.find({ owner: userId })
+                .sort({ createdAt: -1 })
+                .select("title description views createdAt"),
+            Video.countDocuments({ owner: userId }),
+            WatchLater.findOne({ owner: userId }).populate(
+                "videos",
+                "title description"
+            ),
+            Like.find({ owner: userId })
+                .populate("tweet", "content")
+                .populate("video", "title"),
+            Like.countDocuments({ owner: userId }),
+            Comment.find({ owner: userId })
+                .sort({ createdAt: -1 })
+                .populate("tweet", "content")
+                .populate("video", "title")
+                .select("content createdAt"),
+            Comment.countDocuments({ owner: userId }),
+        ]);
 
-    console.log(dashboardData);
+        // Aggregate data for dashboard
+        const dashboardData = {
+            user,
+            stats: {
+                tweetCount,
+                videoCount,
+                watchLaterCount: watchLater ? watchLater.videos.length : 0,
+                likeCount,
+                commentCount,
+            },
+            tweets,
+            videos,
+            watchLater: watchLater ? watchLater.videos : [],
+            likes,
+            comments,
+        };
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                dashboardData,
-                "Dashboard fetched successfully"
-            )
-        );
+        return res
+            .status(200)
+            .json(
+                new APIresponse(
+                    200,
+                    dashboardData,
+                    "Dashboard fetched successfully"
+                )
+            );
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        throw new APIerror(500, "Failed to fetch dashboard data");
+    }
 });
 
 export { getDashboard };
