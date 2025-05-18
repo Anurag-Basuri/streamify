@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import axios from "axios";
 import {
@@ -128,13 +128,8 @@ const VideoPlayer = () => {
         }
     }, [video, watchLater]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-                <FaSpinner className="animate-spin text-5xl text-purple-500" />
-            </div>
-        );
-    }
+    if (loading) return <Spinner />;
+    if (!user) return <Navigate to="/auth" />;
 
     if (error) {
         return (
