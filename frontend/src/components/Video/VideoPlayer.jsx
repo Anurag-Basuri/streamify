@@ -10,8 +10,10 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
     const watchLater = useWatchLater(user);
+
+    // FIX: Pass user first, then videoID
     const { video, loading, error, fetchVideos, incrementViews, addToHistory } =
-        useVideo(videoID, user);
+        useVideo(user, videoID);
 
     // Fetch video and watch later only once on mount or videoID change
     useEffect(() => {
