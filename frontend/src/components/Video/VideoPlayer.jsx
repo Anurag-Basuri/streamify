@@ -71,9 +71,17 @@ const VideoPlayer = () => {
 
         try {
             setCommentLoading(true);
-            await axios.post(`/api/v1/comments/Video/${videoID}`, {
-                content: newComment,
-            });
+            await axios.post(
+                `/api/v1/comments/Video/${videoID}`,
+                { content: newComment },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
             setNewComment("");
             await fetchComments();
             toast.success("Comment added successfully");
