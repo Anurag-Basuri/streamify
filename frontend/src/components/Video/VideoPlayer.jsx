@@ -13,7 +13,7 @@ const VideoPlayer = () => {
     const watchLater = useWatchLater(user);
 
     // Make sure you pass user first, then videoID
-    const { video, loading, error, fetchVideos, incrementViews, addToHistory } =
+    const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
         useVideo(user, videoID);
 
     console.log("useVideo hook result:", { video, loading, error });
@@ -21,7 +21,7 @@ const VideoPlayer = () => {
     // Fetch video and watch later only once on mount or videoID change
     useEffect(() => {
         console.log("useEffect: Fetching video and watch later...");
-        fetchVideos();
+        fetchVideo();
         watchLater.fetchWatchLater();
         // eslint-disable-next-line
     }, [videoID]);

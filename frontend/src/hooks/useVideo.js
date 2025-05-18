@@ -2,16 +2,16 @@ import { useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-const useVideo = (user) => {
+const useVideo = (user, videoID) => {
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("recent");
 
-    console.log("This from useVideo: ", user);
+    console.log("This from useVideo: ", user, );
 
-    const fetchVideos = useCallback(async () => {
+    const fetchVideo = useCallback(async () => {
         if (!user) return;
         try {
             setLoading(true);
@@ -73,7 +73,7 @@ const useVideo = (user) => {
         videos,
         loading,
         error,
-        fetchVideos,
+        fetchVideo,
         deleteVideo,
         togglePublish,
         searchQuery,
