@@ -9,15 +9,19 @@ import useVideo from "../../hooks/useVideo";
 const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
+    console.log("VideoPlayer mounted. videoID:", videoID, "user:", user);
+
     const watchLater = useWatchLater(user);
 
-    // FIX: Pass user first, then videoID
+    // Make sure you pass user first, then videoID
     const { video, loading, error, fetchVideos, incrementViews, addToHistory } =
         useVideo(user, videoID);
 
+    console.log("useVideo hook result:", { video, loading, error });
+
     // Fetch video and watch later only once on mount or videoID change
     useEffect(() => {
-        console.log("Fetching video and watch later...");
+        console.log("useEffect: Fetching video and watch later...");
         fetchVideos();
         watchLater.fetchWatchLater();
         // eslint-disable-next-line
@@ -26,6 +30,9 @@ const VideoPlayer = () => {
     // Handle video play event
     const handlePlay = useCallback(async () => {
         try {
+            console.log(
+                "Video started playing. Incrementing views and adding to history..."
+            );
             await incrementViews();
             await addToHistory();
         } catch (err) {
@@ -35,11 +42,16 @@ const VideoPlayer = () => {
 
     // Handle Watch Later
     const handleWatchLater = useCallback(async () => {
-        if (!video?._id) return;
+        if (!video?._id) {
+            console.warn("handleWatchLater: No video._id found!");
+            return;
+        }
         try {
             if (watchLater.isInWatchLater(video._id)) {
+                console.log("Removing from Watch Later:", video._id);
                 await watchLater.removeFromWatchLater(video._id);
             } else {
+                console.log("Adding to Watch Later:", video._id);
                 await watchLater.addToWatchLater(video._id);
             }
         } catch (err) {
@@ -48,6 +60,7 @@ const VideoPlayer = () => {
     }, [video, watchLater]);
 
     if (loading) {
+        console.log("Loading video...");
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <FaSpinner className="animate-spin text-4xl text-purple-500" />
@@ -56,6 +69,7 @@ const VideoPlayer = () => {
     }
 
     if (error) {
+        console.error("Video loading error:", error);
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <p className="text-red-500 text-xl">{error}</p>
@@ -64,6 +78,7 @@ const VideoPlayer = () => {
     }
 
     if (!video) {
+        console.warn("No video found for videoID:", videoID);
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <p className="text-gray-400 text-xl">Video not found.</p>
@@ -72,6 +87,7 @@ const VideoPlayer = () => {
     }
 
     const inWatchLater = watchLater.isInWatchLater(video._id);
+    console.log("Rendering video:", video);
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
@@ -79,21 +95,27 @@ const VideoPlayer = () => {
                 {/* Video Player Section */}
                 <div className="aspect-video bg-black rounded-xl overflow-hidden relative">
                     {video?.videoFile?.url ? (
-                        <ReactPlayer
-                            onPlay={handlePlay}
-                            url={video.videoFile.url}
-                            controls
-                            width="100%"
-                            height="100%"
-                            playing
-                            config={{
-                                file: {
-                                    attributes: {
-                                        controlsList: "nodownload",
+                        <>
+                            <ReactPlayer
+                                onPlay={handlePlay}
+                                url={video.videoFile.url}
+                                controls
+                                width="100%"
+                                height="100%"
+                                playing
+                                config={{
+                                    file: {
+                                        attributes: {
+                                            controlsList: "nodownload",
+                                        },
                                     },
-                                },
-                            }}
-                        />
+                                }}
+                            />
+                            {console.log(
+                                "ReactPlayer rendered with URL:",
+                                video.videoFile.url
+                            )}
+                        </>
                     ) : (
                         <div className="flex items-center justify-center h-full">
                             <p className="text-gray-400">Video not available</p>
