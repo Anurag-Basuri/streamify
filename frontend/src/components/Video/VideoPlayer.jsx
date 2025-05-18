@@ -1,8 +1,15 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
 import axios from "axios";
-import { FaSpinner, FaClock, FaUser } from "react-icons/fa";
+import {
+    FaSpinner,
+    FaClock,
+    FaUser,
+    FaHeart,
+    FaRegHeart,
+    FaComment,
+} from "react-icons/fa";
 import { toast } from "react-toastify";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
@@ -12,15 +19,39 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
     const watchLater = useWatchLater(user);
-    const [comments, setComments] = useState({});
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState("");
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentsLoading, setCommentsLoading] = useState(true);
 
     const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
         useVideo(user, videoID);
 
-    // Fetch video and watch later only once on mount or videoID change
+    // Fetch comments
+    const fetchComments = useCallback(async () => {
+        setCommentsLoading(true);
+        try {
+            const { data } = await axios.get(
+                `/api/v1/comments/Video/${videoID}`
+            );
+            setComments(data.data.comments || []);
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to fetch comments"
+            );
+        } finally {
+            setCommentsLoading(false);
+        }
+    }, [videoID]);
+
+    // Fetch video, comments and watch later on mount
     useEffect(() => {
-        fetchVideo();
-        watchLater.fetchWatchLater();
+        const fetchData = async () => {
+            await fetchVideo();
+            await watchLater.fetchWatchLater();
+            await fetchComments();
+        };
+        fetchData();
         // eslint-disable-next-line
     }, [videoID]);
 
@@ -30,36 +61,49 @@ const VideoPlayer = () => {
             await incrementViews();
             await addToHistory();
         } catch (err) {
-            // Optionally handle error
+            toast.error("Failed to update video stats");
         }
     }, [incrementViews, addToHistory]);
 
-    const fetchComments = useCallback(async (videoID) => {
-        try {
-            const { data } = await axios.get(
-                `/api/v1/comments/Video/${videoID}`
-            );
-            setComments((prev) => ({
-                ...prev,
-                [videoID]: data.data.comments || [],
-            }));
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to fetch comments"
-            );
-        }
-    }, []);
+    // Add new comment
+    const handleAddComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
 
-    const toggleLike = async (videoID) => {
         try {
-            const { data } = await axios.post(`/api/v1/likes/video/${videoID}`);
-            setVideo((prev) => ({
-                ...prev,
-                likes: data.data.likes,
-                isLiked: data.data.state === 1,
-            }));
+            setCommentLoading(true);
+            await axios.post(`/api/v1/comments/Video/${videoID}`, {
+                content: newComment,
+            });
+            setNewComment("");
+            await fetchComments();
+            toast.success("Comment added successfully");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Like action failed");
+            toast.error(err.response?.data?.message || "Failed to add comment");
+        } finally {
+            setCommentLoading(false);
+        }
+    };
+
+    // Toggle comment like
+    const toggleCommentLike = async (commentId) => {
+        try {
+            await axios.post(`/api/v1/comments/like/${commentId}`);
+            setComments((prev) =>
+                prev.map((comment) =>
+                    comment._id === commentId
+                        ? {
+                              ...comment,
+                              isLiked: !comment.isLiked,
+                              likesCount: comment.isLiked
+                                  ? comment.likesCount - 1
+                                  : comment.likesCount + 1,
+                          }
+                        : comment
+                )
+            );
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to toggle like");
         }
     };
 
@@ -73,7 +117,7 @@ const VideoPlayer = () => {
                 await watchLater.addToWatchLater(video._id);
             }
         } catch (err) {
-            // Optionally handle error
+            toast.error("Failed to update watch later");
         }
     }, [video, watchLater]);
 
@@ -200,6 +244,127 @@ const VideoPlayer = () => {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* Comments Section */}
+                <div className="mt-8 px-2 md:px-0">
+                    <div className="border-t border-gray-700 pt-8">
+                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <FaComment className="text-purple-500" />
+                            {comments.length} Comments
+                        </h3>
+
+                        {/* Add Comment Form */}
+                        {user && (
+                            <form onSubmit={handleAddComment} className="mb-8">
+                                <div className="flex gap-4">
+                                    <img
+                                        src={
+                                            user.avatar || "/default-avatar.png"
+                                        }
+                                        alt={user.userName}
+                                        className="w-10 h-10 rounded-full"
+                                    />
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={newComment}
+                                            onChange={(e) =>
+                                                setNewComment(e.target.value)
+                                            }
+                                            placeholder="Add a comment..."
+                                            className="w-full bg-gray-800 rounded-lg px-4 py-3 pr-16 
+                                            focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            disabled={commentLoading}
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="absolute right-2 top-2 bg-purple-600 px-4 py-1 rounded-md
+                                            hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled={
+                                                !newComment.trim() ||
+                                                commentLoading
+                                            }
+                                        >
+                                            {commentLoading ? (
+                                                <FaSpinner className="animate-spin" />
+                                            ) : (
+                                                "Post"
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Comments List */}
+                        <div className="space-y-6">
+                            {commentsLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <FaSpinner className="animate-spin text-2xl text-purple-500" />
+                                </div>
+                            ) : comments.length === 0 ? (
+                                <div className="text-gray-400 text-center py-8">
+                                    No comments yet. Be the first to comment!
+                                </div>
+                            ) : (
+                                comments.map((comment) => (
+                                    <div
+                                        key={comment._id}
+                                        className="flex gap-4"
+                                    >
+                                        <img
+                                            src={
+                                                comment.owner?.avatar ||
+                                                "/default-avatar.png"
+                                            }
+                                            alt={comment.owner?.userName}
+                                            className="w-10 h-10 rounded-full"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="bg-gray-800 p-4 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="font-medium">
+                                                        {
+                                                            comment.owner
+                                                                ?.userName
+                                                        }
+                                                    </span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        {new Date(
+                                                            comment.createdAt
+                                                        ).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-300">
+                                                    {comment.content}
+                                                </p>
+                                                <div className="mt-2 flex items-center gap-4">
+                                                    <button
+                                                        onClick={() =>
+                                                            toggleCommentLike(
+                                                                comment._id
+                                                            )
+                                                        }
+                                                        className="flex items-center gap-2 text-sm hover:text-purple-400"
+                                                    >
+                                                        {comment.isLiked ? (
+                                                            <FaHeart className="text-red-500" />
+                                                        ) : (
+                                                            <FaRegHeart className="text-gray-400" />
+                                                        )}
+                                                        <span>
+                                                            {comment.likesCount}
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
