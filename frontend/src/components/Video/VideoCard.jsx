@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHeart, FaEllipsisV, FaUser, FaClock } from "react-icons/fa";
-import { formatDistance, formatDuration } from "date-fns";
+import { formatDistance } from "date-fns";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 

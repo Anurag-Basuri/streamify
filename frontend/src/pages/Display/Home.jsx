@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { FaEllipsisV } from "react-icons/fa";
 import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
 import useUserData from "../../hooks/useUserData.js";
