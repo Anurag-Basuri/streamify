@@ -67,8 +67,7 @@ const VideoPlayer = () => {
     // Add new comment
     const handleAddComment = async (e) => {
         e.preventDefault();
-        if (!newComment.trim()) return;
-
+        if (!newComment.trim() || !user) return;
         try {
             setCommentLoading(true);
             await axios.post(
