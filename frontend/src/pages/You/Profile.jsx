@@ -86,7 +86,7 @@ const Profile = () => {
 
     // Fetch dashboard data
     useEffect(() => {
-        const fetchDashboard = async (retries = 3) => {
+        const fetchDashboard = async () => {
             try {
                 console.log("Fetching dashboard data...");
                 const { data } = await axios.get("/api/v1/dashboard");
@@ -98,25 +98,21 @@ const Profile = () => {
                 });
             } catch (error) {
                 console.error("Error fetching dashboard:", error);
-                if (retries > 0) {
-                    console.warn(
-                        `Retrying fetchDashboard... (${retries} retries left)`
-                    );
-                    fetchDashboard(retries - 1);
-                } else {
-                    setDashboard({
-                        data: null,
-                        loading: false,
-                        error:
-                            error.response?.data?.message ||
-                            "Failed to load dashboard",
-                    });
-                }
+                setDashboard({
+                    data: null,
+                    loading: false,
+                    error:
+                        error.response?.data?.message ||
+                        "Failed to load dashboard",
+                });
             }
         };
 
-        fetchDashboard();
-    }, [axios]);
+        // Fetch data only once
+        if (dashboard.loading) {
+            fetchDashboard();
+        }
+    }, [axios, dashboard.loading]);
 
     // Redirect to auth if user is not logged in
     useEffect(() => {
