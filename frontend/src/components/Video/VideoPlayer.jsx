@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import useVideo from "../../hooks/useVideo";
+import Spinner from "../Spinner";
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
@@ -28,20 +29,25 @@ const VideoPlayer = () => {
 
     // Fetch comments
     const fetchComments = useCallback(async () => {
-        setCommentsLoading(true);
-        try {
-            const { data } = await axios.get(
-                `/api/v1/comments/Video/${videoID}`
-            );
-            setComments(data.data.comments || []);
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to fetch comments"
-            );
-        } finally {
-            setCommentsLoading(false);
-        }
-    }, [videoID]);
+    setCommentsLoading(true);
+    try {
+        const { data } = await axios.get(
+            `/api/v1/comments/Video/${videoID}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                },
+            }
+        );
+        setComments(data.data.comments || []);
+    } catch (err) {
+        toast.error(
+            err.response?.data?.message || "Failed to fetch comments"
+        );
+    } finally {
+        setCommentsLoading(false);
+    }
+}, [videoID]);
 
     // Fetch video, comments and watch later on mount
     useEffect(() => {
