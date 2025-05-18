@@ -34,14 +34,14 @@ const VideoPlayer = () => {
         }
     }, [incrementViews, addToHistory]);
 
-    const fetchComments = useCallback(async (tweetId) => {
+    const fetchComments = useCallback(async (videoID) => {
         try {
             const { data } = await axios.get(
-                `/api/v1/comments/Tweet/${tweetId}`
+                `/api/v1/comments/Video/${videoID}`
             );
             setComments((prev) => ({
                 ...prev,
-                [tweetId]: data.data.comments || [],
+                [videoID]: data.data.comments || [],
             }));
         } catch (err) {
             toast.error(
@@ -49,6 +49,19 @@ const VideoPlayer = () => {
             );
         }
     }, []);
+
+    const toggleLike = async (videoID) => {
+        try {
+            const { data } = await axios.post(`/api/v1/likes/video/${videoID}`);
+            setVideo((prev) => ({
+                ...prev,
+                likes: data.data.likes,
+                isLiked: data.data.state === 1,
+            }));
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Like action failed");
+        }
+    };
 
     // Handle Watch Later
     const handleWatchLater = useCallback(async () => {
