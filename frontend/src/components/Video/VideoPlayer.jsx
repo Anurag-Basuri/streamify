@@ -5,7 +5,6 @@ import axios from "axios";
 import {
     FaSpinner,
     FaClock,
-    FaUser,
     FaHeart,
     FaRegHeart,
     FaComment,
