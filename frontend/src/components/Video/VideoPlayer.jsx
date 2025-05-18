@@ -1,7 +1,9 @@
 import { useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
+import axios from "axios";
 import { FaSpinner, FaClock, FaUser } from "react-icons/fa";
+import { toast } from "react-toastify";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import useVideo from "../../hooks/useVideo";
@@ -10,6 +12,7 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
     const watchLater = useWatchLater(user);
+    const [comments, setComments] = useState({});
 
     const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
         useVideo(user, videoID);
@@ -30,6 +33,22 @@ const VideoPlayer = () => {
             // Optionally handle error
         }
     }, [incrementViews, addToHistory]);
+
+    const fetchComments = useCallback(async (tweetId) => {
+        try {
+            const { data } = await axios.get(
+                `/api/v1/comments/Tweet/${tweetId}`
+            );
+            setComments((prev) => ({
+                ...prev,
+                [tweetId]: data.data.comments || [],
+            }));
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to fetch comments"
+            );
+        }
+    }, []);
 
     // Handle Watch Later
     const handleWatchLater = useCallback(async () => {
