@@ -6,9 +6,9 @@ import useWatchLater from "../../hooks/useWatchLater.js";
 import useVideos from "../../hooks/useVideos.js";
 import useUserData from "../../hooks/useUserData.js";
 import useAuth from "../../hooks/useAuth.js";
-import VideoCard from "../../components/Video/VideoCard.jsx";
-import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
 import { HeroSection } from "../../components/Home/HeroSection.jsx";
+import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
+import VideoCard from "../../components/Video/VideoCard.jsx";
 import { VideoGridSection } from "../../components/Home/VideoGridSection.jsx";
 
 const Home = () => {

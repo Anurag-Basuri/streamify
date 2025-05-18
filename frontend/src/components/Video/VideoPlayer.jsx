@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
 import { FaSpinner, FaClock, FaUser } from "react-icons/fa";
-import useAuth from "../hooks/useAuth";
-import useWatchLater from "../hooks/useWatchLater";
-import useVideo from "../hooks/useVideo";
+import useAuth from "../../hooks/useAuth";
+import useWatchLater from "../../hooks/useWatchLater";
+import useVideo from "../../hooks/useVideo";
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
