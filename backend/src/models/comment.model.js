@@ -11,13 +11,14 @@ const commentSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        tweet: {
+        entity: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Tweet", // Ensure this matches the Tweet model
+            required: true,
         },
-        video: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Video", // Ensure this matches the Video model
+        entityType: {
+            type: String,
+            enum: ["Video", "Tweet"],
+            required: true,
         },
     },
     { timestamps: true }
