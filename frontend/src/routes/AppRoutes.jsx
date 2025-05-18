@@ -11,7 +11,7 @@ import Watchlater from "../pages/Account/Watchlater.jsx";
 import YourVideos from "../pages/Account/YourVideos.jsx";
 import Create from "../pages/You/Create.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
-import VideoPlayer from "../components/VideoPlayer.jsx";
+import VideoPlayer from "../components/Video/VideoPlayer.jsx";
 import { Navigate } from "react-router-dom";
 import EditVodeo from "../pages/Account/EditVideos.jsx";
 import PlaylistDetail from "../components/PlaylistDetail.jsx";
