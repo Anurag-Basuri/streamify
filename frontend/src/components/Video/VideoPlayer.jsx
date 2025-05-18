@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
 import { FaSpinner, FaClock, FaUser } from "react-icons/fa";
@@ -13,26 +13,27 @@ const VideoPlayer = () => {
     const { video, loading, error, fetchVideos, incrementViews, addToHistory } =
         useVideo(videoID, user);
 
-    // Initial fetch
+    // Fetch video and watch later only once on mount or videoID change
     useEffect(() => {
+        console.log("Fetching video and watch later...");
         fetchVideos();
         watchLater.fetchWatchLater();
-    }, [videoID, fetchVideos, watchLater]);
+        // eslint-disable-next-line
+    }, [videoID]);
 
     // Handle video play event
-    const handlePlay = async () => {
+    const handlePlay = useCallback(async () => {
         try {
             await incrementViews();
             await addToHistory();
         } catch (err) {
             console.error("Error tracking video play:", err);
         }
-    };
+    }, [incrementViews, addToHistory]);
 
     // Handle Watch Later
-    const handleWatchLater = async () => {
+    const handleWatchLater = useCallback(async () => {
         if (!video?._id) return;
-
         try {
             if (watchLater.isInWatchLater(video._id)) {
                 await watchLater.removeFromWatchLater(video._id);
@@ -42,7 +43,7 @@ const VideoPlayer = () => {
         } catch (err) {
             console.error("Error updating Watch Later:", err);
         }
-    };
+    }, [video, watchLater]);
 
     if (loading) {
         return (
@@ -60,7 +61,15 @@ const VideoPlayer = () => {
         );
     }
 
-    const inWatchLater = watchLater.isInWatchLater(video?._id);
+    if (!video) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <p className="text-gray-400 text-xl">Video not found.</p>
+            </div>
+        );
+    }
+
+    const inWatchLater = watchLater.isInWatchLater(video._id);
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
