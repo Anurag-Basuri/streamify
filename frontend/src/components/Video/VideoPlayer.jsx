@@ -9,7 +9,6 @@ import useVideo from "../../hooks/useVideo";
 const VideoPlayer = () => {
     const { videoID } = useParams();
     const { user } = useAuth();
-    console.log("VideoPlayer mounted. videoID:", videoID, "user:", user);
 
     const watchLater = useWatchLater(user);
 

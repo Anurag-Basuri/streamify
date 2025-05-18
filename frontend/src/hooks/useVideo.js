@@ -9,6 +9,8 @@ const useVideo = (user) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("recent");
 
+    console.log("This from useVideo: ", user);
+
     const fetchVideos = useCallback(async () => {
         if (!user) return;
         try {
