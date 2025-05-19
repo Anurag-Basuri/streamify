@@ -138,4 +138,4 @@ const getLikedEntities = asynchandler(async (req, res) => {
         );
 });
 
-export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedEntities };
+export {toggleTweetLike, toggleVideoLike, getLikedEntities };
