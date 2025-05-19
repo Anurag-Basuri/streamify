@@ -63,62 +63,6 @@ const toggleVideoLike = asynchandler(async (req, res) => {
         );
 });
 
-const toggleCommentLike = asynchandler(async (req, res) => {
-    console.log("Toggle comment like called");
-    const { commentId } = req.params;
-
-    if (!mongoose.isValidObjectId(commentId)) {
-        console.error("Invalid comment ID:", commentId);
-        throw new APIerror(400, "Invalid comment ID");
-    }
-
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-        console.error("Comment not found:", commentId);
-        throw new APIerror(400, "Comment not found");
-    }
-
-    const existLike = await Like.findOne({
-        likedBy: req.user._id,
-        likedEntity: commentId,
-        entityType: "Comment",
-    });
-
-    if (existLike) {
-        console.log("Existing like found. Removing like for comment:", commentId);
-        await Like.deleteOne({ _id: existLike._id });
-
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: commentId, entityType: "Comment" });
-
-        console.log("Comment unliked successfully. Updated likes count:", likes);
-        return res
-            .status(200)
-            .json(
-                new APIresponse(200, { likes: likes, state: 0 }, "Comment unliked")
-            );
-    }
-
-    console.log("No existing like found. Adding like for comment:", commentId);
-
-    // Create a new like
-    await Like.create({
-        likedBy: req.user._id,
-        likedEntity: commentId,
-        entityType: "Comment",
-    });
-
-    // Count the number of likes
-    const likes = await Like.countDocuments({ likedEntity: commentId, entityType: "Comment" });
-
-    console.log("Comment liked successfully. Updated likes count:", likes);
-    return res
-        .status(201)
-        .json(
-            new APIresponse(201, { likes: likes, state: 1 }, "Comment liked")
-        );
-});
-
 const toggleTweetLike = asynchandler(async (req, res) => {
     console.log("Toggle tweet like called");
     const { tweetId } = req.params;

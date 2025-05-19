@@ -9,11 +9,11 @@ const likeSchema = new mongoose.Schema(
         },
         tweet: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Tweet", // Ensure this matches the Tweet model
+            ref: "Tweet",
         },
         video: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Video", // Ensure this matches the Video model
+            ref: "Video",
         },
     },
     { timestamps: true }
