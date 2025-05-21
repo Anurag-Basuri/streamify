@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { useParams, Navigate, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import axios from "axios";
 import {
@@ -22,12 +22,12 @@ import TimeAgo from "timeago-react";
 const VideoPlayer = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
-    const { user, isAuthenticated, loading: authLoading } = useAuth();
+    const { isAuthenticated, user, authLoading } = useAuth();
+    const [isLiking, setIsLiking] = useState(false);
     const [comments, setComments] = useState([]);
+    const [commentsLoading, setCommentsLoading] = useState(false);
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
-    const [commentsLoading, setCommentsLoading] = useState(true);
-    const [isLiking, setIsLiking] = useState(false);
 
     // Initialize watchLater hook with proper dependency
     const watchLater = useWatchLater(isAuthenticated ? user : null);
