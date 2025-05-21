@@ -8,5 +8,6 @@
   "prettier.bracketSameLine": false,
   "diffEditor.codeLens": true,
   "diffEditor.experimental.showMoves": true,
-  "diffEditor.experimental.useTrueInlineView": true
+  "diffEditor.experimental.useTrueInlineView": true,
+  "totvsLanguageServer.welcomePage": false
 }
