@@ -153,69 +153,58 @@ const VideoPlayer = () => {
 
     const inWatchLater = watchLater.isInWatchLater(video._id);
 
-// ... (previous code remains unchanged)
+    return (
+        <div className="min-h-screen bg-gray-900 text-gray-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Video Player Section */}
+                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
+                    <ReactPlayer
+                        url={video.videoFile?.url}
+                        controls
+                        width="100%"
+                        height="100%"
+                        onPlay={handlePlay}
+                        config={{ file: { attributes: { controlsList: "nodownload" } } }}
+                        className="react-player"
+                    />
+                    
+                    {/* Floating Action Bar */}
+                    <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={handleVideoLike}
+                            disabled={isLiking}
+                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
+                                video.isLiked ? 'text-red-500 bg-gray-900/80' : 'text-gray-300 bg-gray-900/50 hover:bg-gray-900/80'
+                            }`}
+                        >
+                            {isLiking ? (
+                                <FaSpinner className="animate-spin" />
+                            ) : video.isLiked ? (
+                                <FaHeart className="text-red-500" />
+                            ) : (
+                                <FaRegHeart />
+                            )}
+                            <span className="text-sm font-medium">
+                                {video.likesCount?.toLocaleString()}
+                            </span>
+                        </button>
 
-return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Video Player Section */}
-            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
-                <ReactPlayer
-                    url={video.videoFile?.url}
-                    controls
-                    width="100%"
-                    height="100%"
-                    onPlay={handlePlay}
-                    config={{ file: { attributes: { controlsList: "nodownload" } } }}
-                    className="react-player"
-                />
-                
-                {/* Floating Action Bar */}
-                <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={handleVideoLike}
-                        disabled={isLiking}
-                        className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
-                            video.isLiked ? 'text-red-500 bg-gray-900/80' : 'text-gray-300 bg-gray-900/50 hover:bg-gray-900/80'
-                        }`}
-                    >
-                        {isLiking ? (
-                            <FaSpinner className="animate-spin" />
-                        ) : video.isLiked ? (
-                            <FaHeart className="text-red-500" />
-                        ) : (
-                            <FaRegHeart />
-                        )}
-                        <span className="text-sm font-medium">
-                            {video.likesCount?.toLocaleString()}
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={handleWatchLater}
-                        disabled={watchLater.loading}
-                        className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
-                            inWatchLater ? 'bg-yellow-400/90 text-gray-900' : 'bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20'
-                        }`}
-                    >
-                        {watchLater.loading ? (
-                            <FaSpinner className="animate-spin" />
-                        ) : inWatchLater ? (
-                            <FaClock />
-                        ) : (
-                            <FaRegClock />
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Video Metadata Section */}
-            {/* ... (rest of the component remains unchanged) */}
-        </div>
-    </div>
-);
-
-// ... (rest of the file remains unchanged)
+                        <button
+                            onClick={handleWatchLater}
+                            disabled={watchLater.loading}
+                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
+                                inWatchLater ? 'bg-yellow-400/90 text-gray-900' : 'bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20'
+                            }`}
+                        >
+                            {watchLater.loading ? (
+                                <FaSpinner className="animate-spin" />
+                            ) : inWatchLater ? (
+                                <FaClock />
+                            ) : (
+                                <FaRegClock />
+                            )}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Video Metadata Section */}
