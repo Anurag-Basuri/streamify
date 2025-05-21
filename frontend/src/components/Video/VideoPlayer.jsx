@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import axios from "axios";
@@ -28,9 +28,50 @@ const VideoPlayer = () => {
     const [commentsLoading, setCommentsLoading] = useState(false);
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
+    const playerRef = useRef(null);
 
-    // Initialize watchLater hook with proper dependency
-    const watchLater = useWatchLater(isAuthenticated ? user : null);
+    // Initialize watchLater hook with memoization
+    const {
+        fetchWatchLater,
+        isInWatchLater,
+        addToWatchLater,
+        removeFromWatchLater,
+        loading: watchLaterLoading,
+    } = useWatchLater(isAuthenticated ? user : null);
+
+    const {
+        video,
+        loading: videoLoading,
+        error: videoError,
+        fetchVideo,
+        incrementViews,
+        addToHistory,
+    } = useVideo(isAuthenticated ? user : null, videoID);
+
+    // Memoized fetch comments function
+    const fetchComments = useCallback(async () => {
+        if (!videoID) return;
+        setCommentsLoading(true);
+        try {
+            const { data } = await axios.get(
+                `/api/v1/comments/Video/${videoID}`,
+                {
+                    headers: isAuthenticated
+                        ? {
+                              Authorization: `Bearer ${localStorage.getItem(
+                                  "accessToken"
+                              )}`,
+                          }
+                        : {},
+                }
+            );
+            setComments(data?.data?.comments || []);
+        } catch (err) {
+            console.error("Error fetching comments:", err);
+        } finally {
+            setCommentsLoading(false);
+        }
+    }, [videoID, isAuthenticated]);
 
     const {
         video,
