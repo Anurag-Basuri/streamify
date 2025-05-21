@@ -163,26 +163,22 @@ const VideoPlayer = () => {
     };
 
     // Comment like handler
-    const toggleCommentLike = async (commentId) => {
+    const handleWatchLater = async () => {
         if (!isAuthenticated) {
             navigate("/auth");
-            return toast.info("Login to like comments");
+            return toast.info("Login to use watch later");
         }
-
+    
+        if (!video?._id) return;
+    
         try {
-            await axios.post(`/api/v1/comments/like/${commentId}`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
-            });
-            
-            setComments(prev => prev.map(comment => 
-                comment._id === commentId ? {
-                    ...comment,
-                    isLiked: !comment.isLiked,
-                    likesCount: comment.isLiked ? comment.likesCount - 1 : comment.likesCount + 1
-                } : comment
-            ));
-        } catch (err) {
-            toast.error("Like toggle failed");
+            if (isInWatchLater(video._id)) {
+                await removeFromWatchLater(video._id);
+            } else {
+                await addToWatchLater(video._id);
+            }
+        } catch (error) {
+            toast.error("Watch later update failed");
         }
     };
 
