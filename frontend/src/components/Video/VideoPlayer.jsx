@@ -32,13 +32,15 @@ const VideoPlayer = () => {
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
     const [playTriggered, setPlayTriggered] = useState(false);
+    const [commentLikeLoading, setCommentLikeLoading] = useState(false);
 
     // Custom hooks
-    const { 
+    const {
         isInWatchLater,
         addToWatchLater,
         removeFromWatchLater,
-        loading: watchLaterLoading 
+        fetchWatchLater,
+        loading: watchLaterLoading,
     } = useWatchLater(isAuthenticated ? user : null);
 
     const {
@@ -55,10 +57,16 @@ const VideoPlayer = () => {
         if (!videoID) return;
         setCommentsLoading(true);
         try {
-            const config = isAuthenticated ? {
-                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
-            } : {};
-            
+            const config = isAuthenticated
+                ? {
+                      headers: {
+                          Authorization: `Bearer ${localStorage.getItem(
+                              "accessToken"
+                          )}`,
+                      },
+                  }
+                : {};
+
             const { data } = await axios.get(
                 `/api/v1/comments/Video/${videoID}`,
                 config
@@ -104,7 +112,7 @@ const VideoPlayer = () => {
     // Video play handler with debounce
     const handlePlay = useCallback(async () => {
         if (!isAuthenticated || playTriggered) return;
-        
+
         try {
             setPlayTriggered(true);
             await Promise.all([incrementViews(), addToHistory()]);
@@ -124,9 +132,17 @@ const VideoPlayer = () => {
 
         try {
             setIsLiking(true);
-            await axios.post(`/api/v1/likes/video/${video._id}`, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
-            });
+            await axios.post(
+                `/api/v1/likes/video/${video._id}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
             await fetchVideo();
         } catch (err) {
             toast.error(err.response?.data?.message || "Like failed");
@@ -151,7 +167,13 @@ const VideoPlayer = () => {
             await axios.post(
                 `/api/v1/comments/Video/${videoID}`,
                 { content: newComment },
-                { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
             );
             setNewComment("");
             await fetchComments();
@@ -163,22 +185,32 @@ const VideoPlayer = () => {
     };
 
     // Comment like handler
-    const handleWatchLater = async () => {
+    const toggleCommentLike = async (commentId) => {
         if (!isAuthenticated) {
             navigate("/auth");
-            return toast.info("Login to use watch later");
+            return toast.info("Login to like comments");
         }
-    
-        if (!video?._id) return;
-    
+
+        if (commentLikeLoading) return;
+
         try {
-            if (isInWatchLater(video._id)) {
-                await removeFromWatchLater(video._id);
-            } else {
-                await addToWatchLater(video._id);
-            }
-        } catch (error) {
-            toast.error("Watch later update failed");
+            setCommentLikeLoading(true);
+            await axios.post(
+                `/api/v1/likes/comment/${commentId}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+            await fetchComments();
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Comment like failed");
+        } finally {
+            setCommentLikeLoading(false);
         }
     };
 
