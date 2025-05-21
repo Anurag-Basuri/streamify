@@ -151,7 +151,7 @@ const VideoPlayer = () => {
             await axios.post(
                 `/api/v1/comments/Video/${videoID}`,
                 { content: newComment },
-                { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+                { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
             );
             setNewComment("");
             await fetchComments();
