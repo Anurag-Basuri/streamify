@@ -39,3 +39,15 @@
 .animate-shimmer {
     animation: shimmer 1.5s infinite;
 }
+.comment-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comment-scrollbar::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.comment-scrollbar::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+    border-radius: 3px;
+}
