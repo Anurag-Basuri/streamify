@@ -5,15 +5,19 @@ import axios from "axios";
 import {
     FaSpinner,
     FaClock,
+    FaRegClock,
     FaHeart,
     FaRegHeart,
     FaComment,
+    FaEye,
+    FaCalendarAlt,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import useVideo from "../../hooks/useVideo";
 import Spinner from "../Spinner";
+import TimeAgo from "timeago-react";
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
@@ -23,44 +27,35 @@ const VideoPlayer = () => {
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
     const [commentsLoading, setCommentsLoading] = useState(true);
+    const [isLiking, setIsLiking] = useState(false);
 
-    const { video, loading, error, fetchVideo, incrementViews, addToHistory } =
+    const { video, loading, error, fetchVideo, incrementViews, addToHistory } = 
         useVideo(user, videoID);
 
-    // Fetch comments
+    // Fetch comments with authorization
     const fetchComments = useCallback(async () => {
-    setCommentsLoading(true);
-    try {
-        const { data } = await axios.get(
-            `/api/v1/comments/Video/${videoID}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                },
-            }
-        );
-        setComments(data.data.comments || []);
-    } catch (err) {
-        toast.error(
-            err.response?.data?.message || "Failed to fetch comments"
-        );
-    } finally {
-        setCommentsLoading(false);
-    }
-}, [videoID]);
+        setCommentsLoading(true);
+        try {
+            const { data } = await axios.get(`/api/v1/comments/Video/${videoID}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+            });
+            setComments(data.data.comments || []);
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to load comments");
+        } finally {
+            setCommentsLoading(false);
+        }
+    }, [videoID]);
 
-    // Fetch video, comments and watch later on mount
     useEffect(() => {
-        const fetchData = async () => {
+        const loadData = async () => {
             await fetchVideo();
             await watchLater.fetchWatchLater();
             await fetchComments();
         };
-        fetchData();
-        // eslint-disable-next-line
-    }, [videoID]);
+        loadData();
+    }, [videoID, fetchVideo, watchLater, fetchComments]);
 
-    // Handle video play event
     const handlePlay = useCallback(async () => {
         try {
             await incrementViews();
@@ -70,7 +65,20 @@ const VideoPlayer = () => {
         }
     }, [incrementViews, addToHistory]);
 
-    // Add new comment
+    const handleVideoLike = async () => {
+        if (!video?._id || isLiking) return;
+        try {
+            setIsLiking(true);
+            const { data } = await axios.post(`/api/v1/likes/video/${video._id}`);
+            await fetchVideo();
+            toast.success(data.message || "Like updated");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Like action failed");
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
     const handleAddComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim() || !user) return;
@@ -79,47 +87,33 @@ const VideoPlayer = () => {
             await axios.post(
                 `/api/v1/comments/Video/${videoID}`,
                 { content: newComment },
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
+                { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
             );
             setNewComment("");
             await fetchComments();
-            toast.success("Comment added successfully");
+            toast.success("Comment added");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to add comment");
+            toast.error(err.response?.data?.message || "Comment failed");
         } finally {
             setCommentLoading(false);
         }
     };
 
-    // Toggle comment like
     const toggleCommentLike = async (commentId) => {
         try {
             await axios.post(`/api/v1/comments/like/${commentId}`);
-            setComments((prev) =>
-                prev.map((comment) =>
-                    comment._id === commentId
-                        ? {
-                              ...comment,
-                              isLiked: !comment.isLiked,
-                              likesCount: comment.isLiked
-                                  ? comment.likesCount - 1
-                                  : comment.likesCount + 1,
-                          }
-                        : comment
-                )
-            );
+            setComments(prev => prev.map(comment => 
+                comment._id === commentId ? {
+                    ...comment,
+                    isLiked: !comment.isLiked,
+                    likesCount: comment.isLiked ? comment.likesCount - 1 : comment.likesCount + 1
+                } : comment
+            ));
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to toggle like");
+            toast.error("Failed to toggle comment like");
         }
     };
 
-    // Handle Watch Later
     const handleWatchLater = useCallback(async () => {
         if (!video?._id) return;
         try {
@@ -138,7 +132,7 @@ const VideoPlayer = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
                     <p className="text-red-500 text-2xl mb-4">Error</p>
                     <p className="text-gray-300">{error}</p>
@@ -149,7 +143,7 @@ const VideoPlayer = () => {
 
     if (!video) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
                     <p className="text-gray-400 text-2xl">Video not found.</p>
                 </div>
@@ -159,216 +153,222 @@ const VideoPlayer = () => {
 
     const inWatchLater = watchLater.isInWatchLater(video._id);
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-0 md:p-6">
-            <div className="max-w-5xl mx-auto">
-                {/* Video Player Section */}
-                <div className="aspect-video bg-black rounded-xl overflow-hidden relative shadow-2xl">
-                    {video?.videoFile?.url ? (
-                        <>
-                            <ReactPlayer
-                                onPlay={handlePlay}
-                                url={video.videoFile.url}
-                                controls
-                                width="100%"
-                                height="100%"
-                                playing
-                                config={{
-                                    file: {
-                                        attributes: {
-                                            controlsList: "nodownload",
-                                        },
-                                    },
-                                }}
-                            />
-                            {/* Watch Later Button */}
-                            {user && (
-                                <button
-                                    className={`absolute top-4 right-4 z-10 p-3 rounded-full shadow-lg transition-colors text-lg flex items-center gap-2
-                                        ${
-                                            inWatchLater
-                                                ? "bg-yellow-400 text-white"
-                                                : "bg-gray-900/80 text-yellow-400 hover:bg-yellow-500"
-                                        }`}
-                                    title={
-                                        inWatchLater
-                                            ? "Remove from Watch Later"
-                                            : "Add to Watch Later"
-                                    }
-                                    onClick={handleWatchLater}
-                                    disabled={watchLater.loading}
-                                >
-                                    <FaClock />
-                                    <span className="hidden md:inline text-sm font-semibold">
-                                        {inWatchLater ? "Saved" : "Watch Later"}
-                                    </span>
-                                    {watchLater.loading && (
-                                        <FaSpinner className="ml-2 animate-spin" />
-                                    )}
-                                </button>
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex items-center justify-center h-full">
-                            <p className="text-gray-400">Video not available</p>
-                        </div>
-                    )}
+// ... (previous code remains unchanged)
+
+return (
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Video Player Section */}
+            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
+                <ReactPlayer
+                    url={video.videoFile?.url}
+                    controls
+                    width="100%"
+                    height="100%"
+                    onPlay={handlePlay}
+                    config={{ file: { attributes: { controlsList: "nodownload" } } }}
+                    className="react-player"
+                />
+                
+                {/* Floating Action Bar */}
+                <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={handleVideoLike}
+                        disabled={isLiking}
+                        className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
+                            video.isLiked ? 'text-red-500 bg-gray-900/80' : 'text-gray-300 bg-gray-900/50 hover:bg-gray-900/80'
+                        }`}
+                    >
+                        {isLiking ? (
+                            <FaSpinner className="animate-spin" />
+                        ) : video.isLiked ? (
+                            <FaHeart className="text-red-500" />
+                        ) : (
+                            <FaRegHeart />
+                        )}
+                        <span className="text-sm font-medium">
+                            {video.likesCount?.toLocaleString()}
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={handleWatchLater}
+                        disabled={watchLater.loading}
+                        className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
+                            inWatchLater ? 'bg-yellow-400/90 text-gray-900' : 'bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20'
+                        }`}
+                    >
+                        {watchLater.loading ? (
+                            <FaSpinner className="animate-spin" />
+                        ) : inWatchLater ? (
+                            <FaClock />
+                        ) : (
+                            <FaRegClock />
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Video Metadata Section */}
+            {/* ... (rest of the component remains unchanged) */}
+        </div>
+    </div>
+);
+
+// ... (rest of the file remains unchanged)
                 </div>
 
                 {/* Video Metadata Section */}
-                <div className="mt-8 space-y-6 px-2 md:px-0">
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                        {video?.title || "Untitled Video"}
-                    </h1>
-                    <p className="text-gray-300 text-lg mb-4">
-                        {video?.description || "No description available."}
-                    </p>
-                    <div className="flex items-center gap-4">
-                        <img
-                            src={video?.owner?.avatar || "/default-avatar.png"}
-                            alt={video?.owner?.userName || "Unknown User"}
-                            className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
-                        />
-                        <div>
-                            <p className="font-medium text-lg">
-                                {video?.owner?.userName || "Unknown User"}
-                            </p>
-                            <p className="text-sm text-gray-400">
-                                {video?.views?.toLocaleString() || 0} views
-                            </p>
-                        </div>
-                    </div>
-                    {/* Tags */}
-                    {video.tags && video.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {video.tags.map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="px-3 py-1 text-xs font-medium bg-purple-700/30 text-purple-200 rounded-full"
-                                >
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Comments Section */}
-                <div className="mt-8 px-2 md:px-0">
-                    <div className="border-t border-gray-700 pt-8">
-                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <FaComment className="text-purple-500" />
-                            {comments.length} Comments
-                        </h3>
-
-                        {/* Add Comment Form */}
-                        {user && (
-                            <form onSubmit={handleAddComment} className="mb-8">
-                                <div className="flex gap-4">
-                                    <img
-                                        src={
-                                            user.avatar || "/default-avatar.png"
-                                        }
-                                        alt={user.userName}
-                                        className="w-10 h-10 rounded-full"
-                                    />
-                                    <div className="flex-1 relative">
-                                        <input
-                                            type="text"
-                                            value={newComment}
-                                            onChange={(e) =>
-                                                setNewComment(e.target.value)
-                                            }
-                                            placeholder="Add a comment..."
-                                            className="w-full bg-gray-800 rounded-lg px-4 py-3 pr-16 
-                                            focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                            disabled={commentLoading}
-                                        />
-                                        <button
-                                            type="submit"
-                                            className="absolute right-2 top-2 bg-purple-600 px-4 py-1 rounded-md
-                                            hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            disabled={
-                                                !newComment.trim() ||
-                                                commentLoading
-                                            }
-                                        >
-                                            {commentLoading ? (
-                                                <FaSpinner className="animate-spin" />
-                                            ) : (
-                                                "Post"
-                                            )}
-                                        </button>
-                                    </div>
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-6">
+                        <h1 className="text-3xl font-bold text-gray-100">{video.title}</h1>
+                        
+                        <div className="flex items-center gap-4 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={video.owner?.avatar || "/default-avatar.png"}
+                                    alt={video.owner?.userName}
+                                    className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
+                                />
+                                <div>
+                                    <p className="font-medium">{video.owner?.userName}</p>
+                                    <p className="text-sm text-gray-400 flex items-center gap-2">
+                                        <FaEye className="mr-1" />
+                                        {video.views?.toLocaleString()} views
+                                    </p>
                                 </div>
-                            </form>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 ml-auto">
+                                <div className="flex items-center gap-2 text-gray-400">
+                                    <FaCalendarAlt />
+                                    <span className="text-sm">
+                                        Uploaded <TimeAgo datetime={video.createdAt} />
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleVideoLike}
+                                    disabled={isLiking}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                >
+                                    {isLiking ? (
+                                        <FaSpinner className="animate-spin" />
+                                    ) : video.isLiked ? (
+                                        <FaHeart className="text-red-500" />
+                                    ) : (
+                                        <FaRegHeart />
+                                    )}
+                                    <span className="font-medium">
+                                        {video.likesCount?.toLocaleString()}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {video.description && (
+                            <p className="text-gray-300 text-lg">{video.description}</p>
                         )}
 
-                        {/* Comments List */}
-                        <div className="space-y-6">
+                        {video.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {video.tags.map(tag => (
+                                    <span
+                                        key={tag}
+                                        className="px-3 py-1.5 text-sm bg-purple-900/30 text-purple-300 rounded-full"
+                                    >
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Comments Section */}
+                    <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-gray-700 pt-8 lg:pt-0 lg:pl-8">
+                        <div className="sticky top-8">
+                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                <FaComment className="text-purple-500" />
+                                {comments.length} Comments
+                            </h3>
+
+                            {/* Comment Form */}
+                            {user && (
+                                <form onSubmit={handleAddComment} className="mb-8">
+                                    <div className="flex gap-3 items-start">
+                                        <img
+                                            src={user.avatar || "/default-avatar.png"}
+                                            alt={user.userName}
+                                            className="w-9 h-9 rounded-full flex-shrink-0"
+                                        />
+                                        <div className="flex-1 relative">
+                                            <input
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                placeholder="Add a comment..."
+                                                className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
+                                                disabled={commentLoading}
+                                            />
+                                            <button
+                                                type="submit"
+                                                disabled={!newComment.trim() || commentLoading}
+                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50 transition-opacity"
+                                            >
+                                                {commentLoading ? "Posting..." : "Post"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* Comments List */}
                             {commentsLoading ? (
                                 <div className="flex justify-center py-8">
                                     <FaSpinner className="animate-spin text-2xl text-purple-500" />
                                 </div>
                             ) : comments.length === 0 ? (
-                                <div className="text-gray-400 text-center py-8">
-                                    No comments yet. Be the first to comment!
-                                </div>
+                                <p className="text-gray-400 text-center py-8">
+                                    No comments yet. Start the conversation!
+                                </p>
                             ) : (
-                                comments.map((comment) => (
-                                    <div
-                                        key={comment._id}
-                                        className="flex gap-4"
-                                    >
-                                        <img
-                                            src={
-                                                comment.owner?.avatar ||
-                                                "/default-avatar.png"
-                                            }
-                                            alt={comment.owner?.userName}
-                                            className="w-10 h-10 rounded-full"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="bg-gray-800 p-4 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="font-medium">
-                                                        {
-                                                            comment.owner
-                                                                ?.userName
-                                                        }
-                                                    </span>
-                                                    <span className="text-gray-400 text-sm">
-                                                        {new Date(
-                                                            comment.createdAt
-                                                        ).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                                <p className="text-gray-300">
-                                                    {comment.content}
-                                                </p>
-                                                <div className="mt-2 flex items-center gap-4">
-                                                    <button
-                                                        onClick={() =>
-                                                            toggleCommentLike(
-                                                                comment._id
-                                                            )
-                                                        }
-                                                        className="flex items-center gap-2 text-sm hover:text-purple-400"
-                                                    >
-                                                        {comment.isLiked ? (
-                                                            <FaHeart className="text-red-500" />
-                                                        ) : (
-                                                            <FaRegHeart className="text-gray-400" />
-                                                        )}
-                                                        <span>
-                                                            {comment.likesCount}
-                                                        </span>
-                                                    </button>
+                                <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
+                                    {comments.map(comment => (
+                                        <div key={comment._id} className="flex gap-3 group">
+                                            <img
+                                                src={comment.owner?.avatar || "/default-avatar.png"}
+                                                alt={comment.owner?.userName}
+                                                className="w-9 h-9 rounded-full flex-shrink-0"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="bg-gray-800 p-4 rounded-lg relative">
+                                                    <div className="flex justify-between items-start mb-1.5">
+                                                        <div>
+                                                            <p className="font-medium text-sm">
+                                                                {comment.owner?.userName}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400">
+                                                                <TimeAgo datetime={comment.createdAt} />
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => toggleCommentLike(comment._id)}
+                                                            className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm"
+                                                        >
+                                                            {comment.isLiked ? (
+                                                                <FaHeart className="text-red-500 text-sm" />
+                                                            ) : (
+                                                                <FaRegHeart className="text-sm" />
+                                                            )}
+                                                            <span>{comment.likesCount}</span>
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-gray-300 text-sm">
+                                                        {comment.content}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
