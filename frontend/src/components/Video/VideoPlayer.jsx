@@ -27,6 +27,10 @@ const VideoPlayer = () => {
     
     // State management
     const [isLiking, setIsLiking] = useState(false);
+    const [likeState, setLikeState] = useState({
+        isLiked: false,
+        likesCount: 0,
+    });
     const [comments, setComments] = useState([]);
     const [commentsLoading, setCommentsLoading] = useState(true);
     const [newComment, setNewComment] = useState("");
@@ -51,6 +55,16 @@ const VideoPlayer = () => {
         incrementViews,
         addToHistory,
     } = useVideo(isAuthenticated ? user : null, videoID);
+
+    // Update like state when video changes
+    useEffect(() => {
+        if (video) {
+            setLikeState({
+                isLiked: video.isLiked || false,
+                likesCount: video.likesCount || 0,
+            });
+        }
+    }, [video]);
 
     // Memoized fetch comments function
     const fetchComments = useCallback(async () => {
@@ -132,8 +146,8 @@ const VideoPlayer = () => {
 
         try {
             setIsLiking(true);
-            await axios.post(
-                `/api/v1/likes/video/${video._id}`,
+            const { data } = await axios.post(
+                `/api/v1/likes/toggle/video/${video._id}`,
                 {},
                 {
                     headers: {
@@ -143,9 +157,17 @@ const VideoPlayer = () => {
                     },
                 }
             );
-            await fetchVideo();
+
+            // Update like state directly from response
+            if (data && data.data) {
+                setLikeState({
+                    isLiked: data.data.state === 1,
+                    likesCount: data.data.likes || 0,
+                });
+            }
         } catch (err) {
-            toast.error(err.response?.data?.message || "Like failed");
+            toast.error(err.response?.data?.message || "Like action failed");
+            console.error("Like error:", err);
         } finally {
             setIsLiking(false);
         }
@@ -196,7 +218,7 @@ const VideoPlayer = () => {
         try {
             setCommentLikeLoading(true);
             await axios.post(
-                `/api/v1/likes/comment/${commentId}`,
+                `/api/v1/likes/toggle/comment/${commentId}`,
                 {},
                 {
                     headers: {
@@ -269,8 +291,10 @@ const VideoPlayer = () => {
                         height="100%"
                         onPlay={handlePlay}
                         config={{
-                            file: { attributes: { controlsList: "nodownload" }},
-                            youtube: { playerVars: { modestbranding: 1 } }
+                            file: {
+                                attributes: { controlsList: "nodownload" },
+                            },
+                            youtube: { playerVars: { modestbranding: 1 } },
                         }}
                         className="react-player"
                     />
@@ -281,20 +305,20 @@ const VideoPlayer = () => {
                             onClick={handleVideoLike}
                             disabled={isLiking}
                             className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
-                                video.isLiked 
-                                ? "text-red-500 bg-gray-900/80" 
-                                : "text-gray-300 bg-gray-900/50 hover:bg-gray-900/80"
+                                likeState.isLiked
+                                    ? "text-red-500 bg-gray-900/80"
+                                    : "text-gray-300 bg-gray-900/50 hover:bg-gray-900/80"
                             }`}
                         >
                             {isLiking ? (
                                 <FaSpinner className="animate-spin" />
-                            ) : video.isLiked ? (
+                            ) : likeState.isLiked ? (
                                 <FaHeart />
                             ) : (
                                 <FaRegHeart />
                             )}
                             <span className="text-sm font-medium">
-                                {video.likesCount?.toLocaleString()}
+                                {likeState.likesCount?.toLocaleString()}
                             </span>
                         </button>
 
@@ -303,8 +327,8 @@ const VideoPlayer = () => {
                             disabled={watchLaterLoading}
                             className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
                                 isInWatchLater(video._id)
-                                ? "bg-yellow-400/90 text-gray-900"
-                                : "bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20"
+                                    ? "bg-yellow-400/90 text-gray-900"
+                                    : "bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20"
                             }`}
                         >
                             {watchLaterLoading ? (
@@ -321,20 +345,30 @@ const VideoPlayer = () => {
                 {/* Video Metadata */}
                 <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <h1 className="text-3xl font-bold text-gray-100">{video.title}</h1>
-                        
+                        <h1 className="text-3xl font-bold text-gray-100">
+                            {video.title}
+                        </h1>
+
                         <div className="flex flex-wrap items-center gap-4 justify-between">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={video.owner?.avatar || "/default-avatar.png"}
+                                    src={
+                                        video.owner?.avatar ||
+                                        "/default-avatar.png"
+                                    }
                                     alt={video.owner?.userName}
                                     className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
                                 />
                                 <div>
-                                    <p className="font-medium">{video.owner?.userName || "Unknown Creator"}</p>
+                                    <p className="font-medium">
+                                        {video.owner?.userName ||
+                                            "Unknown Creator"}
+                                    </p>
                                     <p className="text-sm text-gray-400 flex items-center gap-2">
                                         <FaEye className="text-gray-400" />
-                                        {video.views?.toLocaleString() || 0} views
+                                        {video.views?.toLocaleString() ||
+                                            0}{" "}
+                                        views
                                     </p>
                                 </div>
                             </div>
@@ -359,7 +393,8 @@ const VideoPlayer = () => {
                                         <FaRegHeart />
                                     )}
                                     <span className="font-medium">
-                                        {video.likesCount?.toLocaleString() || 0}
+                                        {video.likesCount?.toLocaleString() ||
+                                            0}
                                     </span>
                                 </button>
                             </div>
@@ -395,27 +430,42 @@ const VideoPlayer = () => {
 
                             {/* Comment Input */}
                             {isAuthenticated ? (
-                                <form onSubmit={handleAddComment} className="mb-8">
+                                <form
+                                    onSubmit={handleAddComment}
+                                    className="mb-8"
+                                >
                                     <div className="flex gap-3 items-start">
                                         <img
-                                            src={user?.avatar || "/default-avatar.png"}
+                                            src={
+                                                user?.avatar ||
+                                                "/default-avatar.png"
+                                            }
                                             alt={user?.userName}
                                             className="w-9 h-9 rounded-full flex-shrink-0"
                                         />
                                         <div className="flex-1 relative">
                                             <input
                                                 value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
+                                                onChange={(e) =>
+                                                    setNewComment(
+                                                        e.target.value
+                                                    )
+                                                }
                                                 placeholder="Add a comment..."
                                                 className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
                                                 disabled={commentLoading}
                                             />
                                             <button
                                                 type="submit"
-                                                disabled={!newComment.trim() || commentLoading}
+                                                disabled={
+                                                    !newComment.trim() ||
+                                                    commentLoading
+                                                }
                                                 className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
                                             >
-                                                {commentLoading ? "Posting..." : "Post"}
+                                                {commentLoading
+                                                    ? "Posting..."
+                                                    : "Post"}
                                             </button>
                                         </div>
                                     </div>
@@ -427,7 +477,8 @@ const VideoPlayer = () => {
                                         className="text-purple-400 hover:underline"
                                     >
                                         Login
-                                    </button> to comment
+                                    </button>{" "}
+                                    to comment
                                 </div>
                             )}
 
@@ -443,9 +494,15 @@ const VideoPlayer = () => {
                             ) : (
                                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
                                     {comments.map((comment) => (
-                                        <div key={comment._id} className="flex gap-3">
+                                        <div
+                                            key={comment._id}
+                                            className="flex gap-3"
+                                        >
                                             <img
-                                                src={comment.owner?.avatar || "/default-avatar.png"}
+                                                src={
+                                                    comment.owner?.avatar ||
+                                                    "/default-avatar.png"
+                                                }
                                                 alt={comment.owner?.userName}
                                                 className="w-9 h-9 rounded-full flex-shrink-0"
                                             />
@@ -453,14 +510,24 @@ const VideoPlayer = () => {
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
                                                         <p className="font-medium text-sm">
-                                                            {comment.owner?.userName || "User"}
+                                                            {comment.owner
+                                                                ?.userName ||
+                                                                "User"}
                                                         </p>
                                                         <p className="text-xs text-gray-400">
-                                                            <TimeAgo datetime={comment.createdAt} />
+                                                            <TimeAgo
+                                                                datetime={
+                                                                    comment.createdAt
+                                                                }
+                                                            />
                                                         </p>
                                                     </div>
                                                     <button
-                                                        onClick={() => toggleCommentLike(comment._id)}
+                                                        onClick={() =>
+                                                            toggleCommentLike(
+                                                                comment._id
+                                                            )
+                                                        }
                                                         className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm"
                                                     >
                                                         {comment.isLiked ? (
@@ -468,7 +535,10 @@ const VideoPlayer = () => {
                                                         ) : (
                                                             <FaRegHeart />
                                                         )}
-                                                        <span>{comment.likesCount || 0}</span>
+                                                        <span>
+                                                            {comment.likesCount ||
+                                                                0}
+                                                        </span>
                                                     </button>
                                                 </div>
                                                 <p className="text-gray-300 text-sm">
