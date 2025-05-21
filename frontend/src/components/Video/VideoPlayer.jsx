@@ -23,20 +23,22 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated, user, authLoading } = useAuth();
+    const playerRef = useRef(null);
+    
+    // State management
     const [isLiking, setIsLiking] = useState(false);
     const [comments, setComments] = useState([]);
-    const [commentsLoading, setCommentsLoading] = useState(false);
+    const [commentsLoading, setCommentsLoading] = useState(true);
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
-    const playerRef = useRef(null);
+    const [playTriggered, setPlayTriggered] = useState(false);
 
-    // Initialize watchLater hook with memoization
-    const {
-        fetchWatchLater,
+    // Custom hooks
+    const { 
         isInWatchLater,
         addToWatchLater,
         removeFromWatchLater,
-        loading: watchLaterLoading,
+        loading: watchLaterLoading 
     } = useWatchLater(isAuthenticated ? user : null);
 
     const {
@@ -53,134 +55,93 @@ const VideoPlayer = () => {
         if (!videoID) return;
         setCommentsLoading(true);
         try {
-            const { data } = await axios.get(
-                `/api/v1/comments/Video/${videoID}`,
-                {
-                    headers: isAuthenticated
-                        ? {
-                              Authorization: `Bearer ${localStorage.getItem(
-                                  "accessToken"
-                              )}`,
-                          }
-                        : {},
-                }
-            );
-            setComments(data?.data?.comments || []);
-        } catch (err) {
-            console.error("Error fetching comments:", err);
-        } finally {
-            setCommentsLoading(false);
-        }
-    }, [videoID, isAuthenticated]);
-
-    const {
-        video,
-        loading: videoLoading,
-        error: videoError,
-        fetchVideo,
-        incrementViews,
-        addToHistory,
-    } = useVideo(isAuthenticated ? user : null, videoID);
-
-    // Fetch comments with proper error handling
-    const fetchComments = useCallback(async () => {
-        if (!videoID) return;
-
-        setCommentsLoading(true);
-        try {
-            const token = localStorage.getItem("accessToken");
-            const config = token
-                ? {
-                      headers: { Authorization: `Bearer ${token}` },
-                  }
-                : {};
-
+            const config = isAuthenticated ? {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+            } : {};
+            
             const { data } = await axios.get(
                 `/api/v1/comments/Video/${videoID}`,
                 config
             );
             setComments(data?.data?.comments || []);
         } catch (err) {
-            console.error("Error fetching comments:", err);
-            // Don't show error toast for comments loading - non-critical
-            setComments([]);
+            console.error("Comment fetch error:", err);
         } finally {
             setCommentsLoading(false);
         }
-    }, [videoID]);
+    }, [videoID, isAuthenticated]);
 
+    // Initial data load
     useEffect(() => {
-        // Don't attempt to fetch if we don't have a videoID
         if (!videoID) return;
 
         const loadData = async () => {
             try {
                 await fetchVideo();
-                // Only fetch watch later if authenticated
-                if (isAuthenticated) {
-                    await watchLater.fetchWatchLater();
-                }
                 await fetchComments();
             } catch (err) {
-                console.error("Error loading data:", err);
+                console.error("Initial load error:", err);
             }
         };
 
         loadData();
-    }, [videoID, fetchVideo, watchLater, fetchComments, isAuthenticated]);
+    }, [videoID, fetchVideo, fetchComments]);
 
-    // Properly handle video playback start
-    const handlePlay = useCallback(async () => {
-        if (!isAuthenticated) return; // Skip if not authenticated
-
-        try {
-            await incrementViews();
-            await addToHistory();
-        } catch (err) {
-            console.error("Failed to update video stats:", err);
-            // Don't show error toast - non-critical functionality
+    // Watch later sync
+    useEffect(() => {
+        if (isAuthenticated) {
+            const syncWatchLater = async () => {
+                try {
+                    await fetchWatchLater();
+                } catch (err) {
+                    console.error("Watch later sync error:", err);
+                }
+            };
+            syncWatchLater();
         }
-    }, [incrementViews, addToHistory, isAuthenticated]);
+    }, [isAuthenticated, fetchWatchLater]);
 
+    // Video play handler with debounce
+    const handlePlay = useCallback(async () => {
+        if (!isAuthenticated || playTriggered) return;
+        
+        try {
+            setPlayTriggered(true);
+            await Promise.all([incrementViews(), addToHistory()]);
+        } catch (err) {
+            console.error("Play tracking error:", err);
+        }
+    }, [incrementViews, addToHistory, isAuthenticated, playTriggered]);
+
+    // Like handler
     const handleVideoLike = async () => {
         if (!isAuthenticated) {
-            toast.info("Please login to like videos");
             navigate("/auth");
-            return;
+            return toast.info("Login to like videos");
         }
 
         if (!video?._id || isLiking) return;
 
         try {
             setIsLiking(true);
-            const { data } = await axios.post(
-                `/api/v1/likes/video/${video._id}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
+            await axios.post(`/api/v1/likes/video/${video._id}`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+            });
             await fetchVideo();
-            toast.success(data.message || "Like updated");
         } catch (err) {
-            console.error("Error liking video:", err);
-            toast.error(err.response?.data?.message || "Like action failed");
+            toast.error(err.response?.data?.message || "Like failed");
         } finally {
             setIsLiking(false);
         }
     };
 
+    // Comment submission
     const handleAddComment = async (e) => {
         e.preventDefault();
 
         if (!isAuthenticated) {
-            toast.info("Please login to comment");
             navigate("/auth");
-            return;
+            return toast.info("Login to comment");
         }
 
         if (!newComment.trim()) return;
@@ -190,171 +151,137 @@ const VideoPlayer = () => {
             await axios.post(
                 `/api/v1/comments/Video/${videoID}`,
                 { content: newComment },
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
+                { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
             );
             setNewComment("");
             await fetchComments();
-            toast.success("Comment added");
         } catch (err) {
-            console.error("Error adding comment:", err);
             toast.error(err.response?.data?.message || "Comment failed");
         } finally {
             setCommentLoading(false);
         }
     };
 
+    // Comment like handler
     const toggleCommentLike = async (commentId) => {
         if (!isAuthenticated) {
-            toast.info("Please login to like comments");
             navigate("/auth");
-            return;
+            return toast.info("Login to like comments");
         }
 
         try {
-            await axios.post(
-                `/api/v1/comments/like/${commentId}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            setComments((prev) =>
-                prev.map((comment) =>
-                    comment._id === commentId
-                        ? {
-                              ...comment,
-                              isLiked: !comment.isLiked,
-                              likesCount: comment.isLiked
-                                  ? comment.likesCount - 1
-                                  : comment.likesCount + 1,
-                          }
-                        : comment
-                )
-            );
+            await axios.post(`/api/v1/comments/like/${commentId}`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+            });
+            
+            setComments(prev => prev.map(comment => 
+                comment._id === commentId ? {
+                    ...comment,
+                    isLiked: !comment.isLiked,
+                    likesCount: comment.isLiked ? comment.likesCount - 1 : comment.likesCount + 1
+                } : comment
+            ));
         } catch (err) {
-            console.error("Error toggling comment like:", err);
-            toast.error("Failed to toggle comment like");
+            toast.error("Like toggle failed");
         }
     };
 
-    const handleWatchLater = useCallback(async () => {
+    // Watch later handler
+    const handleWatchLater = async () => {
         if (!isAuthenticated) {
-            toast.info("Please login to add to watch later");
             navigate("/auth");
-            return;
+            return toast.info("Login to use watch later");
         }
 
         if (!video?._id) return;
 
         try {
-            if (watchLater.isInWatchLater(video._id)) {
-                await watchLater.removeFromWatchLater(video._id);
+            if (isInWatchLater(video._id)) {
+                await removeFromWatchLater(video._id);
             } else {
-                await watchLater.addToWatchLater(video._id);
+                await addToWatchLater(video._id);
             }
         } catch (err) {
-            console.error("Error updating watch later:", err);
-            toast.error("Failed to update watch later");
+            toast.error("Watch later update failed");
         }
-    }, [video, watchLater, isAuthenticated, navigate]);
+    };
 
-    // Show loading indicator while authentication is being checked
-    if (authLoading) return <Spinner />;
+    // Loading states
+    if (authLoading || videoLoading) return <Spinner />;
 
-    // Show loading indicator while video is being fetched
-    if (videoLoading) return <Spinner />;
-
-    // Don't redirect if user is not authenticated - allow for public viewing
-    // if (!user) return <Navigate to="/auth" />;
-
-    if (videoError) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                    <p className="text-red-500 text-2xl mb-4">Error</p>
-                    <p className="text-gray-300">{videoError}</p>
-                </div>
+    // Error states
+    if (videoError) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+            <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+                <p className="text-red-500 text-2xl mb-4">Error</p>
+                <p className="text-gray-300">{videoError}</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (!video) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                    <p className="text-gray-400 text-2xl">Video not found.</p>
-                </div>
+    if (!video) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+            <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+                <p className="text-gray-400 text-2xl">Video not found</p>
             </div>
-        );
-    }
-
-    const inWatchLater =
-        isAuthenticated && watchLater.isInWatchLater(video._id);
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Video Player Section */}
+                {/* Video Player */}
                 <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
                     <ReactPlayer
+                        ref={playerRef}
+                        key={videoID}
                         url={video.videoFile?.url}
                         controls
                         width="100%"
                         height="100%"
                         onPlay={handlePlay}
                         config={{
-                            file: {
-                                attributes: { controlsList: "nodownload" },
-                            },
+                            file: { attributes: { controlsList: "nodownload" }},
+                            youtube: { playerVars: { modestbranding: 1 } }
                         }}
                         className="react-player"
                     />
 
-                    {/* Floating Action Bar */}
+                    {/* Floating Controls */}
                     <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={handleVideoLike}
                             disabled={isLiking}
-                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
-                                video.isLiked
-                                    ? "text-red-500 bg-gray-900/80"
-                                    : "text-gray-300 bg-gray-900/50 hover:bg-gray-900/80"
+                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
+                                video.isLiked 
+                                ? "text-red-500 bg-gray-900/80" 
+                                : "text-gray-300 bg-gray-900/50 hover:bg-gray-900/80"
                             }`}
                         >
                             {isLiking ? (
                                 <FaSpinner className="animate-spin" />
                             ) : video.isLiked ? (
-                                <FaHeart className="text-red-500" />
+                                <FaHeart />
                             ) : (
                                 <FaRegHeart />
                             )}
                             <span className="text-sm font-medium">
-                                {video.likesCount?.toLocaleString() || 0}
+                                {video.likesCount?.toLocaleString()}
                             </span>
                         </button>
 
                         <button
                             onClick={handleWatchLater}
-                            disabled={watchLater.loading}
-                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 transition-colors ${
-                                inWatchLater
-                                    ? "bg-yellow-400/90 text-gray-900"
-                                    : "bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20"
+                            disabled={watchLaterLoading}
+                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
+                                isInWatchLater(video._id)
+                                ? "bg-yellow-400/90 text-gray-900"
+                                : "bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20"
                             }`}
                         >
-                            {watchLater.loading ? (
+                            {watchLaterLoading ? (
                                 <FaSpinner className="animate-spin" />
-                            ) : inWatchLater ? (
+                            ) : isInWatchLater(video._id) ? (
                                 <FaClock />
                             ) : (
                                 <FaRegClock />
@@ -363,48 +290,32 @@ const VideoPlayer = () => {
                     </div>
                 </div>
 
-                {/* Video Metadata Section */}
+                {/* Video Metadata */}
                 <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <h1 className="text-3xl font-bold text-gray-100">
-                            {video.title}
-                        </h1>
-
-                        <div className="flex items-center gap-4 flex-wrap">
+                        <h1 className="text-3xl font-bold text-gray-100">{video.title}</h1>
+                        
+                        <div className="flex flex-wrap items-center gap-4 justify-between">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={
-                                        video.owner?.avatar ||
-                                        "/default-avatar.png"
-                                    }
-                                    alt={video.owner?.userName || "User"}
+                                    src={video.owner?.avatar || "/default-avatar.png"}
+                                    alt={video.owner?.userName}
                                     className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
                                 />
                                 <div>
-                                    <p className="font-medium">
-                                        {video.owner?.userName ||
-                                            "Unknown User"}
-                                    </p>
+                                    <p className="font-medium">{video.owner?.userName || "Unknown Creator"}</p>
                                     <p className="text-sm text-gray-400 flex items-center gap-2">
-                                        <FaEye className="mr-1" />
-                                        {(
-                                            video.views || 0
-                                        ).toLocaleString()}{" "}
-                                        views
+                                        <FaEye className="text-gray-400" />
+                                        {video.views?.toLocaleString() || 0} views
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4 ml-auto">
+                            <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2 text-gray-400">
                                     <FaCalendarAlt />
                                     <span className="text-sm">
-                                        Uploaded{" "}
-                                        <TimeAgo
-                                            datetime={
-                                                video.createdAt || new Date()
-                                            }
-                                        />
+                                        <TimeAgo datetime={video.createdAt} />
                                     </span>
                                 </div>
                                 <button
@@ -420,16 +331,14 @@ const VideoPlayer = () => {
                                         <FaRegHeart />
                                     )}
                                     <span className="font-medium">
-                                        {(
-                                            video.likesCount || 0
-                                        ).toLocaleString()}
+                                        {video.likesCount?.toLocaleString() || 0}
                                     </span>
                                 </button>
                             </div>
                         </div>
 
                         {video.description && (
-                            <p className="text-gray-300 text-lg">
+                            <p className="text-gray-300 text-lg leading-relaxed">
                                 {video.description}
                             </p>
                         )}
@@ -456,59 +365,41 @@ const VideoPlayer = () => {
                                 {comments.length} Comments
                             </h3>
 
-                            {/* Comment Form */}
+                            {/* Comment Input */}
                             {isAuthenticated ? (
-                                <form
-                                    onSubmit={handleAddComment}
-                                    className="mb-8"
-                                >
+                                <form onSubmit={handleAddComment} className="mb-8">
                                     <div className="flex gap-3 items-start">
                                         <img
-                                            src={
-                                                user?.avatar ||
-                                                "/default-avatar.png"
-                                            }
-                                            alt={user?.userName || "User"}
+                                            src={user?.avatar || "/default-avatar.png"}
+                                            alt={user?.userName}
                                             className="w-9 h-9 rounded-full flex-shrink-0"
                                         />
                                         <div className="flex-1 relative">
                                             <input
                                                 value={newComment}
-                                                onChange={(e) =>
-                                                    setNewComment(
-                                                        e.target.value
-                                                    )
-                                                }
+                                                onChange={(e) => setNewComment(e.target.value)}
                                                 placeholder="Add a comment..."
                                                 className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
                                                 disabled={commentLoading}
                                             />
                                             <button
                                                 type="submit"
-                                                disabled={
-                                                    !newComment.trim() ||
-                                                    commentLoading
-                                                }
-                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50 transition-opacity"
+                                                disabled={!newComment.trim() || commentLoading}
+                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
                                             >
-                                                {commentLoading
-                                                    ? "Posting..."
-                                                    : "Post"}
+                                                {commentLoading ? "Posting..." : "Post"}
                                             </button>
                                         </div>
                                     </div>
                                 </form>
                             ) : (
-                                <div className="text-center mb-8 p-4 bg-gray-800 rounded-lg">
-                                    <p className="text-gray-300">
-                                        <button
-                                            onClick={() => navigate("/auth")}
-                                            className="text-purple-400 hover:underline"
-                                        >
-                                            Login
-                                        </button>{" "}
-                                        to add comments
-                                    </p>
+                                <div className="mb-8 p-4 bg-gray-800 rounded-lg text-center">
+                                    <button
+                                        onClick={() => navigate("/auth")}
+                                        className="text-purple-400 hover:underline"
+                                    >
+                                        Login
+                                    </button> to comment
                                 </div>
                             )}
 
@@ -519,67 +410,42 @@ const VideoPlayer = () => {
                                 </div>
                             ) : comments.length === 0 ? (
                                 <p className="text-gray-400 text-center py-8">
-                                    No comments yet. Start the conversation!
+                                    No comments yet
                                 </p>
                             ) : (
                                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
                                     {comments.map((comment) => (
-                                        <div
-                                            key={comment._id}
-                                            className="flex gap-3 group"
-                                        >
+                                        <div key={comment._id} className="flex gap-3">
                                             <img
-                                                src={
-                                                    comment.owner?.avatar ||
-                                                    "/default-avatar.png"
-                                                }
-                                                alt={
-                                                    comment.owner?.userName ||
-                                                    "User"
-                                                }
+                                                src={comment.owner?.avatar || "/default-avatar.png"}
+                                                alt={comment.owner?.userName}
                                                 className="w-9 h-9 rounded-full flex-shrink-0"
                                             />
-                                            <div className="flex-1">
-                                                <div className="bg-gray-800 p-4 rounded-lg relative">
-                                                    <div className="flex justify-between items-start mb-1.5">
-                                                        <div>
-                                                            <p className="font-medium text-sm">
-                                                                {comment.owner
-                                                                    ?.userName ||
-                                                                    "Unknown User"}
-                                                            </p>
-                                                            <p className="text-xs text-gray-400">
-                                                                <TimeAgo
-                                                                    datetime={
-                                                                        comment.createdAt ||
-                                                                        new Date()
-                                                                    }
-                                                                />
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() =>
-                                                                toggleCommentLike(
-                                                                    comment._id
-                                                                )
-                                                            }
-                                                            className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm"
-                                                        >
-                                                            {comment.isLiked ? (
-                                                                <FaHeart className="text-red-500 text-sm" />
-                                                            ) : (
-                                                                <FaRegHeart className="text-sm" />
-                                                            )}
-                                                            <span>
-                                                                {comment.likesCount ||
-                                                                    0}
-                                                            </span>
-                                                        </button>
+                                            <div className="flex-1 bg-gray-800 p-4 rounded-lg">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <p className="font-medium text-sm">
+                                                            {comment.owner?.userName || "User"}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            <TimeAgo datetime={comment.createdAt} />
+                                                        </p>
                                                     </div>
-                                                    <p className="text-gray-300 text-sm">
-                                                        {comment.content}
-                                                    </p>
+                                                    <button
+                                                        onClick={() => toggleCommentLike(comment._id)}
+                                                        className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm"
+                                                    >
+                                                        {comment.isLiked ? (
+                                                            <FaHeart className="text-red-500" />
+                                                        ) : (
+                                                            <FaRegHeart />
+                                                        )}
+                                                        <span>{comment.likesCount || 0}</span>
+                                                    </button>
                                                 </div>
+                                                <p className="text-gray-300 text-sm">
+                                                    {comment.content}
+                                                </p>
                                             </div>
                                         </div>
                                     ))}
