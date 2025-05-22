@@ -34,6 +34,10 @@ const VideoPlayer = () => {
     const [commentLoading, setCommentLoading] = useState(false);
     const [playTriggered, setPlayTriggered] = useState(false);
     const [commentLikeLoading, setCommentLikeLoading] = useState(false);
+    const [likeState, setLikeState] = useState({
+        isLiked: false,
+        likesCount: 0,
+    });
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showPlaylists, setShowPlaylists] = useState(false);
