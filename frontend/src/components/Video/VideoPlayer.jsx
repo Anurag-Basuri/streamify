@@ -236,7 +236,6 @@ const VideoPlayer = () => {
         }
     };
 
-
     // Watch later handler
     const handleWatchLater = async () => {
         if (!isAuthenticated) {
@@ -304,27 +303,6 @@ const VideoPlayer = () => {
 
                     {/* Floating Controls */}
                     <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            onClick={handleVideoLike}
-                            disabled={isLiking}
-                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
-                                likeState.isLiked
-                                    ? "text-red-500 bg-gray-900/80"
-                                    : "text-gray-300 bg-gray-900/50 hover:bg-gray-900/80"
-                            }`}
-                        >
-                            {isLiking ? (
-                                <FaSpinner className="animate-spin" />
-                            ) : likeState.isLiked ? (
-                                <FaHeart />
-                            ) : (
-                                <FaRegHeart />
-                            )}
-                            <span className="text-sm font-medium">
-                                {likeState.likesCount?.toLocaleString()}
-                            </span>
-                        </button>
-
                         <button
                             onClick={handleWatchLater}
                             disabled={watchLaterLoading}
