@@ -52,29 +52,29 @@
     border-radius: 3px;
 }
 .comment-enter {
-  opacity: 0;
-  transform: translateY(-10px);
+    opacity: 0;
+    transform: translateY(-10px);
 }
 .comment-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: all 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease;
 }
 .comment-exit {
-  opacity: 1;
-  transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
 }
 .comment-exit-active {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
 }
 
 .dropdown-menu {
-  transition: opacity 0.2s, transform 0.2s;
-  transform-origin: top right;
+    transition: opacity 0.2s, transform 0.2s;
+    transform-origin: top right;
 }
 
 .player-controls {
-  transition: opacity 0.3s ease;
+    transition:  opacity 0.3s ease;
 }
