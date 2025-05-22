@@ -74,24 +74,23 @@ const VideoPlayer = () => {
         }
     }, [video]);
 
-    // Memoized fetch comments function
+    // Fetch comments
     const fetchComments = useCallback(async () => {
         if (!videoID) return;
+
         setCommentsLoading(true);
         try {
-            const config = isAuthenticated
-                ? {
-                      headers: {
-                          Authorization: `Bearer ${localStorage.getItem(
-                              "accessToken"
-                          )}`,
-                      },
-                  }
-                : {};
-
             const { data } = await axios.get(
-                `/api/v1/comments/Video/${videoID}`,
-                config
+                `/api/v1/comments/video/${videoID}`,
+                {
+                    headers: isAuthenticated
+                        ? {
+                              Authorization: `Bearer ${localStorage.getItem(
+                                  "accessToken"
+                              )}`,
+                          }
+                        : {},
+                }
             );
             setComments(data?.data?.comments || []);
         } catch (err) {
