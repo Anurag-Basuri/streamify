@@ -7,7 +7,6 @@ import {
     deleteComment,
     getEntityComments,
     updateComment,
-    toggleCommentLike,
     countComments,
 } from "../controllers/comment.controller.js";
 
@@ -42,9 +41,6 @@ router.put(
 
 // Delete a comment
 router.delete("/:commentId", deleteComment);
-
-// Toggle like for a comment
-router.post("/like/:commentId", toggleCommentLike);
 
 // Count comments for an entity
 router.get("/count/:entityType/:entityId", countComments);
