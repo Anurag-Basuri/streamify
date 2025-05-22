@@ -11,6 +11,10 @@ import {
     FaComment,
     FaEye,
     FaCalendarAlt,
+    FaEllipsisV,
+    FaPlus,
+    FaDownload,
+    FaShare,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import useAuth from "../../hooks/useAuth";
@@ -18,7 +22,7 @@ import useWatchLater from "../../hooks/useWatchLater";
 import useVideo from "../../hooks/useVideo";
 import Spinner from "../Spinner";
 import TimeAgo from "timeago-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
