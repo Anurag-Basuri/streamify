@@ -91,11 +91,10 @@ const VideoPlayer = () => {
                 : {};
 
             const { data } = await axios.get(
-                `/api/v1/comments/video/${videoID}`,
+                `/api/v1/comments/Video/${videoID}`,
                 config
             );
 
-            console.log("Fetched comments:", data);
             setComments(data?.data?.comments || []);
         } catch (err) {
             console.error("Comment fetch error:", err);
@@ -121,7 +120,7 @@ const VideoPlayer = () => {
             console.error("Failed to fetch playlists:", err);
         }
     }, [isAuthenticated]);
-    
+
     // Initial data load
     useEffect(() => {
         if (!videoID) return;
