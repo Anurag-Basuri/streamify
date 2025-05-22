@@ -240,6 +240,22 @@ const VideoPlayer = () => {
         }
     };
 
+    // Playlist handler
+    const handleShare = useCallback(() => {
+        const url = window.location.href;
+        if (navigator.share) {
+            navigator.share({
+                title: video.title,
+                text: video.description,
+                url: url,
+            });
+        } else {
+            navigator.clipboard.writeText(url);
+            toast.success("Link copied to clipboard!");
+        }
+        setIsMenuOpen(false);
+    }, [video]);
+
     // Watch later handler
     const handleWatchLater = async () => {
         if (!isAuthenticated) {
