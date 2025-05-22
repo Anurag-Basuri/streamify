@@ -42,7 +42,6 @@ const VideoPlayer = () => {
         isLiked: false,
         likesCount: 0,
     });
-
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showPlaylists, setShowPlaylists] = useState(false);
     const [playlists, setPlaylists] = useState([]);
