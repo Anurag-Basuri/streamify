@@ -256,6 +256,46 @@ const VideoPlayer = () => {
         setIsMenuOpen(false);
     }, [video]);
 
+    // fetch playlists
+    const fetchPlaylists = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const { data } = await axios.get("/api/v1/playlists/user", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
+                },
+            });
+            setPlaylists(data.data.playlists);
+        } catch (err) {
+            toast.error("Failed to fetch playlists");
+        }
+    }, [isAuthenticated]);
+
+    // Playlist handler
+    const handleAddToPlaylist = async (playlistId) => {
+        try {
+            await axios.post(
+                `/api/v1/playlists/${playlistId}/videos/${video._id}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                }
+            );
+            toast.success("Added to playlist!");
+            setShowPlaylists(false);
+        } catch (err) {
+            toast.error(
+                err.response?.data?.message || "Failed to add to playlist"
+            );
+        }
+    };
+
     // Watch later handler
     const handleWatchLater = async () => {
         if (!isAuthenticated) {
