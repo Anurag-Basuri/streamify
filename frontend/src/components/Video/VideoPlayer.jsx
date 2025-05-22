@@ -38,6 +38,10 @@ const VideoPlayer = () => {
     const [playTriggered, setPlayTriggered] = useState(false);
     const [commentLikeLoading, setCommentLikeLoading] = useState(false);
 
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showPlaylists, setShowPlaylists] = useState(false);
+    const [playlists, setPlaylists] = useState([]);
+
     // Custom hooks
     const {
         isInWatchLater,
