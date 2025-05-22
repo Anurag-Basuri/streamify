@@ -18,6 +18,7 @@ import useWatchLater from "../../hooks/useWatchLater";
 import useVideo from "../../hooks/useVideo";
 import Spinner from "../Spinner";
 import TimeAgo from "timeago-react";
+import { motion } from "framer-motion";
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
@@ -27,10 +28,6 @@ const VideoPlayer = () => {
 
     // State management
     const [isLiking, setIsLiking] = useState(false);
-    const [likeState, setLikeState] = useState({
-        isLiked: false,
-        likesCount: 0,
-    });
     const [comments, setComments] = useState([]);
     const [commentsLoading, setCommentsLoading] = useState(true);
     const [newComment, setNewComment] = useState("");
@@ -535,8 +532,11 @@ const VideoPlayer = () => {
                             ) : (
                                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
                                     {comments.map((comment) => (
-                                        <div
+                                        <motion.div
                                             key={comment._id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3 }}
                                             className="flex gap-3"
                                         >
                                             <img
@@ -586,7 +586,7 @@ const VideoPlayer = () => {
                                                     {comment.content}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                             )}
