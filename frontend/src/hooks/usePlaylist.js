@@ -2,65 +2,101 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const usePlaylist = (playlistId, user) => {
-    const [playlist, setPlaylist] = useState(null);
+const usePlaylists = (user) => {
+    const [playlists, setPlaylists] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(false);
 
-    // Memoized fetch function to avoid unnecessary re-renders
-    const fetchPlaylist = useCallback(async () => {
-        if (!playlistId || !user) return;
+    // Fetch all user playlists
+    const fetchPlaylists = useCallback(async () => {
+        if (!user) {
+            setPlaylists([]);
+            return;
+        }
 
         setLoading(true);
         setError("");
 
         try {
-            const { data } = await axios.get(
-                `/api/v1/playlists/${playlistId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            setPlaylist(data.data);
+            const { data } = await axios.get(`/api/v1/playlists/`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
+                },
+            });
+            setPlaylists(data.data || []);
             setError("");
         } catch (err) {
             const errorMessage =
-                err.response?.data?.message || "Failed to load playlist";
+                err.response?.data?.message || "Failed to load playlists";
             setError(errorMessage);
-            console.error("Playlist fetch error:", err);
+            console.error("Playlists fetch error:", err);
 
-            // Only show toast for non-404 errors to avoid spam
             if (err.response?.status !== 404) {
                 toast.error(errorMessage);
             }
         } finally {
             setLoading(false);
         }
-    }, [playlistId, user]);
+    }, [user]);
 
-    // Auto-fetch when playlistId or user changes
+    // Auto-fetch when user changes
     useEffect(() => {
-        if (playlistId && user) {
-            fetchPlaylist();
+        if (user) {
+            fetchPlaylists();
+        } else {
+            setPlaylists([]);
         }
-    }, [fetchPlaylist]);
+    }, [fetchPlaylists, user]);
 
-    // Add video to playlist
-    const addVideo = useCallback(
-        async (videoId) => {
-            if (!playlistId || !videoId || !user || actionLoading) {
-                return false;
-            }
+    // Create new playlist
+    const createPlaylist = useCallback(
+        async (playlistData, videoId = null) => {
+            if (!user || actionLoading) return false;
 
             setActionLoading(true);
 
             try {
-                const { data } = await axios.post(
+                const endpoint = videoId
+                    ? `/api/v1/playlists/create/${videoId}`
+                    : `/api/v1/playlists/create`;
+
+                const { data } = await axios.post(endpoint, playlistData, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                });
+
+                // Add new playlist to the list
+                setPlaylists((prev) => [data.data, ...prev]);
+                toast.success("Playlist created successfully");
+                return data.data;
+            } catch (err) {
+                const errorMessage =
+                    err.response?.data?.message || "Failed to create playlist";
+                toast.error(errorMessage);
+                console.error("Create playlist error:", err);
+                return false;
+            } finally {
+                setActionLoading(false);
+            }
+        },
+        [user, actionLoading]
+    );
+
+    // Add video to specific playlist
+    const addVideoToPlaylist = useCallback(
+        async (playlistId, videoId) => {
+            if (!user || !playlistId || !videoId || actionLoading) return false;
+
+            setActionLoading(true);
+
+            try {
+                await axios.post(
                     `/api/v1/playlists/${playlistId}/videos/${videoId}`,
                     {},
                     {
@@ -72,44 +108,38 @@ const usePlaylist = (playlistId, user) => {
                     }
                 );
 
-                // Update playlist state optimistically
-                setPlaylist((prev) => {
-                    if (!prev) return prev;
-
-                    // Check if video is already in playlist to avoid duplicates
-                    const videoExists = prev.videos.some(
-                        (v) => (typeof v === "string" ? v : v._id) === videoId
-                    );
-
-                    if (videoExists) return prev;
-
-                    return {
-                        ...prev,
-                        videos: [...prev.videos, videoId], // Add videoId, backend returns updated playlist
-                    };
-                });
+                // Update the specific playlist in the list
+                setPlaylists((prev) =>
+                    prev.map((playlist) =>
+                        playlist._id === playlistId
+                            ? {
+                                  ...playlist,
+                                  videos: [...playlist.videos, videoId],
+                              }
+                            : playlist
+                    )
+                );
 
                 toast.success("Video added to playlist");
                 return true;
             } catch (err) {
                 const errorMessage =
-                    err.response?.data?.message || "Failed to add video";
+                    err.response?.data?.message ||
+                    "Failed to add video to playlist";
                 toast.error(errorMessage);
-                console.error("Add video error:", err);
+                console.error("Add video to playlist error:", err);
                 return false;
             } finally {
                 setActionLoading(false);
             }
         },
-        [playlistId, user, actionLoading]
+        [user, actionLoading]
     );
 
-    // Remove video from playlist
-    const removeVideo = useCallback(
-        async (videoId) => {
-            if (!playlistId || !videoId || !user || actionLoading) {
-                return false;
-            }
+    // Remove video from specific playlist
+    const removeVideoFromPlaylist = useCallback(
+        async (playlistId, videoId) => {
+            if (!user || !playlistId || !videoId || actionLoading) return false;
 
             setActionLoading(true);
 
@@ -125,40 +155,78 @@ const usePlaylist = (playlistId, user) => {
                     }
                 );
 
-                // Update playlist state optimistically
-                setPlaylist((prev) => {
-                    if (!prev) return prev;
-
-                    return {
-                        ...prev,
-                        videos: prev.videos.filter(
-                            (v) =>
-                                (typeof v === "string" ? v : v._id) !== videoId
-                        ),
-                    };
-                });
+                // Update the specific playlist in the list
+                setPlaylists((prev) =>
+                    prev.map((playlist) =>
+                        playlist._id === playlistId
+                            ? {
+                                  ...playlist,
+                                  videos: playlist.videos.filter(
+                                      (v) =>
+                                          (typeof v === "string"
+                                              ? v
+                                              : v._id) !== videoId
+                                  ),
+                              }
+                            : playlist
+                    )
+                );
 
                 toast.success("Video removed from playlist");
                 return true;
             } catch (err) {
                 const errorMessage =
-                    err.response?.data?.message || "Failed to remove video";
+                    err.response?.data?.message ||
+                    "Failed to remove video from playlist";
                 toast.error(errorMessage);
-                console.error("Remove video error:", err);
+                console.error("Remove video from playlist error:", err);
                 return false;
             } finally {
                 setActionLoading(false);
             }
         },
-        [playlistId, user, actionLoading]
+        [user, actionLoading]
     );
 
-    // Update playlist details (name, description)
-    const updatePlaylist = useCallback(
-        async (updates) => {
-            if (!playlistId || !user || actionLoading) {
+    // Delete playlist
+    const deletePlaylist = useCallback(
+        async (playlistId) => {
+            if (!user || !playlistId || actionLoading) return false;
+
+            setActionLoading(true);
+
+            try {
+                await axios.delete(`/api/v1/playlists/delete/${playlistId}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "accessToken"
+                        )}`,
+                    },
+                });
+
+                // Remove playlist from the list
+                setPlaylists((prev) =>
+                    prev.filter((playlist) => playlist._id !== playlistId)
+                );
+                toast.success("Playlist deleted successfully");
+                return true;
+            } catch (err) {
+                const errorMessage =
+                    err.response?.data?.message || "Failed to delete playlist";
+                toast.error(errorMessage);
+                console.error("Delete playlist error:", err);
                 return false;
+            } finally {
+                setActionLoading(false);
             }
+        },
+        [user, actionLoading]
+    );
+
+    // Update playlist
+    const updatePlaylist = useCallback(
+        async (playlistId, updates) => {
+            if (!user || !playlistId || actionLoading) return false;
 
             setActionLoading(true);
 
@@ -175,9 +243,15 @@ const usePlaylist = (playlistId, user) => {
                     }
                 );
 
-                setPlaylist(data.data);
+                // Update the specific playlist in the list
+                setPlaylists((prev) =>
+                    prev.map((playlist) =>
+                        playlist._id === playlistId ? data.data : playlist
+                    )
+                );
+
                 toast.success("Playlist updated successfully");
-                return true;
+                return data.data;
             } catch (err) {
                 const errorMessage =
                     err.response?.data?.message || "Failed to update playlist";
@@ -188,74 +262,48 @@ const usePlaylist = (playlistId, user) => {
                 setActionLoading(false);
             }
         },
-        [playlistId, user, actionLoading]
+        [user, actionLoading]
     );
 
-    // Delete playlist
-    const deletePlaylist = useCallback(async () => {
-        if (!playlistId || !user || actionLoading) {
-            return false;
-        }
-
-        setActionLoading(true);
-
-        try {
-            await axios.delete(`/api/v1/playlists/delete/${playlistId}`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
-
-            setPlaylist(null);
-            toast.success("Playlist deleted successfully");
-            return true;
-        } catch (err) {
-            const errorMessage =
-                err.response?.data?.message || "Failed to delete playlist";
-            toast.error(errorMessage);
-            console.error("Delete playlist error:", err);
-            return false;
-        } finally {
-            setActionLoading(false);
-        }
-    }, [playlistId, user, actionLoading]);
-
-    // Check if a video exists in the playlist
-    const isVideoInPlaylist = useCallback(
+    // Check if video exists in any playlist
+    const getPlaylistsContainingVideo = useCallback(
         (videoId) => {
-            if (!playlist || !playlist.videos) return false;
+            return playlists.filter((playlist) =>
+                playlist.videos.some(
+                    (v) => (typeof v === "string" ? v : v._id) === videoId
+                )
+            );
+        },
+        [playlists]
+    );
+
+    // Check if video exists in specific playlist
+    const isVideoInPlaylist = useCallback(
+        (playlistId, videoId) => {
+            const playlist = playlists.find((p) => p._id === playlistId);
+            if (!playlist) return false;
 
             return playlist.videos.some(
                 (v) => (typeof v === "string" ? v : v._id) === videoId
             );
         },
-        [playlist]
+        [playlists]
     );
 
-    // Reset hook state
-    const reset = useCallback(() => {
-        setPlaylist(null);
-        setLoading(false);
-        setError("");
-        setActionLoading(false);
-    }, []);
-
     return {
-        playlist,
+        playlists,
         loading,
         error,
         actionLoading,
-        fetchPlaylist,
-        addVideo,
-        removeVideo,
-        updatePlaylist,
+        fetchPlaylists,
+        createPlaylist,
+        addVideoToPlaylist,
+        removeVideoFromPlaylist,
         deletePlaylist,
+        updatePlaylist,
+        getPlaylistsContainingVideo,
         isVideoInPlaylist,
-        reset,
-        setPlaylist, // Keep for manual updates if needed
     };
 };
 
-export default usePlaylist;
+export default usePlaylists;
