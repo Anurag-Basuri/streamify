@@ -147,8 +147,7 @@ const VideoPlayer = () => {
         try {
             setIsLiking(true);
             const { data } = await axios.post(
-                // Correct endpoint to match backend route
-                `/api/v1/likes/video/${video._id}`,
+                `/api/v1/likes/toggle/video/${video._id}`,
                 {},
                 {
                     headers: {
@@ -159,13 +158,16 @@ const VideoPlayer = () => {
                 }
             );
 
-            // Update state from response
-            setLikeState({
-                isLiked: data.data.state === 1,
-                likesCount: data.data.likes,
-            });
+            // Update like state directly from response
+            if (data && data.data) {
+                setLikeState({
+                    isLiked: data.data.state === 1,
+                    likesCount: data.data.likes || 0,
+                });
+            }
         } catch (err) {
             toast.error(err.response?.data?.message || "Like action failed");
+            console.error("Like error:", err);
         } finally {
             setIsLiking(false);
         }
