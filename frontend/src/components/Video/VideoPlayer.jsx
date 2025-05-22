@@ -37,7 +37,7 @@ const VideoPlayer = () => {
     const [newComment, setNewComment] = useState("");
     const [commentLoading, setCommentLoading] = useState(false);
     const [playTriggered, setPlayTriggered] = useState(false);
-    const [commentLikeLoading, setCommentLikeLoading] = useState(false);
+    const [commentLikeLoading, setCommentLikeLoading] = useState({});
     const [likeState, setLikeState] = useState({
         isLiked: false,
         likesCount: 0,
@@ -74,33 +74,36 @@ const VideoPlayer = () => {
         }
     }, [video]);
 
-    // Fetch comments
+    // Fetch comments with like status
     const fetchComments = useCallback(async () => {
         if (!videoID) return;
 
         setCommentsLoading(true);
         try {
+            const config = isAuthenticated
+                ? {
+                      headers: {
+                          Authorization: `Bearer ${localStorage.getItem(
+                              "accessToken"
+                          )}`,
+                      },
+                  }
+                : {};
+
             const { data } = await axios.get(
                 `/api/v1/comments/video/${videoID}`,
-                {
-                    headers: isAuthenticated
-                        ? {
-                              Authorization: `Bearer ${localStorage.getItem(
-                                  "accessToken"
-                              )}`,
-                          }
-                        : {},
-                }
+                config
             );
             setComments(data?.data?.comments || []);
         } catch (err) {
             console.error("Comment fetch error:", err);
+            toast.error("Failed to load comments");
         } finally {
             setCommentsLoading(false);
         }
     }, [videoID, isAuthenticated]);
 
-    // fetch playlists
+    // Fetch playlists
     const fetchPlaylists = useCallback(async () => {
         if (!isAuthenticated) return;
         try {
@@ -111,10 +114,9 @@ const VideoPlayer = () => {
                     )}`,
                 },
             });
-            setPlaylists(data.data.playlists);
+            setPlaylists(data.data.playlists || []);
         } catch (err) {
-            toast.error("Failed to fetch playlists");
-            console.error(err);
+            console.error("Failed to fetch playlists:", err);
         }
     }, [isAuthenticated]);
 
@@ -124,9 +126,11 @@ const VideoPlayer = () => {
 
         const loadData = async () => {
             try {
-                await fetchVideo();
-                await fetchComments();
-                if (isAuthenticated) fetchPlaylists();
+                await Promise.all([
+                    fetchVideo(),
+                    fetchComments(),
+                    isAuthenticated ? fetchPlaylists() : Promise.resolve(),
+                ]);
             } catch (err) {
                 console.error("Initial load error:", err);
             }
@@ -172,6 +176,16 @@ const VideoPlayer = () => {
 
         try {
             setIsLiking(true);
+
+            // Optimistic update
+            const newLikeState = {
+                isLiked: !likeState.isLiked,
+                likesCount: likeState.isLiked
+                    ? Math.max(0, likeState.likesCount - 1)
+                    : likeState.likesCount + 1,
+            };
+            setLikeState(newLikeState);
+
             const { data } = await axios.post(
                 `/api/v1/likes/toggle/video/${video._id}`,
                 {},
@@ -184,13 +198,19 @@ const VideoPlayer = () => {
                 }
             );
 
+            // Update with server response
             if (data?.data) {
-                setLikeState((prev) => ({
+                setLikeState({
                     isLiked: data.data.state === 1,
-                    likesCount: data.data.likes || prev.likesCount,
-                }));
+                    likesCount: data.data.likes || 0,
+                });
             }
         } catch (err) {
+            // Revert optimistic update on error
+            setLikeState({
+                isLiked: likeState.isLiked,
+                likesCount: likeState.likesCount,
+            });
             toast.error(err.response?.data?.message || "Like action failed");
             console.error("Like error:", err);
         } finally {
@@ -213,7 +233,7 @@ const VideoPlayer = () => {
             setCommentLoading(true);
             await axios.post(
                 `/api/v1/comments/Video/${videoID}`,
-                { content: newComment },
+                { content: newComment.trim() },
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -224,24 +244,27 @@ const VideoPlayer = () => {
             );
             setNewComment("");
             await fetchComments();
+            toast.success("Comment added successfully!");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Comment failed");
+            toast.error(err.response?.data?.message || "Failed to add comment");
+            console.error("Comment error:", err);
         } finally {
             setCommentLoading(false);
         }
     };
 
-    // Comment like handler
+    // Comment like handler with individual loading states
     const toggleCommentLike = async (commentId) => {
         if (!isAuthenticated) {
             navigate("/auth");
             return toast.info("Login to like comments");
         }
 
-        if (commentLikeLoading) return;
+        if (commentLikeLoading[commentId]) return;
 
         try {
-            setCommentLikeLoading(true);
+            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: true }));
+
             await axios.post(
                 `/api/v1/likes/toggle/comment/${commentId}`,
                 {},
@@ -256,8 +279,9 @@ const VideoPlayer = () => {
             await fetchComments();
         } catch (err) {
             toast.error(err.response?.data?.message || "Comment like failed");
+            console.error("Comment like error:", err);
         } finally {
-            setCommentLikeLoading(false);
+            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: false }));
         }
     };
 
@@ -265,11 +289,18 @@ const VideoPlayer = () => {
     const handleShare = useCallback(() => {
         const url = window.location.href;
         if (navigator.share) {
-            navigator.share({
-                title: video.title,
-                text: video.description,
-                url: url,
-            });
+            navigator
+                .share({
+                    title: video?.title || "Check out this video",
+                    text: video?.description || "",
+                    url: url,
+                })
+                .catch((err) => {
+                    console.error("Share failed:", err);
+                    // Fallback to clipboard
+                    navigator.clipboard.writeText(url);
+                    toast.success("Link copied to clipboard!");
+                });
         } else {
             navigator.clipboard.writeText(url);
             toast.success("Link copied to clipboard!");
@@ -297,6 +328,7 @@ const VideoPlayer = () => {
             toast.error(
                 err.response?.data?.message || "Failed to add to playlist"
             );
+            console.error("Playlist error:", err);
         }
     };
 
@@ -312,13 +344,29 @@ const VideoPlayer = () => {
         try {
             if (isInWatchLater(video._id)) {
                 await removeFromWatchLater(video._id);
+                toast.success("Removed from Watch Later");
             } else {
                 await addToWatchLater(video._id);
+                toast.success("Added to Watch Later");
             }
-        } catch {
+        } catch (err) {
             toast.error("Watch later update failed");
+            console.error("Watch later error:", err);
         }
     };
+
+    // Click outside handler for menu
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (isMenuOpen && !event.target.closest(".menu-container")) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, [isMenuOpen]);
 
     // Loading states
     if (authLoading || videoLoading) return <Spinner />;
@@ -330,6 +378,12 @@ const VideoPlayer = () => {
                 <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
                     <p className="text-red-500 text-2xl mb-4">Error</p>
                     <p className="text-gray-300">{videoError}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                        Retry
+                    </button>
                 </div>
             </div>
         );
@@ -339,6 +393,12 @@ const VideoPlayer = () => {
             <div className="min-h-screen flex items-center justify-center bg-gray-900">
                 <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
                     <p className="text-gray-400 text-2xl">Video not found</p>
+                    <button
+                        onClick={() => navigate("/")}
+                        className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                        Go Home
+                    </button>
                 </div>
             </div>
         );
@@ -367,10 +427,11 @@ const VideoPlayer = () => {
 
                     {/* Floating Controls */}
                     <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="relative">
+                        <div className="relative menu-container">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 className="p-3 rounded-full backdrop-blur-sm bg-gray-900/50 text-gray-100 hover:bg-gray-800 transition-colors"
+                                aria-label="Video options"
                             >
                                 <FaEllipsisV />
                             </button>
@@ -385,9 +446,12 @@ const VideoPlayer = () => {
                                     >
                                         <button
                                             onClick={handleWatchLater}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                            disabled={watchLaterLoading}
+                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50"
                                         >
-                                            {isInWatchLater(video._id) ? (
+                                            {watchLaterLoading ? (
+                                                <FaSpinner className="animate-spin text-yellow-400" />
+                                            ) : isInWatchLater(video._id) ? (
                                                 <FaClock className="text-yellow-400" />
                                             ) : (
                                                 <FaRegClock className="text-yellow-400" />
@@ -410,6 +474,7 @@ const VideoPlayer = () => {
                                             href={video.videoFile?.url}
                                             download
                                             className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                            onClick={() => setIsMenuOpen(false)}
                                         >
                                             <FaDownload className="text-blue-400" />
                                             Download
@@ -442,7 +507,7 @@ const VideoPlayer = () => {
                                         video.owner?.avatar ||
                                         "/default-avatar.png"
                                     }
-                                    alt={video.owner?.userName}
+                                    alt={video.owner?.userName || "User"}
                                     className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
                                 />
                                 <div>
@@ -469,7 +534,7 @@ const VideoPlayer = () => {
                                 <button
                                     onClick={handleVideoLike}
                                     disabled={isLiking}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors disabled:opacity-50"
                                 >
                                     {isLiking ? (
                                         <FaSpinner className="animate-spin" />
@@ -486,6 +551,7 @@ const VideoPlayer = () => {
                             </div>
                         </div>
 
+                        {/* Playlist Modal */}
                         <AnimatePresence>
                             {showPlaylists && (
                                 <motion.div
@@ -498,7 +564,8 @@ const VideoPlayer = () => {
                                     <motion.div
                                         initial={{ scale: 0.9 }}
                                         animate={{ scale: 1 }}
-                                        className="bg-gray-800 rounded-xl p-6 w-full max-w-md"
+                                        exit={{ scale: 0.9 }}
+                                        className="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="flex justify-between items-center mb-4">
@@ -509,27 +576,33 @@ const VideoPlayer = () => {
                                                 onClick={() =>
                                                     setShowPlaylists(false)
                                                 }
-                                                className="p-2 hover:bg-gray-700 rounded-full text-xl"
+                                                className="p-2 hover:bg-gray-700 rounded-full text-xl transition-colors"
                                             >
                                                 &times;
                                             </button>
                                         </div>
                                         <div className="space-y-3 max-h-96 overflow-y-auto">
-                                            {playlists.map((playlist) => (
-                                                <button
-                                                    key={playlist._id}
-                                                    onClick={() =>
-                                                        handleAddToPlaylist(
-                                                            playlist._id
-                                                        )
-                                                    }
-                                                    className="w-full p-3 text-left hover:bg-gray-700 rounded-lg flex items-center gap-3 transition-colors"
-                                                >
-                                                    <span className="truncate text-purple-400">
-                                                        {playlist.name}
-                                                    </span>
-                                                </button>
-                                            ))}
+                                            {playlists.length === 0 ? (
+                                                <p className="text-gray-400 text-center py-4">
+                                                    No playlists found
+                                                </p>
+                                            ) : (
+                                                playlists.map((playlist) => (
+                                                    <button
+                                                        key={playlist._id}
+                                                        onClick={() =>
+                                                            handleAddToPlaylist(
+                                                                playlist._id
+                                                            )
+                                                        }
+                                                        className="w-full p-3 text-left hover:bg-gray-700 rounded-lg flex items-center gap-3 transition-colors"
+                                                    >
+                                                        <span className="truncate text-purple-400">
+                                                            {playlist.name}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            )}
                                         </div>
                                     </motion.div>
                                 </motion.div>
@@ -537,9 +610,11 @@ const VideoPlayer = () => {
                         </AnimatePresence>
 
                         {video.description && (
-                            <p className="text-gray-300 text-lg leading-relaxed">
-                                {video.description}
-                            </p>
+                            <div className="bg-gray-800 p-4 rounded-lg">
+                                <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">
+                                    {video.description}
+                                </p>
+                            </div>
                         )}
 
                         {video.tags?.length > 0 && (
@@ -547,7 +622,7 @@ const VideoPlayer = () => {
                                 {video.tags.map((tag, index) => (
                                     <span
                                         key={`${tag}-${index}`}
-                                        className="px-3 py-1.5 text-sm bg-purple-900/30 text-purple-300 rounded-full"
+                                        className="px-3 py-1.5 text-sm bg-purple-900/30 text-purple-300 rounded-full hover:bg-purple-900/50 transition-colors cursor-pointer"
                                     >
                                         #{tag}
                                     </span>
@@ -576,8 +651,8 @@ const VideoPlayer = () => {
                                                 user?.avatar ||
                                                 "/default-avatar.png"
                                             }
-                                            alt={user?.userName}
-                                            className="w-9 h-9 rounded-full flex-shrink-0"
+                                            alt={user?.userName || "User"}
+                                            className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                                         />
                                         <div className="flex-1 relative">
                                             <input
@@ -588,8 +663,9 @@ const VideoPlayer = () => {
                                                     )
                                                 }
                                                 placeholder="Add a comment..."
-                                                className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500"
+                                                className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500 transition-colors"
                                                 disabled={commentLoading}
+                                                maxLength={500}
                                             />
                                             <button
                                                 type="submit"
@@ -597,7 +673,7 @@ const VideoPlayer = () => {
                                                     !newComment.trim() ||
                                                     commentLoading
                                                 }
-                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             >
                                                 {commentLoading
                                                     ? "Posting..."
@@ -610,7 +686,7 @@ const VideoPlayer = () => {
                                 <div className="mb-8 p-4 bg-gray-800 rounded-lg text-center">
                                     <button
                                         onClick={() => navigate("/auth")}
-                                        className="text-purple-400 hover:underline"
+                                        className="text-purple-400 hover:underline transition-colors"
                                     >
                                         Login
                                     </button>{" "}
@@ -625,7 +701,7 @@ const VideoPlayer = () => {
                                 </div>
                             ) : comments.length === 0 ? (
                                 <p className="text-gray-400 text-center py-8">
-                                    No comments yet
+                                    No comments yet. Be the first to comment!
                                 </p>
                             ) : (
                                 <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
@@ -642,8 +718,11 @@ const VideoPlayer = () => {
                                                     comment.owner?.avatar ||
                                                     "/default-avatar.png"
                                                 }
-                                                alt={comment.owner?.userName}
-                                                className="w-9 h-9 rounded-full flex-shrink-0"
+                                                alt={
+                                                    comment.owner?.userName ||
+                                                    "User"
+                                                }
+                                                className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                                             />
                                             <div className="flex-1 bg-gray-800 p-4 rounded-lg">
                                                 <div className="flex justify-between items-start mb-2">
@@ -651,7 +730,7 @@ const VideoPlayer = () => {
                                                         <p className="font-medium text-sm">
                                                             {comment.owner
                                                                 ?.userName ||
-                                                                "User"}
+                                                                "Anonymous User"}
                                                         </p>
                                                         <p className="text-xs text-gray-400">
                                                             <TimeAgo
@@ -667,9 +746,18 @@ const VideoPlayer = () => {
                                                                 comment._id
                                                             )
                                                         }
-                                                        className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm"
+                                                        disabled={
+                                                            commentLikeLoading[
+                                                                comment._id
+                                                            ]
+                                                        }
+                                                        className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm transition-colors disabled:opacity-50"
                                                     >
-                                                        {comment.isLiked ? (
+                                                        {commentLikeLoading[
+                                                            comment._id
+                                                        ] ? (
+                                                            <FaSpinner className="animate-spin" />
+                                                        ) : comment.isLiked ? (
                                                             <FaHeart className="text-red-500" />
                                                         ) : (
                                                             <FaRegHeart />
@@ -680,7 +768,7 @@ const VideoPlayer = () => {
                                                         </span>
                                                     </button>
                                                 </div>
-                                                <p className="text-gray-300 text-sm">
+                                                <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                                                     {comment.content}
                                                 </p>
                                             </div>
