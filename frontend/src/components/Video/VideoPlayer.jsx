@@ -367,23 +367,64 @@ const VideoPlayer = () => {
 
                     {/* Floating Controls */}
                     <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            onClick={handleWatchLater}
-                            disabled={watchLaterLoading}
-                            className={`p-3 rounded-full backdrop-blur-sm flex items-center gap-2 ${
-                                isInWatchLater(video._id)
-                                    ? "bg-yellow-400/90 text-gray-900"
-                                    : "bg-gray-900/50 text-yellow-400 hover:bg-yellow-500/20"
-                            }`}
-                        >
-                            {watchLaterLoading ? (
-                                <FaSpinner className="animate-spin" />
-                            ) : isInWatchLater(video._id) ? (
-                                <FaClock />
-                            ) : (
-                                <FaRegClock />
-                            )}
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="p-3 rounded-full backdrop-blur-sm bg-gray-900/50 text-gray-100 hover:bg-gray-800 transition-colors"
+                            >
+                                <FaEllipsisV />
+                            </button>
+
+                            <AnimatePresence>
+                                {isMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute right-0 top-14 bg-gray-800 rounded-lg shadow-xl py-2 w-48 z-50"
+                                    >
+                                        <button
+                                            onClick={handleWatchLater}
+                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                        >
+                                            {isInWatchLater(video._id) ? (
+                                                <FaClock className="text-yellow-400" />
+                                            ) : (
+                                                <FaRegClock className="text-yellow-400" />
+                                            )}
+                                            {isInWatchLater(video._id)
+                                                ? "Remove Watch Later"
+                                                : "Watch Later"}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowPlaylists(true);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                        >
+                                            <FaPlus className="text-purple-400" />
+                                            Add to Playlist
+                                        </button>
+                                        <a
+                                            href={video.videoFile?.url}
+                                            download
+                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                        >
+                                            <FaDownload className="text-blue-400" />
+                                            Download
+                                        </a>
+                                        <button
+                                            onClick={handleShare}
+                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                        >
+                                            <FaShare className="text-green-400" />
+                                            Share
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
 
@@ -444,6 +485,56 @@ const VideoPlayer = () => {
                                 </button>
                             </div>
                         </div>
+
+                        <AnimatePresence>
+                            {showPlaylists && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center"
+                                    onClick={() => setShowPlaylists(false)}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9 }}
+                                        animate={{ scale: 1 }}
+                                        className="bg-gray-800 rounded-xl p-6 w-full max-w-md"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold">
+                                                Add to Playlist
+                                            </h3>
+                                            <button
+                                                onClick={() =>
+                                                    setShowPlaylists(false)
+                                                }
+                                                className="p-2 hover:bg-gray-700 rounded-full text-xl"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            {playlists.map((playlist) => (
+                                                <button
+                                                    key={playlist._id}
+                                                    onClick={() =>
+                                                        handleAddToPlaylist(
+                                                            playlist._id
+                                                        )
+                                                    }
+                                                    className="w-full p-3 text-left hover:bg-gray-700 rounded-lg flex items-center gap-3 transition-colors"
+                                                >
+                                                    <span className="truncate text-purple-400">
+                                                        {playlist.name}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {video.description && (
                             <p className="text-gray-300 text-lg leading-relaxed">
