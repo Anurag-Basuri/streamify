@@ -1,28 +1,30 @@
 import { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import useAuth from "./useAuth";
 
 /**
  * Custom hook for managing playlists across the application
  * @param {string} initialPlaylistId - Optional playlist ID to load initially
+ * @param {Object} user - User object from auth context
  * @returns {Object} Playlist management methods and state
  */
-const usePlaylist = (initialPlaylistId = null) => {
-    const { user, isAuthenticated } = useAuth();
+const usePlaylist = (initialPlaylistId = null, user = null) => {
     const [playlists, setPlaylists] = useState([]);
-    const [currentPlaylist, setCurrentPlaylist] = useState(null);
+    const [playlist, setPlaylist] = useState(null); // Changed from currentPlaylist to match your components
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Helper function to get a valid token
-    const getAuthHeader = useCallback(() => {
+    // Check if user is authenticated
+    const isAuthenticated = Boolean(user);
+
+    // Helper function to get auth headers
+    const getAuthHeaders = useCallback(() => {
         const token = localStorage.getItem("accessToken");
         if (!token) return null;
         return { Authorization: `Bearer ${token}` };
     }, []);
 
-    // Fetch all user playlists
+    // Fetch all user playlists - matches your backend route
     const fetchUserPlaylists = useCallback(async () => {
         if (!isAuthenticated) {
             setPlaylists([]);
@@ -33,14 +35,17 @@ const usePlaylist = (initialPlaylistId = null) => {
             setLoading(true);
             setError(null);
 
-            const headers = getAuthHeader();
-            if (!headers) throw new Error("No authentication token available");
+            const headers = getAuthHeaders();
+            if (!headers) {
+                throw new Error("Authentication required");
+            }
 
-            const { data } = await axios.get("/api/v1/playlists/user", {
+            // Using your backend route: GET /api/v1/playlists/
+            const { data } = await axios.get("/api/v1/playlists/", {
                 headers,
             });
 
-            const fetchedPlaylists = data?.data || [];
+            const fetchedPlaylists = data?.data?.playlists || data?.data || [];
             setPlaylists(fetchedPlaylists);
             return fetchedPlaylists;
         } catch (err) {
@@ -48,17 +53,18 @@ const usePlaylist = (initialPlaylistId = null) => {
                 err.response?.data?.message || "Failed to fetch playlists";
             setError(errorMessage);
             console.error("Playlist fetch error:", err);
+            toast.error(errorMessage);
             return [];
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated, getAuthHeader]);
+    }, [isAuthenticated, getAuthHeaders]);
 
-    // Fetch a specific playlist by ID
+    // Fetch a specific playlist by ID - matches your backend route
     const fetchPlaylist = useCallback(
         async (playlistId = initialPlaylistId) => {
             if (!playlistId || !isAuthenticated) {
-                setCurrentPlaylist(null);
+                setPlaylist(null);
                 return null;
             }
 
@@ -66,10 +72,12 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
+                // Using your backend route: GET /api/v1/playlists/:playlistId
                 const { data } = await axios.get(
                     `/api/v1/playlists/${playlistId}`,
                     {
@@ -78,7 +86,7 @@ const usePlaylist = (initialPlaylistId = null) => {
                 );
 
                 const fetchedPlaylist = data?.data || null;
-                setCurrentPlaylist(fetchedPlaylist);
+                setPlaylist(fetchedPlaylist);
                 return fetchedPlaylist;
             } catch (err) {
                 const errorMessage =
@@ -90,12 +98,12 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [initialPlaylistId, isAuthenticated, getAuthHeader]
+        [initialPlaylistId, isAuthenticated, getAuthHeaders]
     );
 
-    // Create a new playlist
+    // Create a new playlist - matches your backend route
     const createPlaylist = useCallback(
-        async (playlistData) => {
+        async (playlistData, videoId = null) => {
             if (!isAuthenticated) {
                 toast.error("You must be logged in to create playlists");
                 return null;
@@ -105,23 +113,25 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
-                const { data } = await axios.post(
-                    "/api/v1/playlists",
-                    playlistData,
-                    {
-                        headers,
-                    }
-                );
+                // Using your backend route: POST /api/v1/playlists/create/:videoId?
+                const url = videoId
+                    ? `/api/v1/playlists/create/${videoId}`
+                    : "/api/v1/playlists/create";
+
+                const { data } = await axios.post(url, playlistData, {
+                    headers,
+                });
 
                 const newPlaylist = data?.data || null;
-
-                // Update playlists list
-                setPlaylists((prev) => [...prev, newPlaylist]);
-                toast.success("Playlist created successfully");
+                if (newPlaylist) {
+                    setPlaylists((prev) => [newPlaylist, ...prev]);
+                    toast.success("Playlist created successfully");
+                }
 
                 return newPlaylist;
             } catch (err) {
@@ -135,10 +145,10 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, getAuthHeader]
+        [isAuthenticated, getAuthHeaders]
     );
 
-    // Update a playlist
+    // Update a playlist - matches your backend route
     const updatePlaylist = useCallback(
         async (playlistId, updateData) => {
             if (!isAuthenticated || !playlistId) {
@@ -149,26 +159,26 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
-                const { data } = await axios.patch(
-                    `/api/v1/playlists/${playlistId}`,
+                // Using your backend route: PUT /api/v1/playlists/update/:playlistId
+                const { data } = await axios.put(
+                    `/api/v1/playlists/update/${playlistId}`,
                     updateData,
-                    {
-                        headers,
-                    }
+                    { headers }
                 );
 
                 const updatedPlaylist = data?.data || null;
 
-                // Update state if this is the current playlist
-                if (currentPlaylist && currentPlaylist._id === playlistId) {
-                    setCurrentPlaylist(updatedPlaylist);
+                // Update current playlist if it matches
+                if (playlist && playlist._id === playlistId) {
+                    setPlaylist(updatedPlaylist);
                 }
 
-                // Update playlists list
+                // Update playlists array
                 setPlaylists((prev) =>
                     prev.map((p) =>
                         p._id === playlistId ? updatedPlaylist : p
@@ -188,10 +198,10 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, currentPlaylist, getAuthHeader]
+        [isAuthenticated, playlist, getAuthHeaders]
     );
 
-    // Delete a playlist
+    // Delete a playlist - matches your backend route
     const deletePlaylist = useCallback(
         async (playlistId) => {
             if (!isAuthenticated || !playlistId) {
@@ -202,22 +212,24 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
-                await axios.delete(`/api/v1/playlists/${playlistId}`, {
+                // Using your backend route: DELETE /api/v1/playlists/delete/:playlistId
+                await axios.delete(`/api/v1/playlists/delete/${playlistId}`, {
                     headers,
                 });
 
-                // Update playlists list
+                // Update playlists array
                 setPlaylists((prev) =>
                     prev.filter((p) => p._id !== playlistId)
                 );
 
                 // Clear current playlist if it was deleted
-                if (currentPlaylist && currentPlaylist._id === playlistId) {
-                    setCurrentPlaylist(null);
+                if (playlist && playlist._id === playlistId) {
+                    setPlaylist(null);
                 }
 
                 toast.success("Playlist deleted successfully");
@@ -233,12 +245,12 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, currentPlaylist, getAuthHeader]
+        [isAuthenticated, playlist, getAuthHeaders]
     );
 
-    // Add video to playlist
-    const addVideoToPlaylist = useCallback(
-        async (playlistId, videoId) => {
+    // Add video to playlist - matches your backend route
+    const addVideo = useCallback(
+        async (videoId, playlistId = playlist?._id) => {
             if (!isAuthenticated || !playlistId || !videoId) {
                 return false;
             }
@@ -247,26 +259,26 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
+                // Using your backend route: POST /api/v1/playlists/:playlistId/videos/:videoId
                 const { data } = await axios.post(
                     `/api/v1/playlists/${playlistId}/videos/${videoId}`,
                     {},
-                    {
-                        headers,
-                    }
+                    { headers }
                 );
 
                 const updatedPlaylist = data?.data || null;
 
-                // Update state if this is the current playlist
-                if (currentPlaylist && currentPlaylist._id === playlistId) {
-                    setCurrentPlaylist(updatedPlaylist);
+                // Update current playlist if it matches
+                if (playlist && playlist._id === playlistId) {
+                    setPlaylist(updatedPlaylist);
                 }
 
-                // Update playlists list
+                // Update playlists array
                 setPlaylists((prev) =>
                     prev.map((p) =>
                         p._id === playlistId ? updatedPlaylist : p
@@ -287,12 +299,12 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, currentPlaylist, getAuthHeader]
+        [isAuthenticated, playlist, getAuthHeaders]
     );
 
-    // Remove video from playlist
-    const removeVideoFromPlaylist = useCallback(
-        async (playlistId, videoId) => {
+    // Remove video from playlist - matches your backend route
+    const removeVideo = useCallback(
+        async (videoId, playlistId = playlist?._id) => {
             if (!isAuthenticated || !playlistId || !videoId) {
                 return false;
             }
@@ -301,25 +313,25 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(true);
                 setError(null);
 
-                const headers = getAuthHeader();
-                if (!headers)
-                    throw new Error("No authentication token available");
+                const headers = getAuthHeaders();
+                if (!headers) {
+                    throw new Error("Authentication required");
+                }
 
+                // Using your backend route: DELETE /api/v1/playlists/remove/:playlistId/videos/:videoId
                 const { data } = await axios.delete(
-                    `/api/v1/playlists/${playlistId}/videos/${videoId}`,
-                    {
-                        headers,
-                    }
+                    `/api/v1/playlists/remove/${playlistId}/videos/${videoId}`,
+                    { headers }
                 );
 
                 const updatedPlaylist = data?.data || null;
 
-                // Update state if this is the current playlist
-                if (currentPlaylist && currentPlaylist._id === playlistId) {
-                    setCurrentPlaylist(updatedPlaylist);
+                // Update current playlist if it matches
+                if (playlist && playlist._id === playlistId) {
+                    setPlaylist(updatedPlaylist);
                 }
 
-                // Update playlists list
+                // Update playlists array
                 setPlaylists((prev) =>
                     prev.map((p) =>
                         p._id === playlistId ? updatedPlaylist : p
@@ -340,66 +352,66 @@ const usePlaylist = (initialPlaylistId = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, currentPlaylist, getAuthHeader]
+        [isAuthenticated, playlist, getAuthHeaders]
     );
 
     // Check if a video is in a playlist
     const isVideoInPlaylist = useCallback(
-        (playlistId, videoId) => {
+        (videoId, playlistId = playlist?._id) => {
             if (!playlistId || !videoId) return false;
 
-            // Check in current playlist first for efficiency
-            if (currentPlaylist && currentPlaylist._id === playlistId) {
-                return currentPlaylist.videos.some(
-                    (video) => video._id === videoId
-                );
+            // Check in current playlist first
+            if (playlist && playlist._id === playlistId) {
+                return playlist.videos?.some((video) => {
+                    // Handle both populated and non-populated video objects
+                    const id = typeof video === "string" ? video : video._id;
+                    return id === videoId;
+                });
             }
 
-            // Otherwise check in playlists array
-            const playlist = playlists.find((p) => p._id === playlistId);
-            if (!playlist) return false;
+            // Check in playlists array
+            const targetPlaylist = playlists.find((p) => p._id === playlistId);
+            if (!targetPlaylist) return false;
 
-            return playlist.videos.some((video) => video._id === videoId);
+            return targetPlaylist.videos?.some((video) => {
+                const id = typeof video === "string" ? video : video._id;
+                return id === videoId;
+            });
         },
-        [currentPlaylist, playlists]
+        [playlist, playlists]
     );
 
     // Load initial playlist if ID was provided
     useEffect(() => {
-        if (initialPlaylistId) {
+        if (initialPlaylistId && isAuthenticated) {
             fetchPlaylist(initialPlaylistId);
         }
-    }, [initialPlaylistId, fetchPlaylist]);
-
-    // Load user playlists when auth state changes
-    useEffect(() => {
-        if (isAuthenticated) {
-            fetchUserPlaylists();
-        } else {
-            setPlaylists([]);
-            setCurrentPlaylist(null);
-        }
-    }, [isAuthenticated, fetchUserPlaylists]);
+    }, [initialPlaylistId, isAuthenticated, fetchPlaylist]);
 
     return {
-        // State
+        // State - using names that match your existing components
         playlists,
-        currentPlaylist,
+        playlist, // Main playlist object
         loading,
         error,
 
-        // Methods
+        // Methods - using names that match your existing components
         fetchUserPlaylists,
         fetchPlaylist,
         createPlaylist,
         updatePlaylist,
         deletePlaylist,
-        addVideoToPlaylist,
-        removeVideoFromPlaylist,
+        addVideo, // Simplified name used in PlaylistDetail
+        removeVideo, // Simplified name used in PlaylistDetail
         isVideoInPlaylist,
 
-        // Setters
-        setCurrentPlaylist,
+        // Additional methods for flexibility
+        addVideoToPlaylist: addVideo, // Alias for consistency
+        removeVideoFromPlaylist: removeVideo, // Alias for consistency
+
+        // Setters for manual state management if needed
+        setPlaylist,
+        setPlaylists,
     };
 };
 
