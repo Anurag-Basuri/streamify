@@ -1,19 +1,22 @@
+// like.model.js
 import mongoose from "mongoose";
 
 const likeSchema = new mongoose.Schema(
     {
-        owner: {
+        likedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
-        tweet: {
+        likedEntity: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Tweet",
+            refPath: "entityType",
+            required: true,
         },
-        video: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Video",
+        entityType: {
+            type: String,
+            required: true,
+            enum: ["Video", "Tweet", "Comment"],
         },
     },
     { timestamps: true }
