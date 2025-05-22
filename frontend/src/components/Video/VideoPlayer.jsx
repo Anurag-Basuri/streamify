@@ -24,7 +24,7 @@ const VideoPlayer = () => {
     const navigate = useNavigate();
     const { isAuthenticated, user, authLoading } = useAuth();
     const playerRef = useRef(null);
-    
+
     // State management
     const [isLiking, setIsLiking] = useState(false);
     const [likeState, setLikeState] = useState({
@@ -147,7 +147,8 @@ const VideoPlayer = () => {
         try {
             setIsLiking(true);
             const { data } = await axios.post(
-                `/api/v1/likes/toggle/video/${video._id}`,
+                // Correct endpoint to match backend route
+                `/api/v1/likes/video/${video._id}`,
                 {},
                 {
                     headers: {
@@ -158,16 +159,13 @@ const VideoPlayer = () => {
                 }
             );
 
-            // Update like state directly from response
-            if (data && data.data) {
-                setLikeState({
-                    isLiked: data.data.state === 1,
-                    likesCount: data.data.likes || 0,
-                });
-            }
+            // Update state from response
+            setLikeState({
+                isLiked: data.data.state === 1,
+                likesCount: data.data.likes,
+            });
         } catch (err) {
             toast.error(err.response?.data?.message || "Like action failed");
-            console.error("Like error:", err);
         } finally {
             setIsLiking(false);
         }
@@ -251,7 +249,7 @@ const VideoPlayer = () => {
             } else {
                 await addToWatchLater(video._id);
             }
-        } catch (err) {
+        } catch {
             toast.error("Watch later update failed");
         }
     };
@@ -260,22 +258,24 @@ const VideoPlayer = () => {
     if (authLoading || videoLoading) return <Spinner />;
 
     // Error states
-    if (videoError) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-            <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                <p className="text-red-500 text-2xl mb-4">Error</p>
-                <p className="text-gray-300">{videoError}</p>
+    if (videoError)
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+                    <p className="text-red-500 text-2xl mb-4">Error</p>
+                    <p className="text-gray-300">{videoError}</p>
+                </div>
             </div>
-        </div>
-    );
+        );
 
-    if (!video) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-            <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                <p className="text-gray-400 text-2xl">Video not found</p>
+    if (!video)
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+                    <p className="text-gray-400 text-2xl">Video not found</p>
+                </div>
             </div>
-        </div>
-    );
+        );
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100">
