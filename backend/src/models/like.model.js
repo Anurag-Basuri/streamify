@@ -1,4 +1,3 @@
-// like.model.js
 import mongoose from "mongoose";
 
 const likeSchema = new mongoose.Schema(
@@ -20,6 +19,12 @@ const likeSchema = new mongoose.Schema(
         },
     },
     { timestamps: true }
+);
+
+// Create compound index to prevent duplicate likes
+likeSchema.index(
+    { likedBy: 1, likedEntity: 1, entityType: 1 },
+    { unique: true }
 );
 
 export const Like = mongoose.model("Like", likeSchema);
