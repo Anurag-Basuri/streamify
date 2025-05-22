@@ -473,13 +473,13 @@ const VideoPlayer = () => {
                                 >
                                     {isLiking ? (
                                         <FaSpinner className="animate-spin" />
-                                    ) : video.isLiked ? (
+                                    ) : likeState.isLiked ? (
                                         <FaHeart className="text-red-500" />
                                     ) : (
-                                        <FaRegHeart />
+                                        <FaRegHeart className="text-gray-100" />
                                     )}
                                     <span className="font-medium">
-                                        {video.likesCount?.toLocaleString() ||
+                                        {likeState.likesCount?.toLocaleString() ||
                                             0}
                                     </span>
                                 </button>
