@@ -6,9 +6,13 @@ import pkg from "jsonwebtoken";
 const { verify } = pkg;
 
 const verifyAccessToken = asynchandler(async (req, res, next) => {
+    // Get token from cookies or Authorization header
+    const authHeader = req.header("Authorization");
     const token =
         req.cookies?.accessToken ||
-        req.header("Authorization")?.replace("Bearer ", "");
+        (authHeader && authHeader.startsWith("Bearer ")
+            ? authHeader.substring(7)
+            : null);
 
     if (!token) {
         req.user = null; // Mark user as unauthenticated but allow the request to proceed
