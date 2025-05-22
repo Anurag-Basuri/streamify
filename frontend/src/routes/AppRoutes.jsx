@@ -14,7 +14,7 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import VideoPlayer from "../components/Video/VideoPlayer.jsx";
 import { Navigate } from "react-router-dom";
 import EditVodeo from "../pages/Account/EditVideos.jsx";
-import PlaylistDetail from "../components/PlaylistDetail.jsx";
+import PlaylistDetail from "../components/Playlist/PlaylistDetail.jsx";
 
 const AppRoutes = () => {
     return (

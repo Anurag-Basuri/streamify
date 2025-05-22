@@ -14,9 +14,9 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import debounce from "lodash.debounce";
-import useAuth from "../hooks/useAuth";
-import useTheme from "../hooks/useTheme";
-import usePlaylist from "../hooks/usePlaylist";
+import useAuth from "../../hooks/useAuth";
+import useTheme from "../../hooks/useTheme";
+import usePlaylist from "../../hooks/usePlaylist";
 
 const PlaylistDetail = () => {
     const { playlistID } = useParams();
