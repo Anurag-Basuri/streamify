@@ -240,7 +240,7 @@ const VideoPlayer = () => {
         }
     };
 
-    // Playlist handler
+    // Share handler
     const handleShare = useCallback(() => {
         const url = window.location.href;
         if (navigator.share) {
