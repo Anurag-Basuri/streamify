@@ -19,15 +19,14 @@ import { FiChevronRight } from "react-icons/fi";
 import PropTypes from "prop-types";
 
 const Playlist = () => {
-    const [playlists, setPlaylists] = useState([]);
     const [selectedPlaylist, setSelectedPlaylist] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [formData, setFormData] = useState({ name: "", description: "" });
-    const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const navigate = useNavigate();
+    const { playlists, loading, createPlaylist, updatePlaylist, deletePlaylist } = usePlaylist();
 
     // Fetch playlists with error handling
     useEffect(() => {
