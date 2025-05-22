@@ -1,4 +1,3 @@
-// like.controller.js
 import mongoose from "mongoose";
 import { Like } from "../models/like.model.js";
 import { Video } from "../models/video.model.js";
