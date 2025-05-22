@@ -108,7 +108,7 @@ const VideoPlayer = () => {
     const fetchPlaylists = useCallback(async () => {
         if (!isAuthenticated) return;
         try {
-            const { data } = await axios.get("/api/v1/playlists/user", {
+            const { data } = await axios.get("/api/v1/playlists/", {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem(
                         "accessToken"
