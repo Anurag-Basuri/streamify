@@ -100,6 +100,24 @@ const VideoPlayer = () => {
         }
     }, [videoID, isAuthenticated]);
 
+    // fetch playlists
+    const fetchPlaylists = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const { data } = await axios.get("/api/v1/playlists/user", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
+                },
+            });
+            setPlaylists(data.data.playlists);
+        } catch (err) {
+            toast.error("Failed to fetch playlists");
+            console.error(err);
+        }
+    }, [isAuthenticated]);
+
     // Initial data load
     useEffect(() => {
         if (!videoID) return;
@@ -258,23 +276,6 @@ const VideoPlayer = () => {
         }
         setIsMenuOpen(false);
     }, [video]);
-
-    // fetch playlists
-    const fetchPlaylists = useCallback(async () => {
-        if (!isAuthenticated) return;
-        try {
-            const { data } = await axios.get("/api/v1/playlists/user", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
-            setPlaylists(data.data.playlists);
-        } catch (err) {
-            toast.error("Failed to fetch playlists");
-        }
-    }, [isAuthenticated]);
 
     // Playlist handler
     const handleAddToPlaylist = async (playlistId) => {
