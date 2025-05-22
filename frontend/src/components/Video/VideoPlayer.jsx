@@ -213,11 +213,12 @@ const VideoPlayer = () => {
             return toast.info("Login to like comments");
         }
 
+        if (commentLikeLoading) return;
+
         try {
             setCommentLikeLoading(true);
-            const { data } = await axios.post(
-                // New endpoint for comment likes
-                `/api/v1/likes/comment/${commentId}`,
+            await axios.post(
+                `/api/v1/likes/toggle/comment/${commentId}`,
                 {},
                 {
                     headers: {
@@ -227,25 +228,14 @@ const VideoPlayer = () => {
                     },
                 }
             );
-
-            // Update local state
-            setComments((prev) =>
-                prev.map((comment) =>
-                    comment._id === commentId
-                        ? {
-                              ...comment,
-                              isLiked: data.data.state === 1,
-                              likesCount: data.data.likes,
-                          }
-                        : comment
-                )
-            );
+            await fetchComments();
         } catch (err) {
             toast.error(err.response?.data?.message || "Comment like failed");
         } finally {
             setCommentLikeLoading(false);
         }
     };
+
 
     // Watch later handler
     const handleWatchLater = async () => {
