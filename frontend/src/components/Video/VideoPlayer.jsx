@@ -109,13 +109,14 @@ const VideoPlayer = () => {
             try {
                 await fetchVideo();
                 await fetchComments();
+                if (isAuthenticated) fetchPlaylists();
             } catch (err) {
                 console.error("Initial load error:", err);
             }
         };
 
         loadData();
-    }, [videoID, fetchVideo, fetchComments]);
+    }, [videoID, fetchVideo, fetchComments, isAuthenticated, fetchPlaylists]);
 
     // Watch later sync
     useEffect(() => {
@@ -166,12 +167,11 @@ const VideoPlayer = () => {
                 }
             );
 
-            // Update like state directly from response
-            if (data && data.data) {
-                setLikeState({
+            if (data?.data) {
+                setLikeState((prev) => ({
                     isLiked: data.data.state === 1,
-                    likesCount: data.data.likes || 0,
-                });
+                    likesCount: data.data.likes || prev.likesCount,
+                }));
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Like action failed");
