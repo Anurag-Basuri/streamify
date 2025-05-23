@@ -20,7 +20,7 @@ router.use(verifyAccessToken);
 router.post("/create/:videoId?", createPlaylist);
 
 // Get all playlists for the authenticated user
-router.get("/", getUserPlaylists);
+router.get("/:userID", getUserPlaylists);
 
 // Get a playlist by its ID
 router.get("/:playlistId", getPlaylistById);
