@@ -6,8 +6,6 @@ import { Tweet } from "../models/tweet.model.js";
 
 const createTweet = asynchandler(async (req, res) => {
     const { content } = req.body;
-    console.log("Content:", content);
-    console.log(req.user);
     
 
     if (!content || content.trim().length < 1) {
