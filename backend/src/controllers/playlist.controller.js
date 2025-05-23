@@ -15,7 +15,6 @@ const createPlaylist = asynchandler(async (req, res) => {
     }
 
     if (videoId) {
-        console.log(videoId);
         if (!mongoose.isValidObjectId(videoId)) {
             throw new APIerror(400, "Invalid video ID");
         }
@@ -40,7 +39,6 @@ const createPlaylist = asynchandler(async (req, res) => {
 
 // Get all playlists for the authenticated user
 const getUserPlaylists = asynchandler(async (req, res) => {
-    console.log(req.user._id);
     const playlists = await Playlist.find({ owner: req.user._id }).sort({
         createdAt: -1,
     });
@@ -59,7 +57,6 @@ const getUserPlaylists = asynchandler(async (req, res) => {
 // Get a playlist by ID
 const getPlaylistById = asynchandler(async (req, res) => {
     const { playlistId } = req.params;
-    console.log(playlistId);
 
     if (!mongoose.isValidObjectId(playlistId)) {
         throw new APIerror(400, "Invalid playlist ID");
