@@ -145,7 +145,8 @@ const Playlist = () => {
             e.target.onerror = null;
         };
 
-        const validVideos = videos.filter((v) => v?._id);
+        // Only use videos that are valid objects with an _id
+        const validVideos = (videos || []).filter((v) => v && v._id);
         const videoCount = validVideos.length;
 
         return (
