@@ -40,8 +40,6 @@ const Playlist = () => {
         clearError,
     } = usePlaylist();
 
-    
-
     // Fetch playlists on component mount
     useEffect(() => {
         fetchUserPlaylists();

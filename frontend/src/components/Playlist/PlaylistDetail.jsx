@@ -19,7 +19,8 @@ import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 import usePlaylist from "../../hooks/usePlaylist";
 
-const PlaylistDetail = () => {
+const
+    PlaylistDetail = () => {
     const { playlistID } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
