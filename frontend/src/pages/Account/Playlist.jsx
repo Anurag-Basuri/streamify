@@ -121,8 +121,12 @@ const Playlist = () => {
     const calculateTotalDuration = (videos) => {
         if (!videos?.length) return "0 min";
 
+        // Filter out null/undefined videos and those without duration
         const totalSeconds = videos.reduce((acc, video) => {
-            return acc + (video.duration || 0);
+            if (video && typeof video.duration === "number") {
+                return acc + video.duration;
+            }
+            return acc;
         }, 0);
 
         const hours = Math.floor(totalSeconds / 3600);
