@@ -289,7 +289,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                     description: updateData.description?.trim(),
                 };
 
-                const { data } = await axios.put(
+                await axios.put(
                     `/api/v1/playlists/update/${playlistId}`,
                     cleanData,
                     { headers }
