@@ -112,6 +112,8 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
 
     // Fetch all user playlists with comprehensive error handling
     const fetchUserPlaylists = useCallback(async () => {
+        console.log("Fetching user playlists...");
+        console.log("Is user authenticated?", isAuthenticated);
         if (!isAuthenticated) {
             setPlaylists([]);
             clearError();

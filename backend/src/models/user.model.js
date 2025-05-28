@@ -53,12 +53,6 @@ const userSchema = new Schema(
         coverImagePublicId: {
             type: String, // Cloudinary public ID for cover image
         },
-        watchHistory: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: "Video",
-            },
-        ],
         password: {
             type: String,
             required: true,

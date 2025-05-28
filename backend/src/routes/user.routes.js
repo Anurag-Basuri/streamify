@@ -12,7 +12,6 @@ import {
     get_current_user,
     update_account_details,
     get_user_profile,
-    get_watch_history,
 } from "../controllers/user.controller.js";
 import { verifyAccessToken } from "../middlewares/auth.middleware.js";
 import {
@@ -119,6 +118,5 @@ router.patch(
 
 router.get("/current-user", verifyAccessToken, get_current_user);
 router.get("/c/:username", verifyAccessToken, get_user_profile);
-router.get("/history", verifyAccessToken, get_watch_history);
 
 export default router;
