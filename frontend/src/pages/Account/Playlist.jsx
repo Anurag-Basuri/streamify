@@ -43,7 +43,7 @@ const Playlist = () => {
         deletePlaylist,
         fetchUserPlaylists,
         clearError,
-    } = usePlaylist(user);
+    } = usePlaylist(null, user);
 
     // Fetch playlists on component mount
     useEffect(() => {
