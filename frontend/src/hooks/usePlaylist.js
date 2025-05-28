@@ -181,6 +181,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             getAuthHeaders,
             handleError,
             clearError,
+            playlists,
         ]
     );
 
@@ -310,6 +311,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
         [
             isAuthenticated,
             playlist,
+            playlists,
             getAuthHeaders,
             handleError,
             clearError,
