@@ -124,7 +124,6 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             clearError();
 
             const headers = getAuthHeaders();
-            console.log(await axios.get("/api/v1/playlists/", { headers }));
             const { data } = await axios.get("/api/v1/playlists/", { headers });
 
             const fetchedPlaylists = data?.data?.playlists || data?.data || [];
