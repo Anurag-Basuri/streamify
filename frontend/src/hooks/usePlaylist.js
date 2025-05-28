@@ -112,23 +112,19 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
 
     // Fetch all user playlists with comprehensive error handling
     const fetchUserPlaylists = useCallback(async () => {
-        console.log("Fetching user playlists...");
         if (!isAuthenticated) {
             setPlaylists([]);
             clearError();
             return [];
         }
-
         try {
             setLoading(true);
             clearError();
-
             const headers = getAuthHeaders();
             const { data } = await axios.get("/api/v1/playlists/", { headers });
-
-            const fetchedPlaylists = data?.data?.playlists || data?.data || [];
-            setPlaylists(fetchedPlaylists);
-            return fetchedPlaylists;
+            // Always expect an array
+            setPlaylists(Array.isArray(data.data) ? data.data : []);
+            return Array.isArray(data.data) ? data.data : [];
         } catch (err) {
             handleError(err, "fetch playlists");
             setPlaylists([]);
@@ -217,27 +213,18 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             try {
                 setLoading(true);
                 clearError();
-
                 const headers = getAuthHeaders();
                 const url = videoId
                     ? `/api/v1/playlists/create/${videoId}`
                     : "/api/v1/playlists/create";
-
-                // Clean the data
                 const cleanData = {
                     name: playlistData.name.trim(),
                     description: playlistData.description?.trim() || "",
                 };
-
                 const { data } = await axios.post(url, cleanData, { headers });
-
-                const newPlaylist = data?.data || null;
-                if (newPlaylist) {
-                    setPlaylists((prev) => [newPlaylist, ...prev]);
-                    toast.success("Playlist created successfully");
-                }
-
-                return newPlaylist;
+                await fetchUserPlaylists(); // <--- refetch after create
+                toast.success("Playlist created successfully");
+                return data?.data || null;
             } catch (err) {
                 handleError(err, "create playlist");
                 return null;
@@ -245,7 +232,13 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, getAuthHeaders, handleError, clearError]
+        [
+            isAuthenticated,
+            getAuthHeaders,
+            handleError,
+            clearError,
+            fetchUserPlaylists,
+        ]
     );
 
     // Update a playlist with optimistic updates and rollback
@@ -301,20 +294,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                     cleanData,
                     { headers }
                 );
-
-                const updatedPlaylist = data?.data || null;
-
-                // Update with server response
-                if (playlist && playlist._id === playlistId) {
-                    setPlaylist(updatedPlaylist);
-                }
-
-                setPlaylists((prev) =>
-                    prev.map((p) =>
-                        p._id === playlistId ? updatedPlaylist : p
-                    )
-                );
-
+                await fetchUserPlaylists(); // <--- refetch after update
                 toast.success("Playlist updated successfully");
                 return true;
             } catch (err) {
@@ -333,6 +313,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             getAuthHeaders,
             handleError,
             clearError,
+            fetchUserPlaylists,
         ]
     );
 
@@ -353,17 +334,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                 await axios.delete(`/api/v1/playlists/delete/${playlistId}`, {
                     headers,
                 });
-
-                // Update state
-                setPlaylists((prev) =>
-                    prev.filter((p) => p._id !== playlistId)
-                );
-
-                // Clear current playlist if it was deleted
-                if (playlist && playlist._id === playlistId) {
-                    setPlaylist(null);
-                }
-
+                await fetchUserPlaylists(); // <--- refetch after delete
                 toast.success("Playlist deleted successfully");
                 return true;
             } catch (err) {
@@ -373,7 +344,13 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                 setLoading(false);
             }
         },
-        [isAuthenticated, playlist, getAuthHeaders, handleError, clearError]
+        [
+            isAuthenticated,
+            getAuthHeaders,
+            handleError,
+            clearError,
+            fetchUserPlaylists,
+        ]
     );
 
     // Add video to playlist with duplicate checking
