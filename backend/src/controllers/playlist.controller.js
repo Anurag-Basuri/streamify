@@ -40,6 +40,7 @@ const createPlaylist = asynchandler(async (req, res) => {
 // Get all playlists for the authenticated user
 const getUserPlaylists = asynchandler(async (req, res) => {
     const { userID } = req.params;
+    console.log(req.user)
     const playlists = await Playlist.find({ owner: userID }).sort({
         createdAt: -1,
     });

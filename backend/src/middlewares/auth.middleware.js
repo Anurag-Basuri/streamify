@@ -13,7 +13,7 @@ const verifyAccessToken = asynchandler(async (req, res, next) => {
         (authHeader && authHeader.startsWith("Bearer ")
             ? authHeader.substring(7)
             : null);
-
+    
     if (!token) {
         req.user = null; // Mark user as unauthenticated but allow the request to proceed
         return next();
