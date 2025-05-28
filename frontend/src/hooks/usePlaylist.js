@@ -14,10 +14,8 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    console.log("user: ", user)
     // Check if user is authenticated
     const isAuthenticated = Boolean(user);
-    console.log("Is user authenticated?", isAuthenticated);
 
     // Helper function to get auth headers with validation
     const getAuthHeaders = useCallback(() => {
@@ -115,7 +113,6 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
     // Fetch all user playlists with comprehensive error handling
     const fetchUserPlaylists = useCallback(async () => {
         console.log("Fetching user playlists...");
-        console.log("Is user authenticated?", isAuthenticated);
         if (!isAuthenticated) {
             setPlaylists([]);
             clearError();
@@ -127,9 +124,8 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             clearError();
 
             const headers = getAuthHeaders();
-            console.log("Fetching user playlists with headers:", headers);
+            console.log(await axios.get("/api/v1/playlists/", { headers }));
             const { data } = await axios.get("/api/v1/playlists/", { headers });
-            console.log("Fetched user playlists:", data.data.playlists);
 
             const fetchedPlaylists = data?.data?.playlists || data?.data || [];
             setPlaylists(fetchedPlaylists);
