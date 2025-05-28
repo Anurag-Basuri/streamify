@@ -20,6 +20,7 @@ import {
 import { FiChevronRight, FiCalendar } from "react-icons/fi";
 import PropTypes from "prop-types";
 import usePlaylist from "../../hooks/usePlaylist";
+import useAuth from "../../hooks/useAuth";
 
 const Playlist = () => {
     const [selectedPlaylist, setSelectedPlaylist] = useState(null);
@@ -28,6 +29,9 @@ const Playlist = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [formData, setFormData] = useState({ name: "", description: "" });
     const navigate = useNavigate();
+    
+    // Use the custom hook to get user authentication context
+    const { user } = useAuth();
 
     // Use the custom hook with proper auth context (you may need to adjust this)
     const {
@@ -39,7 +43,7 @@ const Playlist = () => {
         deletePlaylist,
         fetchUserPlaylists,
         clearError,
-    } = usePlaylist();
+    } = usePlaylist(user);
 
     // Fetch playlists on component mount
     useEffect(() => {

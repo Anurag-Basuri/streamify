@@ -16,6 +16,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
 
     // Check if user is authenticated
     const isAuthenticated = Boolean(user);
+    
 
     // Helper function to get auth headers with validation
     const getAuthHeaders = useCallback(() => {
