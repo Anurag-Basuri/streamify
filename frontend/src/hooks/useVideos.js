@@ -34,8 +34,6 @@ const useVideos = (isAuthenticated, user) => {
                     signal: controller.current.signal,
                 });
 
-                console.log("Fetched videos:", data);
-
                 const formattedVideos = data.data.videos.map((video) => ({
                     ...video,
                     isLiked: isAuthenticated
