@@ -416,7 +416,7 @@ const Playlist = () => {
 
             try {
                 if (isEdit) {
-                    await handleUpdatePlaylist(localFormData); // <-- pass localFormData
+                    await handleUpdatePlaylist(localFormData);
                 } else {
                     await handleCreatePlaylist(localFormData);
                 }
@@ -478,7 +478,7 @@ const Playlist = () => {
                             {localFormData.description.length}/500 characters
                         </div>
                     </div>
-
+                    <hr className="border-gray-700 my-2" />
                     <div className="flex gap-3 justify-end pt-2">
                         <button
                             type="button"
@@ -496,7 +496,13 @@ const Playlist = () => {
                             type="submit"
                             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 disabled:opacity-50"
                             disabled={
-                                isSubmitting || !localFormData.name.trim()
+                                isSubmitting ||
+                                !localFormData.name.trim() ||
+                                (isEdit &&
+                                    localFormData.name.trim() ===
+                                        (selectedPlaylist?.name || "") &&
+                                    localFormData.description.trim() ===
+                                        (selectedPlaylist?.description || ""))
                             }
                         >
                             {isSubmitting ? (
