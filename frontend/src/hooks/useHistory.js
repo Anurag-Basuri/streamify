@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { isToday, isYesterday, subDays, format } from 'date-fns';
 
 const useHistory = (user) => {
@@ -8,7 +8,8 @@ const useHistory = (user) => {
     const [removingId, setRemovingId] = useState(null);
     const [showClearModal, setShowClearModal] = useState(false);
 
-    const fetchHistory = async () => {
+    // Fetch user's watch history
+    const fetchHistory = useCallback(async () => {
         try {
             const response = await fetch("/api/v1/history", {
                 headers: {
@@ -23,8 +24,9 @@ const useHistory = (user) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
+    // Remove a video from history
     const removeFromHistory = async (videoId) => {
         try {
             const response = await fetch(`/api/v1/history/${videoId}`, {
@@ -42,6 +44,7 @@ const useHistory = (user) => {
         }
     };
 
+    // Clear entire watch history
     const clearHistory = async () => {
         try {
             const response = await fetch("/api/v1/history/clear", {
@@ -59,6 +62,7 @@ const useHistory = (user) => {
         }
     };
 
+    // Group history by date
     const groupHistoryByDate = () => {
         return history.reduce((acc, item) => {
             const date = new Date(item.watchedAt);
@@ -82,7 +86,7 @@ const useHistory = (user) => {
 
     useEffect(() => {
         if (user) fetchHistory();
-    }, [user]);
+    }, [user, fetchHistory]);
 
     return {
         history,
