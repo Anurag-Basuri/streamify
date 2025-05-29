@@ -137,7 +137,7 @@ const Playlist = () => {
         return `${minutes}m`;
     };
 
-    // Enhanced Thumbnail Grid with better animations and states
+    // Thumbnail Grid
     const ThumbnailGrid = ({ videos = [] }) => {
         const handleImageError = (e) => {
             e.target.src = "/fallback-thumbnail.jpg";
@@ -228,7 +228,7 @@ const Playlist = () => {
         ),
     };
 
-    // Enhanced Playlist Card with better animations and information
+    // Playlist Card
     const PlaylistCard = ({ playlist }) => {
         if (!playlist) return null;
 
@@ -365,7 +365,7 @@ const Playlist = () => {
         }).isRequired,
     };
 
-    // Enhanced Modal Component
+    // Modal Component
     const Modal = ({ title, children, onClose }) => (
         <motion.div
             initial={{ opacity: 0 }}
@@ -400,7 +400,7 @@ const Playlist = () => {
         onClose: PropTypes.func.isRequired,
     };
 
-    // Enhanced Form Components
+    // Form Components
     const PlaylistForm = ({ isEdit = false }) => {
         const [localFormData, setLocalFormData] = useState(formData);
         const [isSubmitting, setIsSubmitting] = useState(false);
@@ -527,7 +527,7 @@ const Playlist = () => {
         isEdit: PropTypes.bool,
     };
 
-    // Enhanced Delete Modal
+    // Delete Modal
     const DeleteModal = () => {
         const [isDeleting, setIsDeleting] = useState(false);
 
