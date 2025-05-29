@@ -84,11 +84,10 @@ const Playlist = () => {
     };
 
     // Update Playlist Handler
-    const handleUpdatePlaylist = async (e) => {
-        e.preventDefault();
+    const handleUpdatePlaylist = async (updatedData) => {
         if (!selectedPlaylist) return;
 
-        const success = await updatePlaylist(selectedPlaylist._id, formData);
+        const success = await updatePlaylist(selectedPlaylist._id, updatedData);
         if (success) {
             setShowEditModal(false);
             setSelectedPlaylist(null);
