@@ -56,15 +56,17 @@ const History = () => {
                         >
                             <GroupHeader title={group} />
                             <div className="grid gap-4">
-                                {items.map((item) => (
-                                    <HistoryItem
-                                        key={item.video._id}
-                                        item={item}
-                                        onRemove={setRemovingId}
-                                        formatDuration={formatDuration}
-                                        formatTime={formatTime}
-                                    />
-                                ))}
+                                {items.map((item) =>
+                                    item.video ? (
+                                        <HistoryItem
+                                            key={item.video._id}
+                                            item={item}
+                                            onRemove={setRemovingId}
+                                            formatDuration={formatDuration}
+                                            formatTime={formatTime}
+                                        />
+                                    ) : null
+                                )}
                             </div>
                         </motion.div>
                     ))}

@@ -26,6 +26,23 @@ const useHistory = (user) => {
         }
     }, [user]);
 
+    // Add a video to history
+    const addToHistory = async (videoId) => {
+        try {
+            const response = await fetch(`/api/v1/history/add/${videoId}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Failed to add to history");
+            setHistory((prev) => [data.data, ...prev]);
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     // Remove a video from history
     const removeFromHistory = async (videoId) => {
         try {
