@@ -416,9 +416,9 @@ const Playlist = () => {
 
             try {
                 if (isEdit) {
-                    await handleUpdatePlaylist(e);
+                    await handleUpdatePlaylist(localFormData); // <-- pass localFormData
                 } else {
-                    await handleCreatePlaylist(e);
+                    await handleCreatePlaylist(localFormData);
                 }
             } finally {
                 setIsSubmitting(false);
