@@ -175,6 +175,7 @@ const deletePlaylist = asynchandler(async (req, res) => {
 const updatePlaylist = asynchandler(async (req, res) => {
     const { playlistId } = req.params;
     const { name, description } = req.body;
+    console.log(req.body);
 
     if (!mongoose.isValidObjectId(playlistId)) {
         throw new APIerror(400, "Invalid playlist ID");

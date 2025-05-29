@@ -181,7 +181,6 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
             getAuthHeaders,
             handleError,
             clearError,
-            playlists,
         ]
     );
 
