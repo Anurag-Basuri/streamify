@@ -28,7 +28,7 @@ const History = () => {
 
     if (loading) return <LoadingState />;
     if (error) return <ErrorState error={error} />;
-    if (history.length === 0) return <EmptyState />;
+    if (!Array.isArray(history) || history.length === 0) return <EmptyState />;
 
     const groupedHistory = groupHistoryByDate(history);
 
