@@ -19,7 +19,7 @@ const useHistory = (user) => {
         try {
             const response = await fetch("/api/v1/history", {
                 headers: {
-                    Authorization: `Bearer ${user.token}`,
+                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
                 },
             });
             const data = await response.json();
