@@ -39,13 +39,13 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
         { to: "/history", icon: History, label: "History" },
         { to: "/playlist", icon: ListVideo, label: "Playlists" },
         { to: "/watchlater", icon: Clock, label: "Watch Later" },
+        { to: "/uservideos", icon: Film, label: "Your Videos" },
         { to: "/downloads", icon: DownloadCloud, label: "Downloads" },
     ];
 
     const accountLinks = [
         { to: "/profile", icon: User, label: "Profile" },
         { to: "/create", icon: PlusSquare, label: "Create" },
-        { to: "/uservideos", icon: Film, label: "Your Videos" },
         { to: "/settings", icon: Settings, label: "Settings" },
     ];
 
