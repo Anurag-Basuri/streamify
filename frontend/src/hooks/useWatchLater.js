@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import PropTypes from "prop-types";
 
@@ -11,15 +11,24 @@ const useWatchLater = (user) => {
     const [filter, setFilter] = useState("all");
     const [remindLater, setRemindLater] = useState({});
 
-    const isInWatchLater = (videoId) => {
-        return videos.some((video) => video._id === videoId);
-    };
+    const clearError = () => setError("");
 
-    const fetchWatchLater = async () => {
+    const isInWatchLater = useCallback(
+        (videoId) => videos.some((video) => video._id === videoId),
+        [videos]
+    );
+
+    const fetchWatchLater = useCallback(async () => {
+        if (!user?.token) {
+            setVideos([]);
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
         try {
             const response = await fetch("/api/v1/watchlater", {
                 headers: {
-                    Authorization: `Bearer ${user?.token}`,
+                    Authorization: `Bearer ${user.token}`,
                 },
             });
             const data = await response.json();
@@ -39,7 +48,7 @@ const useWatchLater = (user) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     const removeFromWatchLater = async (videoId) => {
         try {
@@ -60,12 +69,12 @@ const useWatchLater = (user) => {
         }
     };
 
-    const setReminder = async (videoId) => {
+    const setReminder = (videoId) => {
         setRemindLater((prev) => ({ ...prev, [videoId]: true }));
         toast.success("Reminder set successfully");
     };
 
-    const getFilteredVideos = () => {
+    const getFilteredVideos = useCallback(() => {
         let filteredVideos = videos;
 
         if (filter === "today") {
@@ -90,17 +99,21 @@ const useWatchLater = (user) => {
         }
 
         return filteredVideos;
-    };
+    }, [videos, filter, sortBy]);
 
     useEffect(() => {
-        if (user) fetchWatchLater();
-    }, [user]);
+        setLoading(true);
+        setVideos([]);
+        if (user?.token) fetchWatchLater();
+        // eslint-disable-next-line
+    }, [user?.token, fetchWatchLater]);
 
     return {
         videos: getFilteredVideos(),
         loading,
         fetchWatchLater,
         error,
+        clearError,
         removingVideo,
         setRemovingVideo,
         removeFromWatchLater,
@@ -111,6 +124,7 @@ const useWatchLater = (user) => {
         remindLater,
         setReminder,
         isInWatchLater,
+        refresh: fetchWatchLater,
     };
 };
 
