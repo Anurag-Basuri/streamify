@@ -27,16 +27,6 @@ export const HistoryItem = ({ item, onRemove, formatDuration }) => {
     );
 };
 
-VideoThumbnail.propTypes = {
-    video: PropTypes.object.isRequired,
-    formatDuration: PropTypes.func.isRequired,
-};
-
-VideoDetails.propTypes = {
-    item: PropTypes.object.isRequired,
-    onRemove: PropTypes.func.isRequired,
-};
-
 const VideoThumbnail = ({ video, formatDuration }) => {
     const thumbnailUrl = video?.thumbnail?.url || "/default-thumbnail.jpg";
     const videoId = video?._id || "";
@@ -91,6 +81,17 @@ const VideoDetails = ({ item, onRemove }) => {
             <VideoMetadata views={video.views} watchedAt={item.watchedAt} />
         </div>
     );
+}
+
+VideoThumbnail.propTypes = {
+    video: PropTypes.object.isRequired,
+    formatDuration: PropTypes.func.isRequired,
+};
+
+
+VideoDetails.propTypes = {
+    item: PropTypes.object.isRequired,
+    onRemove: PropTypes.func.isRequired,
 };
 
 HistoryItem.propTypes = {
