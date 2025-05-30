@@ -1,8 +1,7 @@
 import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FaPlayCircle, FaTrash, FaEye } from "react-icons/fa";
-import { formatDistanceToNow, format } from "date-fns";
+import { FaPlayCircle, FaTrash } from "react-icons/fa";
 import { colors } from "../../utils/theme";
 
 // Import these if not already imported
@@ -26,6 +25,16 @@ export const HistoryItem = ({ item, onRemove, formatDuration }) => {
             </div>
         </motion.div>
     );
+};
+
+VideoThumbnail.propTypes = {
+    video: PropTypes.object.isRequired,
+    formatDuration: PropTypes.func.isRequired,
+};
+
+VideoDetails.propTypes = {
+    item: PropTypes.object.isRequired,
+    onRemove: PropTypes.func.isRequired,
 };
 
 const VideoThumbnail = ({ video, formatDuration }) => {
