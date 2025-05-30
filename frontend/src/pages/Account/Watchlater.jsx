@@ -4,7 +4,6 @@ import useAuth from "../../hooks/useAuth";
 import PropTypes from "prop-types";
 import { toast } from "react-hot-toast";
 
-// Dummy VideoCard and LoadingState/ErrorState for demonstration
 // Replace with your actual VideoCard, LoadingState, ErrorState if needed
 const VideoCard = ({
     video,
