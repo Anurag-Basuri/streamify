@@ -3,7 +3,6 @@ import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import PropTypes from "prop-types";
 
-// Minimal VideoCard, LoadingState, ErrorState, and EmptyState for this page
 const VideoCard = ({
     video,
     onRemove,
