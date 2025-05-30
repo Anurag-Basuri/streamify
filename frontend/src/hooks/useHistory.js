@@ -23,7 +23,6 @@ const useHistory = (user) => {
                 },
             });
             const data = await response.json();
-            console.log("Response:", data);
             if (!response.ok)
                 throw new Error(data.message || "Couldn't fetch history");
             // Always set to array of items
