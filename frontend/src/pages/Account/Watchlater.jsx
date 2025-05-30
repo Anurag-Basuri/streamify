@@ -3,6 +3,7 @@ import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import EmptyState from "../../components/WatchLater/EmptyState.jsx";
 import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader.jsx";
+import {LoadingSpinner} from "../../components/Common/LoadingSpinner.jsx";
 import PropTypes from "prop-types";
 
 const VideoCard = ({
@@ -42,7 +43,11 @@ VideoCard.propTypes = {
     hasReminder: PropTypes.bool.isRequired,
 };
 
-const LoadingState = () => <div className="text-center py-12">Loading...</div>;
+const LoadingState = () => (
+    <div className="text-center py-12">
+        <LoadingSpinner />
+    </div>
+);
 const ErrorState = ({ error, onRetry }) => (
     <div className="text-center py-12 text-red-500">
         {error}
