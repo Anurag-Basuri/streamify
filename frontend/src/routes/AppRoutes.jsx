@@ -8,7 +8,7 @@ import History from "../pages/Account/History.jsx";
 import Download from "../pages/Account/Download.jsx";
 import Playlist from "../pages/Account/Playlist.jsx";
 import Watchlater from "../pages/Account/Watchlater.jsx";
-import YourVideos from "../pages/You/YourVideos.jsx";
+import YourVideos from "../pages/Account/YourVideos.jsx";
 import Create from "../pages/You/Create.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import VideoPlayer from "../components/Video/VideoPlayer.jsx";
