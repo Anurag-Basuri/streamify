@@ -2,14 +2,24 @@ import PropTypes from "prop-types";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import { FilterSelect } from "./FilterSelect";
 
-const WatchLaterHeader = ({ videoCount, filter, setFilter, sortBy, setSortBy }) => (
+const WatchLaterHeader = ({
+    videoCount,
+    filter,
+    setFilter,
+    sortBy,
+    setSortBy,
+}) => (
     <div className="flex items-center gap-4 mb-8">
         <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
             <ClockIcon className="w-8 h-8 text-white" />
         </div>
         <div>
-            <h1 className="text-4xl font-bold text-gray-900">Watch Later</h1>
-            <p className="text-gray-500 mt-1">{videoCount} saved videos</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+                Watch Later
+            </h1>
+            <p className="text-gray-500 mt-1">
+                {videoCount} saved video{videoCount !== 1 ? "s" : ""}
+            </p>
         </div>
         <div className="ml-auto flex gap-3">
             <FilterSelect
@@ -18,15 +28,13 @@ const WatchLaterHeader = ({ videoCount, filter, setFilter, sortBy, setSortBy }) 
                 options={[
                     { value: "all", label: "All" },
                     { value: "today", label: "Added Today" },
-                    { value: "week", label: "This Week" }
+                    { value: "week", label: "This Week" },
                 ]}
             />
             <FilterSelect
                 value={sortBy}
                 onChange={setSortBy}
-                options={[
-                    { value: "recent", label: "Recently Added" }
-                ]}
+                options={[{ value: "recent", label: "Recently Added" }]}
             />
         </div>
     </div>
