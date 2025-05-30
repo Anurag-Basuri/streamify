@@ -3,7 +3,7 @@ import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import EmptyState from "../../components/WatchLater/EmptyState.jsx";
 import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader.jsx";
-import {LoadingSpinner} from "../../components/Common/LoadingSpinner.jsx";
+import { LoadingSpinner } from "../../components/Common/LoadingSpinner.jsx";
 import PropTypes from "prop-types";
 
 const VideoCard = ({
@@ -13,25 +13,31 @@ const VideoCard = ({
     isRemoving,
     hasReminder,
 }) => (
-    <div className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
-        <div className="font-bold">{video.title}</div>
-        <div className="text-xs text-gray-500">
+    <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-4 flex flex-col gap-2 transition-colors">
+        <div className="font-bold text-gray-900 dark:text-gray-100">
+            {video.title}
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
             {video.addedAt && new Date(video.addedAt).toLocaleString()}
         </div>
-        <button
-            className="text-red-500"
-            onClick={onRemove}
-            disabled={isRemoving}
-        >
-            {isRemoving ? "Removing..." : "Remove"}
-        </button>
-        <button
-            className="text-blue-500"
-            onClick={onRemindLater}
-            disabled={hasReminder}
-        >
-            {hasReminder ? "Reminder Set" : "Remind Me"}
-        </button>
+        <div className="flex gap-2 mt-2">
+            <button
+                className="text-red-500 hover:text-red-700 font-medium px-3 py-1 rounded transition disabled:opacity-60"
+                onClick={onRemove}
+                disabled={isRemoving}
+            >
+                {isRemoving ? "Removing..." : "Remove"}
+            </button>
+            <button
+                className={`text-blue-500 hover:text-blue-700 font-medium px-3 py-1 rounded transition disabled:opacity-60 ${
+                    hasReminder ? "bg-blue-50 dark:bg-blue-900" : ""
+                }`}
+                onClick={onRemindLater}
+                disabled={hasReminder}
+            >
+                {hasReminder ? "Reminder Set" : "Remind Me"}
+            </button>
+        </div>
     </div>
 );
 
@@ -84,10 +90,9 @@ const WatchLater = () => {
         refresh,
     } = useWatchLater(user);
 
-    // UI
     if (!user)
         return (
-            <div className="min-h-screen flex items-center justify-center text-gray-600">
+            <div className="min-h-screen flex items-center justify-center text-gray-600 dark:text-gray-300">
                 Please log in to view your Watch Later list.
             </div>
         );
@@ -108,11 +113,11 @@ const WatchLater = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8"
+            className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 p-8"
         >
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
                     <WatchLaterHeader
                         videoCount={videos.length}
                         filter={filter}
@@ -120,20 +125,22 @@ const WatchLater = () => {
                         sortBy={sortBy}
                         setSortBy={setSortBy}
                     />
-                    <button
-                        onClick={refresh}
-                        className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
-                        aria-label="Refresh"
-                    >
-                        Refresh
-                    </button>
-                    <button
-                        onClick={clearWatchLater}
-                        className="ml-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
-                        aria-label="Clear All"
-                    >
-                        Clear All
-                    </button>
+                    <div className="flex gap-2 ml-auto">
+                        <button
+                            onClick={refresh}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                            aria-label="Refresh"
+                        >
+                            Refresh
+                        </button>
+                        <button
+                            onClick={clearWatchLater}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
+                            aria-label="Clear All"
+                        >
+                            Clear All
+                        </button>
+                    </div>
                 </div>
                 {/* Content */}
                 <AnimatePresence mode="wait">
