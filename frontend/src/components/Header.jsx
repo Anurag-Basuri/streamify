@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Menu, X, Bell, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import PropTypes from 'prop-types';
 import useAuth from "../hooks/useAuth.js";
 import useTheme from "../hooks/useTheme.js";
 
@@ -187,5 +188,14 @@ const AuthButtons = ({ theme }) => (
         </Link>
     </>
 );
+
+AuthButtons.propTypes = {
+    theme: PropTypes.string.isRequired
+};
+
+Header.propTypes = {
+    toggleSidebar: PropTypes.func.isRequired,
+    isSidebarOpen: PropTypes.bool.isRequired
+};
 
 export default Header;
