@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
+import EmptyState from "../../components/EmptyState.jsx";
+import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader.jsx";
 import PropTypes from "prop-types";
 
 const VideoCard = ({
@@ -56,52 +58,6 @@ ErrorState.propTypes = {
     error: PropTypes.string.isRequired,
     onRetry: PropTypes.func,
 };
-
-const EmptyState = () => (
-    <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
-        <svg
-            className="w-32 mx-auto mb-8 text-gray-300"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            viewBox="0 0 64 64"
-        >
-            <circle cx="32" cy="32" r="30" stroke="currentColor" />
-            <path
-                d="M20 32h24M32 20v24"
-                stroke="currentColor"
-                strokeLinecap="round"
-            />
-        </svg>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Your Time Capsule Awaits
-        </h2>
-        <p className="text-gray-500 max-w-md mx-auto mb-8">
-            Save videos you want to watch later and they&apos;ll appear here.
-            Curate your perfect viewing experience!
-        </p>
-        <a
-            href="/videos"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-xl 
-            hover:bg-blue-700 transition-all transform hover:-translate-y-1 shadow-lg"
-        >
-            <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-            >
-                <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M14.752 11.168l-6.518-3.759A1 1 0 007 8.118v7.764a1 1 0 001.234.97l6.518-1.757A1 1 0 0016 14.882V9.118a1 1 0 00-1.248-.95z"
-                />
-            </svg>
-            Explore Trending Videos
-        </a>
-    </div>
-);
 
 const WatchLater = () => {
     const { user } = useAuth();
