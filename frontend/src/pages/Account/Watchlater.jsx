@@ -107,63 +107,27 @@ const WatchLater = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
-                    <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
-                        {/* Clock icon SVG */}
-                        <svg
-                            className="w-8 h-8 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                            Watch Later
-                        </h1>
-                        <p className="text-gray-500 mt-1">
-                            {videos.length} saved video
-                            {videos.length !== 1 ? "s" : ""}
-                        </p>
-                    </div>
-                    <div className="ml-auto flex gap-3">
-                        <select
-                            className="rounded-lg px-2 py-1 border text-gray-700"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        >
-                            <option value="all">All</option>
-                            <option value="today">Added Today</option>
-                            <option value="week">This Week</option>
-                        </select>
-                        <select
-                            className="rounded-lg px-2 py-1 border text-gray-700"
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                        >
-                            <option value="recent">Recently Added</option>
-                        </select>
-                        <button
-                            onClick={refresh}
-                            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
-                            aria-label="Refresh"
-                        >
-                            Refresh
-                        </button>
-                        <button
-                            onClick={clearWatchLater}
-                            className="ml-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
-                            aria-label="Clear All"
-                        >
-                            Clear All
-                        </button>
-                    </div>
+                    <WatchLaterHeader
+                        videoCount={videos.length}
+                        filter={filter}
+                        setFilter={setFilter}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                    />
+                    <button
+                        onClick={refresh}
+                        className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                        aria-label="Refresh"
+                    >
+                        Refresh
+                    </button>
+                    <button
+                        onClick={clearWatchLater}
+                        className="ml-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
+                        aria-label="Clear All"
+                    >
+                        Clear All
+                    </button>
                 </div>
                 {/* Content */}
                 <AnimatePresence mode="wait">
