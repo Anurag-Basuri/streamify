@@ -48,6 +48,20 @@ const addVideoToWatchLater = asynchandler(async (req, res) => {
         );
 });
 
+const clearWatchLater = asynchandler(async (req, res) => {
+    let watchLater = await WatchLater.findOne({ owner: req.user._id });
+    if (!watchLater) {
+        throw new APIerror(404, "Watch later list not found");
+    }
+
+    watchLater.videos = [];
+    await watchLater.save();
+
+    return res
+        .status(200)
+        .json(new APIresponse(200, watchLater, "Watch later list cleared"));
+});
+
 const removeVideoFromWatchLater = asynchandler(async (req, res) => {
     const { videoId } = req.params;
 
@@ -61,28 +75,53 @@ const removeVideoFromWatchLater = asynchandler(async (req, res) => {
     }
 
     const originalLength = watchLater.videos.length;
-    watchLater.videos = watchLater.videos.filter(v => v.video.toString() !== videoId);
+    watchLater.videos = watchLater.videos.filter(
+        (v) => v.video.toString() !== videoId
+    );
     if (watchLater.videos.length === originalLength) {
         throw new APIerror(404, "Video not found in watch later list");
     }
 
     await watchLater.save();
 
-    return res.status(200).json(new APIresponse(200, watchLater, "Video removed from watch later"));
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, watchLater, "Video removed from watch later")
+        );
 });
 
 const getWatchLaterVideos = asynchandler(async (req, res) => {
-    let watchLater = await WatchLater.findOne({ owner: req.user._id })
-        .populate({
+    let watchLater = await WatchLater.findOne({ owner: req.user._id }).populate(
+        {
             path: "videos.video",
             model: "Video",
-        });
+        }
+    );
     if (!watchLater) {
-        watchLater = await WatchLater.create({ owner: req.user._id, videos: [] });
+        watchLater = await WatchLater.create({
+            owner: req.user._id,
+            videos: [],
+        });
     }
     // Sort videos by addedAt descending (most recent first)
-    const sortedVideos = watchLater.videos.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
-    return res.status(200).json(new APIresponse(200, { videos: sortedVideos }, "Fetched watch later videos"));
+    const sortedVideos = watchLater.videos.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+    );
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { videos: sortedVideos },
+                "Fetched watch later videos"
+            )
+        );
 });
 
-export { addVideoToWatchLater, removeVideoFromWatchLater, getWatchLaterVideos };
+export {
+    addVideoToWatchLater,
+    removeVideoFromWatchLater,
+    getWatchLaterVideos,
+    clearWatchLater,
+};
