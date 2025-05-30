@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
-import EmptyState from "../../components/EmptyState.jsx";
+import EmptyState from "../../components/WatchLater/EmptyState.jsx";
 import WatchLaterHeader from "../../components/WatchLater/WatchLaterHeader.jsx";
 import PropTypes from "prop-types";
 
