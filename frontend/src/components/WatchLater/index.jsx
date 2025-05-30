@@ -15,6 +15,7 @@ const WatchLater = () => {
         videos,
         loading,
         error,
+        clearError,
         removingVideo,
         setRemovingVideo,
         removeFromWatchLater,
@@ -23,11 +24,28 @@ const WatchLater = () => {
         filter,
         setFilter,
         remindLater,
-        setReminder
+        setReminder,
+        refresh,
     } = useWatchLater(user);
 
+    if (!user)
+        return (
+            <div className="min-h-screen flex items-center justify-center text-gray-600">
+                Please log in to view your Watch Later list.
+            </div>
+        );
+
     if (loading) return <LoadingState />;
-    if (error) return <ErrorState error={error} />;
+    if (error)
+        return (
+            <ErrorState
+                error={error}
+                onRetry={() => {
+                    clearError();
+                    refresh();
+                }}
+            />
+        );
 
     return (
         <ErrorBoundary
@@ -42,14 +60,22 @@ const WatchLater = () => {
                 className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8"
             >
                 <div className="max-w-7xl mx-auto">
-                    <WatchLaterHeader 
-                        videoCount={videos.length}
-                        filter={filter}
-                        setFilter={setFilter}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                    />
-                    
+                    <div className="flex items-center justify-between mb-4">
+                        <WatchLaterHeader
+                            videoCount={videos.length}
+                            filter={filter}
+                            setFilter={setFilter}
+                            sortBy={sortBy}
+                            setSortBy={setSortBy}
+                        />
+                        <button
+                            onClick={refresh}
+                            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                            aria-label="Refresh"
+                        >
+                            Refresh
+                        </button>
+                    </div>
                     <AnimatePresence mode="wait">
                         {videos.length === 0 ? (
                             <motion.div
@@ -72,9 +98,15 @@ const WatchLater = () => {
                                     <VideoCard
                                         key={video._id}
                                         video={video}
-                                        onRemove={() => setRemovingVideo(video._id)}
-                                        onConfirmRemove={() => removeFromWatchLater(video._id)}
-                                        onRemindLater={() => setReminder(video._id)}
+                                        onRemove={() =>
+                                            setRemovingVideo(video._id)
+                                        }
+                                        onConfirmRemove={() =>
+                                            removeFromWatchLater(video._id)
+                                        }
+                                        onRemindLater={() =>
+                                            setReminder(video._id)
+                                        }
                                         isRemoving={removingVideo === video._id}
                                         hasReminder={remindLater[video._id]}
                                     />
