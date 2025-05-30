@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { PlayCircleIcon } from "@heroicons/react/24/solid";
 import emptyStateIllustration from "../../resources/watch-later-empty.svg";
 
-export const EmptyState = () => (
+const EmptyState = () => (
     <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
         <img
             src={emptyStateIllustration}
@@ -26,3 +26,5 @@ export const EmptyState = () => (
         </Link>
     </div>
 );
+
+export default EmptyState;
