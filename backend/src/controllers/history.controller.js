@@ -55,6 +55,7 @@ const addVideoToHistory = asynchandler(async (req, res) => {
 // Get user's history
 const getUserHistory = asynchandler(async (req, res) => {
     const userId = req.user._id;
+    console.log("Fetching history for user:", userId);
 
     const history = await History.findOne({ user: userId })
         .populate({

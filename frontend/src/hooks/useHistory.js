@@ -22,6 +22,7 @@ const useHistory = (user) => {
                     Authorization: `Bearer ${user.token}`,
                 },
             });
+            console.log("Response:", response);
             const data = await response.json();
             if (!response.ok)
                 throw new Error(data.message || "Couldn't fetch history");
