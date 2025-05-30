@@ -54,6 +54,7 @@ const addVideoToHistory = asynchandler(async (req, res) => {
 
 // Get user's history
 const getUserHistory = asynchandler(async (req, res) => {
+    console.log("Fetching user history...");
     const userId = req.user._id;
     console.log("Fetching history for user:", userId);
 

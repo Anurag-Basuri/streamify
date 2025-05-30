@@ -10,7 +10,7 @@ const useHistory = (user) => {
 
     // Fetch user's watch history
     const fetchHistory = useCallback(async () => {
-        if (!user?.token) {
+        if (!user || !localStorage.getItem("accessToken")) {
             setHistory([]);
             setLoading(false);
             return;
@@ -22,8 +22,8 @@ const useHistory = (user) => {
                     Authorization: `Bearer ${user.token}`,
                 },
             });
-            console.log("Response:", response);
             const data = await response.json();
+            console.log("Response:", data);
             if (!response.ok)
                 throw new Error(data.message || "Couldn't fetch history");
             // Always set to array of items
