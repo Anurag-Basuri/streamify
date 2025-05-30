@@ -48,6 +48,7 @@ const LoadingState = () => (
         <LoadingSpinner />
     </div>
 );
+
 const ErrorState = ({ error, onRetry }) => (
     <div className="text-center py-12 text-red-500">
         {error}

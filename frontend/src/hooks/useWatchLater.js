@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 
 const useWatchLater = (user) => {
     const [videos, setVideos] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [removingVideo, setRemovingVideo] = useState(null);
     const [sortBy, setSortBy] = useState("recent");
@@ -21,9 +21,9 @@ const useWatchLater = (user) => {
 
     // Fetch watch later videos from backend
     const fetchWatchLater = useCallback(async () => {
-        if (!user?.token) {
+        if (!user || !localStorage.getItem("accessToken")) {
             setVideos([]);
-            setLoading(false);
+            setLoading(true);
             return;
         }
         setLoading(true);
@@ -34,10 +34,11 @@ const useWatchLater = (user) => {
             }).toString();
             const response = await fetch(`/api/v1/watchlater?${params}`, {
                 headers: {
-                    Authorization: `Bearer ${user.token}`,
+                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
                 },
             });
             const data = await response.json();
+            console.log("Watch Later Data:", data);
             if (!response.ok)
                 throw new Error(data.message || "Couldn't fetch watch later");
 
