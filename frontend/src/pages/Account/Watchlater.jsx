@@ -103,7 +103,7 @@ const EmptyState = () => (
     </div>
 );
 
-const WatchLaterPage = () => {
+const WatchLater = () => {
     const { user } = useAuth();
     const {
         videos,
@@ -248,9 +248,9 @@ const WatchLaterPage = () => {
     );
 };
 
-WatchLaterPage.propTypes = {
+WatchLater.propTypes = {
     className: PropTypes.string,
     onError: PropTypes.func,
 };
 
-export default WatchLaterPage;
+export default WatchLater;
