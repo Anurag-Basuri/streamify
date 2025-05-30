@@ -10,6 +10,7 @@ const useWatchLater = (user) => {
     const [sortBy, setSortBy] = useState("recent");
     const [filter, setFilter] = useState("all");
     const [remindLater, setRemindLater] = useState({});
+    const [pagination, setPagination] = useState(null);
 
     const clearError = () => setError("");
 
@@ -18,6 +19,7 @@ const useWatchLater = (user) => {
         [videos]
     );
 
+    // Fetch watch later videos from backend
     const fetchWatchLater = useCallback(async () => {
         if (!user?.token) {
             setVideos([]);
@@ -26,7 +28,11 @@ const useWatchLater = (user) => {
         }
         setLoading(true);
         try {
-            const response = await fetch("/api/v1/watchlater", {
+            const params = new URLSearchParams({
+                sortBy,
+                filter,
+            }).toString();
+            const response = await fetch(`/api/v1/watchlater?${params}`, {
                 headers: {
                     Authorization: `Bearer ${user.token}`,
                 },
@@ -35,6 +41,7 @@ const useWatchLater = (user) => {
             if (!response.ok)
                 throw new Error(data.message || "Couldn't fetch watch later");
 
+            // Map backend response to flat array for UI
             const flat = (data.data?.videos || []).map((item) => ({
                 ...item.video,
                 addedAt: item.addedAt,
@@ -42,24 +49,36 @@ const useWatchLater = (user) => {
                 _watchlaterId: item._id,
             }));
             setVideos(flat);
+            setPagination(data.data?.pagination || null);
         } catch (err) {
             setError(err.message);
             toast.error(err.message);
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, sortBy, filter]);
 
+    // Remove a video from watch later (sync with backend)
     const removeFromWatchLater = async (videoId) => {
         try {
+            setRemovingVideo(videoId);
             const response = await fetch(`/api/v1/watchlater/${videoId}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${user?.token}`,
                 },
             });
-            if (!response.ok) throw new Error("Failed to remove video");
-            setVideos((prev) => prev.filter((video) => video._id !== videoId));
+            const data = await response.json();
+            if (!response.ok)
+                throw new Error(data.message || "Failed to remove video");
+            // Use backend response to update videos
+            const flat = (data.data?.videos || []).map((item) => ({
+                ...item.video,
+                addedAt: item.addedAt,
+                remindAt: item.remindAt,
+                _watchlaterId: item._id,
+            }));
+            setVideos(flat);
             setRemovingVideo(null);
             toast.success("Video removed from Watch Later");
         } catch (err) {
@@ -69,11 +88,65 @@ const useWatchLater = (user) => {
         }
     };
 
-    const setReminder = (videoId) => {
-        setRemindLater((prev) => ({ ...prev, [videoId]: true }));
-        toast.success("Reminder set successfully");
+    // Clear all videos from watch later
+    const clearWatchLater = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/v1/watchlater/clear`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+            const data = await response.json();
+            if (!response.ok)
+                throw new Error(data.message || "Failed to clear Watch Later");
+            setVideos([]);
+            toast.success("Watch Later cleared");
+        } catch (err) {
+            setError(err.message);
+            toast.error(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // Set or remove a reminder for a video
+    const setReminder = async (videoId, remindAt) => {
+        try {
+            const response = await fetch(
+                `/api/v1/watchlater/${videoId}/reminder`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                    body: JSON.stringify({ remindAt }),
+                }
+            );
+            const data = await response.json();
+            if (!response.ok)
+                throw new Error(data.message || "Failed to set reminder");
+            setRemindLater((prev) => ({ ...prev, [videoId]: !!remindAt }));
+            // Optionally update the video's remindAt in local state
+            setVideos((prev) =>
+                prev.map((v) =>
+                    v._id === videoId
+                        ? { ...v, remindAt: data.data?.video?.remindAt || null }
+                        : v
+                )
+            );
+            toast.success(
+                remindAt ? "Reminder set successfully" : "Reminder removed"
+            );
+        } catch (err) {
+            setError(err.message);
+            toast.error(err.message);
+        }
+    };
+
+    // Filtering and sorting (client-side fallback)
     const getFilteredVideos = useCallback(() => {
         let filteredVideos = videos;
 
@@ -102,10 +175,7 @@ const useWatchLater = (user) => {
     }, [videos, filter, sortBy]);
 
     useEffect(() => {
-        setLoading(true);
-        setVideos([]);
         if (user?.token) fetchWatchLater();
-        // eslint-disable-next-line
     }, [user?.token, fetchWatchLater]);
 
     return {
@@ -117,6 +187,7 @@ const useWatchLater = (user) => {
         removingVideo,
         setRemovingVideo,
         removeFromWatchLater,
+        clearWatchLater,
         sortBy,
         setSortBy,
         filter,
@@ -125,6 +196,7 @@ const useWatchLater = (user) => {
         setReminder,
         isInWatchLater,
         refresh: fetchWatchLater,
+        pagination,
     };
 };
 
