@@ -18,6 +18,7 @@ const YourVideos = () => {
         loading,
         error,
         fetchVideos,
+        updateVideo,
         deleteVideo,
         togglePublish,
         searchQuery,
