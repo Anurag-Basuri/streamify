@@ -4,7 +4,6 @@ import { asynchandler } from "../utils/asynchandler.js";
 
 const validateResult = asynchandler(async (req, res, next) => {
     const errors = validationResult(req);
-    console.log(req.body);
 
     if (!errors.isEmpty()) {
         const errors = validationResult(req);

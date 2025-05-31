@@ -31,7 +31,7 @@ const useVideo = (user) => {
             const response = await axios.get(
                 `/api/v1/videos/user?${params.toString()}`,
                 {
-                    headers: { Authorization: `Bearer ${user.token}` },
+                    headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
                 }
             );
             setVideos(response.data.data.videos || []);
