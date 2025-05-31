@@ -42,6 +42,31 @@ const useVideo = (user) => {
         }
     }, [user, searchQuery, sortBy]);
 
+    // Update video
+    const updateVideo = useCallback(
+        async (videoId, updatedData) => {
+            if (!user) return;
+            try {
+                const response = await axios.patch(
+                    `/api/v1/videos/${videoId}`,
+                    updatedData,
+                    { headers: { Authorization: `Bearer ${user.token}` } }
+                );
+                setVideos((prev) =>
+                    prev.map((v) =>
+                        v._id === videoId ? response.data.data : v
+                    )
+                );
+                toast.success("Video updated successfully");
+            } catch (err) {
+                toast.error(
+                    err.response?.data?.message || "Failed to update video"
+                );
+            }
+        },
+        [user]
+    );
+
     // Delete a video
     const deleteVideo = useCallback(
         async (videoId) => {
@@ -101,6 +126,7 @@ const useVideo = (user) => {
         loading,
         error,
         fetchVideos,
+        updateVideo,
         deleteVideo,
         togglePublish,
         searchQuery,
