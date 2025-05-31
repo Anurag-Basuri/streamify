@@ -70,6 +70,12 @@ const uploadCoverImage = multer({
 // Compressor
 const compressVideo = (inputPath, outputPath) => {
     return new Promise((resolve, reject) => {
+        // Ensure output directory exists
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
         if (!fs.existsSync(inputPath)) {
             return reject(new Error("Input file not found"));
         }
@@ -80,12 +86,6 @@ const compressVideo = (inputPath, outputPath) => {
             .outputOptions(["-crf 28", "-preset medium"])
             .on("start", (commandLine) => {
                 console.log("FFmpeg command:", commandLine);
-            })
-            .on("progress", (progress) => {
-                const percent = Math.round(
-                    (progress.timemark / progress.targetSize) * 100
-                );
-                console.log(`Processing: ${percent}% done`);
             })
             .on("end", () => {
                 console.log("Compression finished successfully");
