@@ -17,7 +17,7 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = Router();
 
-// Public route
+// Route to fetch all videos with pagination
 router.get(
     "/",
     query("page").isInt({ min: 1 }).optional(),
