@@ -18,7 +18,7 @@ import {
 import { toast } from "react-hot-toast";
 import PropTypes from 'prop-types';
 
-// --- Compact Search Bar ---
+// --- Search Bar ---
 const SearchFilterBar = ({
     searchQuery,
     onSearchChange,
@@ -75,7 +75,7 @@ SearchFilterBar.propTypes = {
     filtered: PropTypes.number.isRequired,
 };
 
-// --- Compact Edit Modal ---
+// --- Edit Modal ---
 const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
     const [form, setForm] = useState({ title: "", description: "", tags: "" });
 
@@ -240,7 +240,7 @@ EditVideoModal.propTypes = {
     );
 };
 
-// --- Compact Video Card ---
+// --- Video Card ---
 const VideoCard = ({ video, onEdit, onDelete, onTogglePublish, onPlay }) => (
     <motion.div
         layout
@@ -329,6 +329,22 @@ const VideoCard = ({ video, onEdit, onDelete, onTogglePublish, onPlay }) => (
         </div>
     </motion.div>
 );
+
+VideoCard.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string,
+        thumbnail: PropTypes.string,
+        isPublished: PropTypes.bool.isRequired,
+        views: PropTypes.number,
+        createdAt: PropTypes.string
+    }).isRequired,
+    onEdit: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
+    onTogglePublish: PropTypes.func.isRequired,
+    onPlay: PropTypes.func.isRequired
+};
 
 const YourVideos = () => {
     const navigate = useNavigate();
