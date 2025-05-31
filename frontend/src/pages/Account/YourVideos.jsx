@@ -16,6 +16,7 @@ import {
     ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
+import PropTypes from 'prop-types';
 
 // --- Compact Search Bar ---
 const SearchFilterBar = ({
@@ -64,6 +65,15 @@ const SearchFilterBar = ({
         )}
     </div>
 );
+
+SearchFilterBar.propTypes = {
+    searchQuery: PropTypes.string.isRequired,
+    onSearchChange: PropTypes.func.isRequired,
+    sortBy: PropTypes.string.isRequired,
+    onSortChange: PropTypes.func.isRequired,
+    total: PropTypes.number.isRequired,
+    filtered: PropTypes.number.isRequired,
+};
 
 // --- Compact Edit Modal ---
 const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
