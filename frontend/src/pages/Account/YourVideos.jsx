@@ -389,7 +389,7 @@ const YourVideos = () => {
             setSearchQuery(searchQuery.trim());
         }, 200);
         return () => clearTimeout(searchTimeout.current);
-    }, [searchQuery]);
+    }, [searchQuery, setSearchQuery]);
 
     const handleEditVideo = (video) => setEditModal({ open: true, video });
     const handleSaveVideo = async (updated) => {
