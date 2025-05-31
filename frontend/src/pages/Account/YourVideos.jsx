@@ -16,7 +16,7 @@ import {
     ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 
 // --- Search Bar ---
 const SearchFilterBar = ({
@@ -78,20 +78,6 @@ SearchFilterBar.propTypes = {
 // --- Edit Modal ---
 const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
     const [form, setForm] = useState({ title: "", description: "", tags: "" });
-
-EditVideoModal.propTypes = {
-    video: PropTypes.shape({
-        _id: PropTypes.string,
-        title: PropTypes.string,
-        description: PropTypes.string,
-        tags: PropTypes.arrayOf(PropTypes.string),
-        thumbnail: PropTypes.string
-    }),
-    open: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    onSave: PropTypes.func.isRequired,
-    loading: PropTypes.bool.isRequired
-};
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [err, setErr] = useState({});
 
@@ -137,7 +123,7 @@ EditVideoModal.propTypes = {
                                 .split(",")
                                 .map((t) => t.trim())
                                 .filter(Boolean),
-                            thumbnail: thumbnailFile,
+                            thumbnailFile,
                         });
                 }}
             >
@@ -240,6 +226,20 @@ EditVideoModal.propTypes = {
     );
 };
 
+EditVideoModal.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string,
+        title: PropTypes.string,
+        description: PropTypes.string,
+        tags: PropTypes.arrayOf(PropTypes.string),
+        thumbnail: PropTypes.string,
+    }),
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onSave: PropTypes.func.isRequired,
+    loading: PropTypes.bool.isRequired,
+};
+
 // --- Video Card ---
 const VideoCard = ({ video, onEdit, onDelete, onTogglePublish, onPlay }) => (
     <motion.div
@@ -338,12 +338,12 @@ VideoCard.propTypes = {
         thumbnail: PropTypes.string,
         isPublished: PropTypes.bool.isRequired,
         views: PropTypes.number,
-        createdAt: PropTypes.string
+        createdAt: PropTypes.string,
     }).isRequired,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
     onTogglePublish: PropTypes.func.isRequired,
-    onPlay: PropTypes.func.isRequired
+    onPlay: PropTypes.func.isRequired,
 };
 
 const YourVideos = () => {
@@ -365,7 +365,6 @@ const YourVideos = () => {
 
     const [editModal, setEditModal] = useState({ open: false, video: null });
     const [editLoading, setEditLoading] = useState(false);
-    const searchTimeout = useRef();
 
     // Local filtering for search (compact)
     const filteredVideos = searchQuery
@@ -397,16 +396,6 @@ const YourVideos = () => {
         // eslint-disable-next-line
     }, [sortBy]);
 
-    // Debounce search input for local filtering
-    useEffect(() => {
-        if (searchTimeout.current) clearTimeout(searchTimeout.current);
-        searchTimeout.current = setTimeout(() => {
-            // Implement debounced behavior here, e.g., filtering videos
-            setSearchQuery(searchQuery.trim());
-        }, 200);
-        return () => clearTimeout(searchTimeout.current);
-    }, [searchQuery, setSearchQuery]);
-
     const handleEditVideo = (video) => setEditModal({ open: true, video });
     const handleSaveVideo = async (updated) => {
         setEditLoading(true);
@@ -414,6 +403,7 @@ const YourVideos = () => {
             title: updated.title,
             description: updated.description,
             tags: updated.tags,
+            thumbnailFile: updated.thumbnailFile,
         });
         setEditModal({ open: false, video: null });
         setEditLoading(false);
