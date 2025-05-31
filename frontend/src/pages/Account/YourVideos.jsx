@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
@@ -26,13 +26,27 @@ const YourVideos = () => {
         setSortBy,
     } = useVideo(user);
 
+    // Debounce search to avoid excessive API calls
+    const searchTimeout = useRef();
+
     useEffect(() => {
         if (!user) {
             navigate("/signin?redirect=/videos");
             return;
         }
         fetchVideos();
-    }, [user, fetchVideos, navigate]);
+        // eslint-disable-next-line
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+        searchTimeout.current = setTimeout(() => {
+            fetchVideos();
+        }, 400);
+        return () => clearTimeout(searchTimeout.current);
+        // eslint-disable-next-line
+    }, [searchQuery, sortBy]);
 
     if (loading) return <LoadingState />;
     if (error) return <ErrorState error={error} onRetry={fetchVideos} />;
@@ -42,7 +56,7 @@ const YourVideos = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8"
+            className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-950 p-4 md:p-8"
         >
             <div className="max-w-7xl mx-auto space-y-8">
                 <VideoHeader
