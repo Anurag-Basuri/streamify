@@ -384,8 +384,6 @@ const YourVideos = () => {
     // Debounce search input for local filtering
     useEffect(() => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
-        searchTimeout.current = setTimeout(() => {}, 200);
-        return () => clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
             // Implement debounced behavior here, e.g., filtering videos
             setSearchQuery(searchQuery.trim());
