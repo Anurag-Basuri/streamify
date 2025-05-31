@@ -29,7 +29,7 @@ const useVideo = (user) => {
             }
             // Use /api/v1/videos/user for authenticated user's videos
             const response = await axios.get(
-                `/api/v1/videos/user?${params.toString()}`,
+                `/api/v1/videos/user/${user._id}`,
                 {
                     headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
                 }
