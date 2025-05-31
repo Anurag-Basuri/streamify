@@ -27,6 +27,7 @@ const useVideo = (user) => {
                 else if (sortBy === "oldest") params.append("sort", "oldest");
                 else if (sortBy === "popular") params.append("sort", "views");
             }
+            // Use /api/v1/videos/user for authenticated user's videos
             const response = await axios.get(
                 `/api/v1/videos/user?${params.toString()}`,
                 {
@@ -42,13 +43,14 @@ const useVideo = (user) => {
         }
     }, [user, searchQuery, sortBy]);
 
-    // Update video
+    // Update video details (title, description, tags, thumbnail)
     const updateVideo = useCallback(
         async (videoId, updatedData) => {
             if (!user) return;
             try {
+                // Use the correct update endpoint
                 const response = await axios.patch(
-                    `/api/v1/videos/${videoId}`,
+                    `/api/v1/videos/update/${videoId}`,
                     updatedData,
                     { headers: { Authorization: `Bearer ${user.token}` } }
                 );
@@ -67,7 +69,7 @@ const useVideo = (user) => {
         [user]
     );
 
-    // Delete a video
+    // Delete a video (soft delete)
     const deleteVideo = useCallback(
         async (videoId) => {
             if (!user) return;
@@ -91,8 +93,9 @@ const useVideo = (user) => {
         async (videoId) => {
             if (!user) return;
             try {
+                // Use the correct publish endpoint
                 const response = await axios.patch(
-                    `/api/v1/videos/${videoId}/toggle-publish`,
+                    `/api/v1/videos/${videoId}/publish`,
                     {},
                     { headers: { Authorization: `Bearer ${user.token}` } }
                 );
