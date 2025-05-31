@@ -68,6 +68,7 @@ const SearchFilterBar = ({
 // --- Compact Edit Modal ---
 const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
     const [form, setForm] = useState({ title: "", description: "", tags: "" });
+    const [thumbnailFile, setThumbnailFile] = useState(null);
     const [err, setErr] = useState({});
 
     useEffect(() => {
@@ -77,6 +78,7 @@ const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
                 description: video.description || "",
                 tags: video.tags?.join(", ") || "",
             });
+            setThumbnailFile(null);
             setErr({});
         }
     }, [open, video]);
@@ -111,6 +113,7 @@ const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
                                 .split(",")
                                 .map((t) => t.trim())
                                 .filter(Boolean),
+                            thumbnail: thumbnailFile,
                         });
                 }}
             >
@@ -170,6 +173,27 @@ const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
                     }
                     placeholder="Tags (comma separated)"
                 />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Thumbnail
+                </label>
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    onChange={(e) => setThumbnailFile(e.target.files[0])}
+                />
+                {video.thumbnail && !thumbnailFile && (
+                    <img
+                        src={video.thumbnail}
+                        alt="Current thumbnail"
+                        className="w-24 h-14 mt-2 rounded object-cover"
+                    />
+                )}
+                {thumbnailFile && (
+                    <div className="mt-2 text-xs text-gray-500">
+                        {thumbnailFile.name}
+                    </div>
+                )}
                 <div className="flex justify-end gap-2 mt-2">
                     <button
                         type="button"
