@@ -78,6 +78,20 @@ SearchFilterBar.propTypes = {
 // --- Compact Edit Modal ---
 const EditVideoModal = ({ video, open, onClose, onSave, loading }) => {
     const [form, setForm] = useState({ title: "", description: "", tags: "" });
+
+EditVideoModal.propTypes = {
+    video: PropTypes.shape({
+        _id: PropTypes.string,
+        title: PropTypes.string,
+        description: PropTypes.string,
+        tags: PropTypes.arrayOf(PropTypes.string),
+        thumbnail: PropTypes.string
+    }),
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onSave: PropTypes.func.isRequired,
+    loading: PropTypes.bool.isRequired
+};
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [err, setErr] = useState({});
 
