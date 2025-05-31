@@ -65,7 +65,7 @@ const useUpload = (formData, navigate) => {
             const response = await axios.post('/api/v1/videos/upload', formPayload, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${user?.token}`
+                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`
                 },
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round(
