@@ -60,7 +60,6 @@ const generateCloudinarySignedUrl = async (publicId, options = {}) => {
     }
 };
 
-
 // Upload video on cloudinary
 const uploadOnCloudinary = async (localFilePath) => {
     try {
@@ -75,7 +74,6 @@ const uploadOnCloudinary = async (localFilePath) => {
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto",
         });
-        console.log("Cloudinary upload successful:", response);
 
         // Remove the local file after upload
         fs.unlinkSync(localFilePath);
@@ -87,6 +85,5 @@ const uploadOnCloudinary = async (localFilePath) => {
         throw error; // Rethrow the error so the controller knows about it
     }
 };
-
 
 export { uploadOnCloudinary, generateCloudinarySignedUrl };
