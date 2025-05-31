@@ -53,7 +53,7 @@ const useUpload = (formData, navigate) => {
             const formPayload = new FormData();
             
             // Append video file and metadata
-            formPayload.append('video', videoFile);
+            formPayload.append('videoFile', videoFile);
             formPayload.append('title', formData.title);
             formPayload.append('description', formData.description);
             formPayload.append('tags', JSON.stringify(formData.tags));
