@@ -9,5 +9,8 @@
   "diffEditor.codeLens": true,
   "diffEditor.experimental.showMoves": true,
   "diffEditor.experimental.useTrueInlineView": true,
-  "totvsLanguageServer.welcomePage": false
+  "totvsLanguageServer.welcomePage": false,
+  "cSpell.words": [
+    "asynchandler"
+  ]
 }
