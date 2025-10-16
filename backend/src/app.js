@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
-import passport from "passport";
+// import passport from "passport";
 import { v2 as cloudinary } from "cloudinary";
 
 // Load environment variables
@@ -23,7 +23,7 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 import historyRouter from "./routes/history.routes.js";
 
 // Initialize Passport Config
-import "./config/passport.js";
+// import "./config/passport.js";
 
 const app = express();
 
@@ -70,8 +70,8 @@ app.use(
 );
 
 // Initialize Passport (After Session Middleware)
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // Routes
 app.use("/auth", authRouter);
