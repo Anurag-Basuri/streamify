@@ -1,22 +1,58 @@
 # 🎬 Streamify - Modern Video Streaming Platform
 
-Streamify is a full-stack video streaming platform built with **React**, **Node.js**, and **MongoDB**. It provides a modern, responsive interface for uploading, sharing, and discovering videos, with features like playlists, watch later, history, and more.
+Streamify is a full‑stack video streaming platform (React + Vite frontend, Node.js + Express backend, MongoDB). This README is updated to match the current workspace layout and includes quick links to the most relevant files.
 
----
+Quick links
+- Frontend entry: [`App`](frontend/src/App.jsx) ([frontend/src/App.jsx](frontend/src/App.jsx)) — rendered by [`main`](frontend/src/main.jsx) ([frontend/src/main.jsx](frontend/src/main.jsx))
+- Frontend config: [`vite.config.js`](vite.config.js) ([vite.config.js](vite.config.js)), [`tailwind.config.js`](frontend/tailwind.config.js) ([frontend/tailwind.config.js](frontend/tailwind.config.js)), [`package.json`](frontend/package.json) ([frontend/package.json](frontend/package.json))
+- Backend entry: [`index.js`](backend/src/index.js) ([backend/src/index.js](backend/src/index.js)) and [`app.js`](backend/src/app.js) ([backend/src/app.js](backend/src/app.js))
+- Backend config: [`package.json`](backend/package.json) ([backend/package.json](backend/package.json)), DB connect: [`database/index.js`](backend/src/database/index.js) ([backend/src/database/index.js](backend/src/database/index.js))
+- Key backend utilities: [`cloudinary`](backend/src/utils/cloudinary.js) ([backend/src/utils/cloudinary.js](backend/src/utils/cloudinary.js)), [`tokens`](backend/src/utils/tokens.js) ([backend/src/utils/tokens.js](backend/src/utils/tokens.js)), [`APIresponse`](backend/src/utils/APIresponse.js) ([backend/src/utils/APIresponse.js](backend/src/utils/APIresponse.js))
 
-## 🚩 Table of Contents
+Project structure (high-level)
+- frontend/
+  - UI and routing in [`frontend/src/`](frontend/src)
+  - Main components: [`Header.jsx`](frontend/src/components/Header.jsx) ([frontend/src/components/Header.jsx](frontend/src/components/Header.jsx)), [`Sidebar.jsx`](frontend/src/components/Sidebar.jsx) ([frontend/src/components/Sidebar.jsx](frontend/src/components/Sidebar.jsx)), video components in [`frontend/src/components/Video/`](frontend/src/components/Video)
+  - Upload UI: [`FileUploadArea.jsx`](frontend/src/components/Upload/FileUploadArea.jsx) ([frontend/src/components/Upload/FileUploadArea.jsx](frontend/src/components/Upload/FileUploadArea.jsx))
+  - Hooks: [`useAuth`](frontend/src/hooks/useAuth.js) ([frontend/src/hooks/useAuth.js](frontend/src/hooks/useAuth.js)), [`useUpload`](frontend/src/hooks/useUpload.js) ([frontend/src/hooks/useUpload.js](frontend/src/hooks/useUpload.js)), [`useVideos`](frontend/src/hooks/useVideos.js) ([frontend/src/hooks/useVideos.js](frontend/src/hooks/useVideos.js))
+- backend/
+  - API controllers: [`backend/src/controllers/video.controller.js`](backend/src/controllers/video.controller.js) ([backend/src/controllers/video.controller.js](backend/src/controllers/video.controller.js)), auth controller: [`auth.controller.js`](backend/src/controllers/auth.controller.js) ([backend/src/controllers/auth.controller.js](backend/src/controllers/auth.controller.js))
+  - Routes: [`video.routes.js`](backend/src/routes/video.routes.js) ([backend/src/routes/video.routes.js](backend/src/routes/video.routes.js)), [`auth.routes.js`](backend/src/routes/auth.routes.js) ([backend/src/routes/auth.routes.js](backend/src/routes/auth.routes.js)), playlist/watchlater/history routes under [`backend/src/routes/`](backend/src/routes)
+  - Middlewares: auth [`auth.middleware.js`](backend/src/middlewares/auth.middleware.js) ([backend/src/middlewares/auth.middleware.js](backend/src/middlewares/auth.middleware.js)), file upload [`multer.middleware.js`](backend/src/middlewares/multer.middleware.js) ([backend/src/middlewares/multer.middleware.js](backend/src/middlewares/multer.middleware.js))
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Key Components](#key-components)
-- [API Endpoints](#api-endpoints)
-- [Theme Customization](#theme-customization)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
+Getting started (dev)
+1. Frontend
+   - Open [frontend/package.json](frontend/package.json) and run:
+     ```sh
+     npm --prefix frontend run dev
+     ```
+   - Frontend uses Vite and Tailwind; main app is  (frontend/src/main.jsx).
+
+2. Backend
+   - Ensure MongoDB running and required env values set in  (see below).
+   - Run:
+     ```sh
+     npm --prefix backend run dev
+     ```
+   - Backend entry is  (backend/src/index.js); core Express app is  (backend/src/app.js).
+
+Environment variables
+- Frontend: create `frontend/.env` with:
+```
+VITE_API_URL=http://localhost:8000
+VITE_CLOUD_NAME=your_cloudinary_cloud_name
+```
+- Backend: create `backend/.env` with:
+```
+PORT=8000
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+```
+
+**Note:** Replace `your_mongodb_uri`, `your_jwt_secret`, `your_cloudinary_cloud_name`, `your_cloudinary_api_key`, and `your_cloudinary_api_secret` with your actual configuration values.
 
 ---
 
