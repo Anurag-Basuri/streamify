@@ -1,6 +1,5 @@
 import Router from "express";
 import { body } from "express-validator";
-import passport from "passport";
 import {
     loginUser,
     logoutUser,
@@ -13,7 +12,8 @@ import {
     update_account_details,
     get_user_profile,
 } from "../controllers/user.controller.js";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import { verifyAccessToken, requireAuth } from "../middlewares/auth.middleware.js";
+import { validateResult } from "../middlewares/validate.middleware.js";
 import {
     uploadAvatar,
     uploadCoverImage,
@@ -22,101 +22,104 @@ import {
 
 const router = Router();
 
-// Google OAuth Routes
-router.get(
-    "/auth/google",
-    passport.authenticate("google", {
-        scope: ["profile", "email"],
-        session: false,
-    })
-);
-
-router.get(
-    "/auth/google/callback",
-    passport.authenticate("google", { session: false }),
-    async (req, res) => {
-        try {
-            const user = req.user;
-            const accessToken = user.generateAccessToken();
-            const refreshToken = user.generateRefreshToken();
-
-            user.refreshToken = refreshToken;
-            await user.save();
-
-            res.redirect(
-                `${process.env.FRONTEND_URL}/oauth?access=${accessToken}&refresh=${refreshToken}`
-            );
-        } catch (error) {
-            console.error("Google OAuth callback error:", error);
-            res.status(500).json({ message: "OAuth authentication failed" });
-        }
-    }
-);
+// ===========================================
+// PUBLIC ROUTES (No authentication required)
+// ===========================================
 
 // Validation Rules
 const registerValidationRules = [
-    body("userName").notEmpty().withMessage("Username is required").trim(),
-    body("fullName").notEmpty().withMessage("Full Name is required").trim(),
+    body("userName")
+        .notEmpty().withMessage("Username is required")
+        .trim()
+        .isLength({ min: 3, max: 30 }).withMessage("Username must be 3-30 characters"),
+    body("fullName")
+        .notEmpty().withMessage("Full Name is required")
+        .trim()
+        .isLength({ min: 3, max: 30 }).withMessage("Full Name must be 3-30 characters"),
     body("email")
-        .isEmail()
-        .withMessage("Please provide a valid email")
+        .isEmail().withMessage("Please provide a valid email")
         .normalizeEmail(),
     body("password")
-        .notEmpty()
-        .withMessage("Password is required")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters long"),
+        .notEmpty().withMessage("Password is required")
+        .isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
 ];
 
-// Auth Routes
+const loginValidationRules = [
+    body("email")
+        .isEmail().withMessage("Please provide a valid email")
+        .normalizeEmail(),
+    body("password")
+        .notEmpty().withMessage("Password is required"),
+];
+
+// Register new user
 router.post(
     "/register",
-    uploadFields, // ✅ Using predefined upload middleware for avatar & cover image
+    uploadFields,
     registerValidationRules,
+    validateResult,
     registerUser
 );
 
+// Login user
 router.post(
     "/login",
-    [
-        body("email")
-            .isEmail()
-            .withMessage("Please provide a valid email")
-            .normalizeEmail(),
-        body("password")
-            .notEmpty()
-            .withMessage("Password is required")
-            .isLength({ min: 6 })
-            .withMessage("Password must be at least 6 characters long"),
-    ],
+    loginValidationRules,
+    validateResult,
     loginUser
 );
 
-router.post("/logout", verifyAccessToken, logoutUser);
+// Refresh access token
 router.post("/refresh-token", refreshAccessToken);
 
-// Secure Routes
-router.patch("/change-password", verifyAccessToken, change_current_password);
+// ===========================================
+// PROTECTED ROUTES (Authentication required)
+// ===========================================
+
+// Logout user
+router.post("/logout", requireAuth, logoutUser);
+
+// Get current user profile
+router.get("/current-user", requireAuth, get_current_user);
+
+// Change password
+router.patch(
+    "/change-password",
+    requireAuth,
+    [
+        body("oldPassword").notEmpty().withMessage("Old password is required"),
+        body("newPassword1").isLength({ min: 6 }).withMessage("New password must be at least 6 characters"),
+        body("newPassword2").notEmpty().withMessage("Confirm password is required"),
+    ],
+    validateResult,
+    change_current_password
+);
+
+// Change avatar
 router.patch(
     "/change-avatar",
-    verifyAccessToken,
-    uploadAvatar, // ✅ Use specific upload middleware
+    requireAuth,
+    uploadAvatar,
     change_Avatar
 );
+
+// Change cover image
 router.patch(
     "/change-cover-image",
-    verifyAccessToken,
-    uploadCoverImage, // ✅ Use specific upload middleware
+    requireAuth,
+    uploadCoverImage,
     change_CoverImage
 );
+
+// Update account details
 router.patch(
     "/update-details",
-    verifyAccessToken,
-    uploadFields, // ✅ Use predefined upload middleware
+    requireAuth,
+    uploadFields,
     update_account_details
 );
 
-router.get("/current-user", verifyAccessToken, get_current_user);
+// Get user channel profile (public with optional auth for subscription status)
 router.get("/c/:username", verifyAccessToken, get_user_profile);
 
 export default router;
