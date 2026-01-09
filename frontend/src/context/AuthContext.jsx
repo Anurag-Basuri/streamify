@@ -3,98 +3,111 @@ import {
     useState,
     useEffect,
     useCallback,
-    useRef,
     useMemo,
 } from "react";
 import PropTypes from "prop-types";
 import { useNavigate, useLocation } from "react-router-dom";
-import {jwtDecode} from "jwt-decode";
+import { toast } from "react-hot-toast";
 import {
     getCurrentUser,
     signIn,
     signUp,
-    logout,
-    refreshToken,
+    logout as logoutApi,
     handleGoogleAuth,
+    TokenService,
 } from "../services/authService";
 
-const AuthContext = createContext();
+// Create context
+const AuthContext = createContext(null);
+
+// Auth states
+const AUTH_STATES = {
+    LOADING: "loading",
+    AUTHENTICATED: "authenticated",
+    UNAUTHENTICATED: "unauthenticated",
+};
 
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [authState, setAuthState] = useState(AUTH_STATES.LOADING);
     const [isLoading, setIsLoading] = useState(true);
-    const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const intervalRef = useRef(null);
 
     // Load user profile
     const loadUserProfile = useCallback(async () => {
-        setIsLoading(true);
         try {
             const profile = await getCurrentUser();
             setUser(profile);
+            setAuthState(AUTH_STATES.AUTHENTICATED);
             return profile;
         } catch (error) {
             console.error("Failed to load user profile:", error);
             setUser(null);
+            setAuthState(AUTH_STATES.UNAUTHENTICATED);
             throw error;
-        } finally {
-            setIsLoading(false);
         }
     }, []);
 
-    // Refresh access token
-    const handleTokenRefresh = useCallback(async () => {
-        if (isTokenRefreshing) return;
-        setIsTokenRefreshing(true);
-
-        try {
-            // refreshToken() from authService handles token storage internally
-            await refreshToken();
-            const profile = await loadUserProfile();
-            setUser(profile);
-            return true;
-        } catch (error) {
-            console.error("Token refresh failed:", error);
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
+    // Handle session expiration (from API interceptor)
+    useEffect(() => {
+        const handleSessionExpired = () => {
             setUser(null);
-            navigate("/auth", { state: { sessionExpired: true } });
-            return false;
-        } finally {
-            setIsTokenRefreshing(false);
-        }
-    }, [isTokenRefreshing, navigate, loadUserProfile]);
+            setAuthState(AUTH_STATES.UNAUTHENTICATED);
+            toast.error("Your session has expired. Please login again.");
+            navigate("/auth?mode=login", {
+                state: { from: location.pathname, sessionExpired: true },
+            });
+        };
 
-    // Initialize authentication
+        window.addEventListener("auth:sessionExpired", handleSessionExpired);
+        return () => {
+            window.removeEventListener(
+                "auth:sessionExpired",
+                handleSessionExpired
+            );
+        };
+    }, [navigate, location.pathname]);
+
+    // Initialize authentication on mount
     useEffect(() => {
         let isMounted = true;
 
         const initializeAuth = async () => {
-            try {
-                const accessToken = localStorage.getItem("accessToken");
-                if (accessToken) {
-                    const tokenExp = jwtDecode(accessToken)?.exp;
-                    if (tokenExp && tokenExp * 1000 > Date.now()) {
-                        await loadUserProfile();
-                    } else {
-                        await handleTokenRefresh();
-                    }
-                } else {
+            const accessToken = TokenService.getAccessToken();
+
+            if (!accessToken) {
+                if (isMounted) {
+                    setAuthState(AUTH_STATES.UNAUTHENTICATED);
                     setIsLoading(false);
                 }
-            } catch (error) {
-                if (isMounted) {
-                    console.error("Initialization error:", error);
-                    setUser(null);
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
-                    navigate("/auth");
+                return;
+            }
+
+            // Check if token is expired
+            if (TokenService.isTokenExpired(accessToken)) {
+                // Try to refresh
+                try {
+                    await loadUserProfile();
+                } catch {
+                    TokenService.clearTokens();
+                    if (isMounted) {
+                        setAuthState(AUTH_STATES.UNAUTHENTICATED);
+                    }
                 }
-            } finally {
-                if (isMounted) setIsInitialized(true);
+            } else {
+                // Token is valid, load profile
+                try {
+                    await loadUserProfile();
+                } catch {
+                    if (isMounted) {
+                        setAuthState(AUTH_STATES.UNAUTHENTICATED);
+                    }
+                }
+            }
+
+            if (isMounted) {
+                setIsLoading(false);
             }
         };
 
@@ -103,145 +116,132 @@ const AuthProvider = ({ children }) => {
         return () => {
             isMounted = false;
         };
-    }, [navigate, loadUserProfile, handleTokenRefresh]);
-
-    // Periodically check token expiration
-    useEffect(() => {
-        const checkAuth = async () => {
-            const accessToken = localStorage.getItem("accessToken");
-            if (accessToken) {
-                const tokenExp = jwtDecode(accessToken)?.exp;
-                if (tokenExp && tokenExp * 1000 < Date.now() + 300000) {
-                    await handleTokenRefresh();
-                }
-            }
-        };
-
-        const interval = setInterval(checkAuth, 300000); // Check every 5 minutes
-        return () => clearInterval(interval);
-    }, [handleTokenRefresh]);
+    }, [loadUserProfile]);
 
     // Handle OAuth callback
     useEffect(() => {
-        const handleOAuthCallback = async () => {
-            const params = new URLSearchParams(window.location.search);
-            const accessToken = params.get("access");
-            const refreshToken = params.get("refresh");
+        const params = new URLSearchParams(window.location.search);
+        const accessToken = params.get("access");
+        const refreshToken = params.get("refresh");
 
-            if (accessToken && refreshToken) {
-                try {
-                    localStorage.setItem("accessToken", accessToken);
-                    localStorage.setItem("refreshToken", refreshToken);
-                    await loadUserProfile();
-                    navigate(location.state?.from || "/profile");
+        if (accessToken && refreshToken) {
+            TokenService.setTokens(accessToken, refreshToken);
+            loadUserProfile()
+                .then(() => {
+                    navigate(location.state?.from || "/profile", {
+                        replace: true,
+                    });
                     window.history.replaceState(
                         {},
                         document.title,
                         window.location.pathname
                     );
-                } catch (error) {
+                })
+                .catch((error) => {
                     console.error("OAuth callback error:", error);
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
-                    navigate("/auth");
-                }
-            }
-        };
-
-        handleOAuthCallback();
+                    TokenService.clearTokens();
+                    navigate("/auth?mode=login");
+                });
+        }
     }, [navigate, location, loadUserProfile]);
 
     // Login user
     const login = useCallback(
         async (credentials) => {
+            setIsLoading(true);
             try {
-                await signIn(credentials);
-                const profile = await loadUserProfile();
-                setUser(profile);
+                const { user: userData } = await signIn(credentials);
+                await loadUserProfile();
+                toast.success(`Welcome back, ${userData?.fullName || "User"}!`);
                 return true;
             } catch (error) {
-                console.error("Login error:", error);
-                setUser(null);
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
+                const message =
+                    error.message || "Login failed. Please try again.";
+                toast.error(message);
                 throw error;
+            } finally {
+                setIsLoading(false);
             }
         },
         [loadUserProfile]
     );
 
-    // Register user (user must login after registration)
+    // Register user
     const register = useCallback(async (userData) => {
+        setIsLoading(true);
         try {
-            await signUp(userData);
-            // Registration successful, but user needs to login
-            // Backend doesn't return tokens on registration
-            return {
-                success: true,
-                message: "Registration successful. Please login.",
-            };
+            const result = await signUp(userData);
+            toast.success(result.message);
+            return result;
         } catch (error) {
-            console.error("Registration error:", error);
+            const message =
+                error.message || "Registration failed. Please try again.";
+            toast.error(message);
             throw error;
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
     // Logout user
-    const logoutUser = useCallback(async () => {
+    const logout = useCallback(async () => {
+        setIsLoading(true);
         try {
-            await logout();
+            await logoutApi();
             setUser(null);
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            navigate("/auth");
+            setAuthState(AUTH_STATES.UNAUTHENTICATED);
+            toast.success("Logged out successfully");
+            navigate("/auth?mode=login");
         } catch (error) {
             console.error("Logout error:", error);
+            // Still clear local state even if API fails
+            setUser(null);
+            setAuthState(AUTH_STATES.UNAUTHENTICATED);
+            navigate("/auth?mode=login");
+        } finally {
+            setIsLoading(false);
         }
     }, [navigate]);
 
     // Google login
-    const googleLogin = useCallback(async () => {
-        try {
-            await handleGoogleAuth();
-        } catch (error) {
-            console.error("Google login failed:", error);
-        }
+    const googleLogin = useCallback(() => {
+        handleGoogleAuth();
     }, []);
 
     // Update user in context
-    const updateUserInContext = useCallback((newUserData) => {
-        setUser((prev) => ({ ...prev, ...newUserData }));
+    const updateUser = useCallback((updates) => {
+        setUser((prev) => (prev ? { ...prev, ...updates } : null));
     }, []);
 
     // Memoized context value
-    const authContextValue = useMemo(
+    const contextValue = useMemo(
         () => ({
             user,
-            isLoading: isLoading || !isInitialized,
-            isAuthenticated: !!user,
+            isLoading,
+            isAuthenticated: authState === AUTH_STATES.AUTHENTICATED,
+            authState,
             login,
             register,
-            logout: logoutUser,
+            logout,
             googleLogin,
-            updateUserInContext,
+            updateUser,
+            refreshProfile: loadUserProfile,
         }),
         [
             user,
             isLoading,
-            isInitialized,
+            authState,
             login,
             register,
-            logoutUser,
+            logout,
             googleLogin,
-            updateUserInContext,
+            updateUser,
+            loadUserProfile,
         ]
     );
 
     return (
-        <AuthContext.Provider value={authContextValue}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );
@@ -251,4 +251,4 @@ AuthProvider.propTypes = {
     children: PropTypes.node.isRequired,
 };
 
-export { AuthProvider, AuthContext };
+export { AuthProvider, AuthContext, AUTH_STATES };
