@@ -1,163 +1,68 @@
-import axios from "axios";
+// Authentication service - handles all auth-related API calls
+import { api, ApiError, TokenService } from "./api";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}/api/v1/users`
-    : "http://localhost:8000/api/v1/users";
-
-// Create Axios instance with default configuration
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-// Create public Axios instance for unauthenticated requests
-const publicClient = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-// Request interceptor - Add auth token to requests
-apiClient.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-// Response interceptor - Handle token refresh on 401
-apiClient.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
-
-        // Only try to refresh if we get 401 and haven't already retried
-        if (
-            error.response?.status === 401 &&
-            !originalRequest._retry &&
-            !originalRequest.url.includes("/refresh-token") &&
-            !originalRequest.url.includes("/login")
-        ) {
-            originalRequest._retry = true;
-
-            try {
-                const newToken = await refreshToken();
-                if (newToken) {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                    return apiClient(originalRequest);
-                }
-            } catch (refreshError) {
-                // Token refresh failed, clear storage and redirect
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-                window.location.href = "/auth";
-                return Promise.reject(refreshError);
-            }
-        }
-        return Promise.reject(error);
-    }
-);
-
-// Get current user profile
-export const getCurrentUser = async () => {
-    try {
-        const response = await apiClient.get("/current-user");
-        return response.data.data;
-    } catch (error) {
-        if (error.response?.status === 401) {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-        }
-        throw new Error(
-            error.response?.data?.message || "Failed to fetch user"
-        );
-    }
+// Auth API endpoints
+const AUTH_ENDPOINTS = {
+    LOGIN: "/api/v1/users/login",
+    REGISTER: "/api/v1/users/register",
+    LOGOUT: "/api/v1/users/logout",
+    REFRESH_TOKEN: "/api/v1/users/refresh-token",
+    CURRENT_USER: "/api/v1/users/current-user",
+    CHANGE_PASSWORD: "/api/v1/users/change-password",
+    CHANGE_AVATAR: "/api/v1/users/change-avatar",
+    CHANGE_COVER: "/api/v1/users/change-cover-image",
 };
 
-// Refresh access token
-export const refreshToken = async () => {
-    try {
-        const storedRefreshToken = localStorage.getItem("refreshToken");
-        if (!storedRefreshToken) {
-            throw new Error("No refresh token available");
-        }
-
-        const response = await publicClient.post("/refresh-token", {
-            refreshToken: storedRefreshToken,
-        });
-
-        // Backend returns { accessToken, refreshToken } in data.data
-        const { accessToken, refreshToken: newRefreshToken } =
-            response.data.data;
-
-        if (!accessToken) {
-            throw new Error("No access token received");
-        }
-
-        localStorage.setItem("accessToken", accessToken);
-        if (newRefreshToken) {
-            localStorage.setItem("refreshToken", newRefreshToken);
-        }
-
-        return accessToken;
-    } catch (error) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        throw error;
-    }
-};
-
-// Sign in user
+/**
+ * Sign in user with email and password
+ * @param {Object} credentials - { email, password }
+ * @returns {Promise<Object>} User data with tokens
+ */
 export const signIn = async (credentials) => {
     try {
-        const response = await publicClient.post("/login", credentials);
+        const response = await api.post(AUTH_ENDPOINTS.LOGIN, credentials);
         const { accessToken, refreshToken, user } = response.data.data;
 
-        if (accessToken) {
-            localStorage.setItem("accessToken", accessToken);
-        }
-        if (refreshToken) {
-            localStorage.setItem("refreshToken", refreshToken);
-        }
+        TokenService.setTokens(accessToken, refreshToken);
 
-        return { accessToken, refreshToken, user };
+        return { user, accessToken, refreshToken };
     } catch (error) {
-        throw new Error(error.response?.data?.message || "Login failed");
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
     }
 };
 
-// Sign up new user (Note: Backend doesn't return tokens on registration)
+/**
+ * Register new user
+ * @param {Object} userData - { userName, fullName, email, password }
+ * @returns {Promise<Object>} Created user data (no tokens - user must login)
+ */
 export const signUp = async (userData) => {
     try {
-        const response = await publicClient.post("/register", userData);
-        // Backend returns user data without tokens
-        // User needs to login after registration
-        return response.data.data;
+        const response = await api.post(AUTH_ENDPOINTS.REGISTER, userData);
+        return {
+            success: true,
+            user: response.data.data,
+            message: "Registration successful! Please login.",
+        };
     } catch (error) {
-        throw new Error(error.response?.data?.message || "Registration failed");
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
     }
 };
 
-// Logout user
+/**
+ * Logout current user
+ */
 export const logout = async () => {
     try {
-        await apiClient.post("/logout");
+        await api.post(AUTH_ENDPOINTS.LOGOUT);
     } catch (error) {
-        // Even if logout fails on server, clear local storage
-        console.error("Logout error:", error);
+        // Log error but don't throw - always clear local state
+        console.error("Logout API error:", error);
     } finally {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        // Clear all cookies
+        TokenService.clearTokens();
+        // Clear any session cookies
         document.cookie.split(";").forEach((c) => {
             document.cookie = c
                 .replace(/^ +/, "")
@@ -166,52 +71,122 @@ export const logout = async () => {
     }
 };
 
-// Update user avatar
-export const updateAvatar = async (file) => {
+/**
+ * Refresh access token
+ * @returns {Promise<string>} New access token
+ */
+export const refreshToken = async () => {
+    const storedRefreshToken = TokenService.getRefreshToken();
+
+    if (!storedRefreshToken) {
+        throw new ApiError("No refresh token available", 401);
+    }
+
+    try {
+        const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
+            refreshToken: storedRefreshToken,
+        });
+
+        const { accessToken, refreshToken: newRefreshToken } =
+            response.data.data;
+        TokenService.setTokens(accessToken, newRefreshToken);
+
+        return accessToken;
+    } catch (error) {
+        TokenService.clearTokens();
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Get current authenticated user
+ * @returns {Promise<Object>} User data
+ */
+export const getCurrentUser = async () => {
+    try {
+        const response = await api.get(AUTH_ENDPOINTS.CURRENT_USER);
+        return response.data.data;
+    } catch (error) {
+        if (error.statusCode === 401) {
+            TokenService.clearTokens();
+        }
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Update user avatar
+ * @param {File} file - Avatar image file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<Object>} Updated user data
+ */
+export const updateAvatar = async (file, onProgress) => {
     const formData = new FormData();
     formData.append("avatar", file);
 
     try {
-        const response = await apiClient.patch("/change-avatar", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        const response = await api.upload(
+            AUTH_ENDPOINTS.CHANGE_AVATAR,
+            formData,
+            onProgress
+        );
         return response.data.data;
     } catch (error) {
-        throw new Error(
-            error.response?.data?.message || "Avatar update failed"
-        );
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
     }
 };
 
-// Update cover image
-export const updateCoverImage = async (file) => {
+/**
+ * Update cover image
+ * @param {File} file - Cover image file
+ * @param {Function} onProgress - Progress callback (0-100)
+ * @returns {Promise<Object>} Updated user data
+ */
+export const updateCoverImage = async (file, onProgress) => {
     const formData = new FormData();
     formData.append("coverImage", file);
 
     try {
-        const response = await apiClient.patch(
-            "/change-cover-image",
+        const response = await api.upload(
+            AUTH_ENDPOINTS.CHANGE_COVER,
             formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            }
+            onProgress
         );
         return response.data.data;
     } catch (error) {
-        throw new Error(
-            error.response?.data?.message || "Cover image update failed"
-        );
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
     }
 };
 
-// Initiate Google OAuth (disabled until backend enables it)
-export const handleGoogleAuth = () => {
-    console.warn("Google OAuth is currently disabled");
-    // window.location.href = `${API_BASE_URL}/auth/google`;
+/**
+ * Change user password
+ * @param {Object} passwords - { oldPassword, newPassword1, newPassword2 }
+ * @returns {Promise<Object>} Success message
+ */
+export const changePassword = async (passwords) => {
+    try {
+        const response = await api.patch(
+            AUTH_ENDPOINTS.CHANGE_PASSWORD,
+            passwords
+        );
+        return response.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
 };
 
-export { apiClient, publicClient };
+/**
+ * Initiate Google OAuth login (disabled until backend enables it)
+ */
+export const handleGoogleAuth = () => {
+    console.warn("Google OAuth is currently disabled");
+    // window.location.href = `${API_CONFIG.baseURL}/api/v1/users/auth/google`;
+};
+
+// Re-export for backward compatibility
+export { api as apiClient, TokenService };
