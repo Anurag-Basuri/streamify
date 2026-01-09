@@ -1,59 +1,74 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-hot-toast";
+import { getAllVideos } from "../services/videoService";
 
+/**
+ * Custom hook for fetching and managing video list with pagination
+ * @param {boolean} isAuthenticated - Whether user is authenticated
+ * @param {Object} user - Current user object
+ * @returns {Object} Video state and controls
+ */
 const useVideos = (isAuthenticated, user) => {
     const [videos, setVideos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const controller = useRef(new AbortController());
+    const [error, setError] = useState(null);
+    const abortControllerRef = useRef(null);
 
     const fetchVideos = useCallback(
-        async (pageNum) => {
-            // Cancel previous request if any
-            controller.current.abort();
-            controller.current = new AbortController();
+        async (pageNum, reset = false) => {
+            // Cancel any ongoing request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            abortControllerRef.current = new AbortController();
 
             try {
-                setLoadingMore(pageNum > 1);
-                const { data } = await axios.get(`/api/v1/videos`, {
-                    headers: isAuthenticated
-                        ? {
-                              Authorization: `Bearer ${localStorage.getItem(
-                                  "accessToken"
-                              )}`,
-                          }
-                        : {},
-                    params: {
-                        page: pageNum,
-                        limit: 10,
-                        sort: "-createdAt",
-                    },
-                    signal: controller.current.signal,
+                setError(null);
+
+                if (pageNum === 1) {
+                    setIsLoading(true);
+                } else {
+                    setLoadingMore(true);
+                }
+
+                const data = await getAllVideos({
+                    page: pageNum,
+                    limit: 12,
+                    sort: "-createdAt",
                 });
 
-                const formattedVideos = data.data.videos.map((video) => ({
+                const formattedVideos = data.videos.map((video) => ({
                     ...video,
                     isLiked: isAuthenticated
                         ? video.likes?.includes(user?._id)
                         : false,
                 }));
 
-                setVideos(
-                    pageNum === 1
-                        ? formattedVideos
-                        : (prev) => [...prev, ...formattedVideos]
-                );
-                setHasMore(
-                    data.data.videos.length > 0 && data.data.hasNextPage
-                );
-            } catch (error) {
-                if (!axios.isCancel(error)) {
-                    toast.error(
-                        error.response?.data?.message || "Failed to load videos"
-                    );
+                if (reset || pageNum === 1) {
+                    setVideos(formattedVideos);
+                } else {
+                    setVideos((prev) => [...prev, ...formattedVideos]);
+                }
+
+                setHasMore(data.hasNextPage);
+            } catch (err) {
+                // Ignore abort errors
+                if (
+                    err.name === "AbortError" ||
+                    err.message?.includes("canceled")
+                ) {
+                    return;
+                }
+
+                console.error("Failed to load videos:", err);
+                setError(err.message || "Failed to load videos");
+
+                // Only show toast for non-initial loads
+                if (pageNum > 1) {
+                    toast.error("Failed to load more videos");
                 }
             } finally {
                 setIsLoading(false);
@@ -63,34 +78,49 @@ const useVideos = (isAuthenticated, user) => {
         [isAuthenticated, user?._id]
     );
 
-    // Add useEffect to fetch videos when component mounts or dependencies change
+    // Initial fetch
     useEffect(() => {
-        setPage(1); // Reset page when auth status or user changes
-        fetchVideos(1);
+        setPage(1);
+        fetchVideos(1, true);
 
-        // Cleanup function to abort any ongoing requests
         return () => {
-            controller.current.abort();
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
         };
     }, [fetchVideos]);
 
-    // Add another useEffect to handle page changes
+    // Handle page changes
     useEffect(() => {
         if (page > 1) {
             fetchVideos(page);
         }
     }, [page, fetchVideos]);
 
+    // Load more function
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore) {
+            setPage((prev) => prev + 1);
+        }
+    }, [loadingMore, hasMore]);
+
+    // Refresh function
+    const refresh = useCallback(() => {
+        setPage(1);
+        fetchVideos(1, true);
+    }, [fetchVideos]);
+
     return {
         videos,
         setVideos,
         isLoading,
+        error,
         page,
         setPage,
         hasMore,
         loadingMore,
-        fetchVideos,
-        controller,
+        loadMore,
+        refresh,
     };
 };
 
