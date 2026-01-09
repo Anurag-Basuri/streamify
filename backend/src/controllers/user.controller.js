@@ -102,18 +102,17 @@ const loginUser = asynchandler(async (req, res, next) => {
 
 // Function to handle user logout
 const logoutUser = asynchandler(async (req, res, next) => {
-    // Invalidate the access token (add to a blacklist)
+    // Remove refresh token from database
     await User.findByIdAndUpdate(req.user._id, {
-        $unset: { refreshToken: 1 }, // Remove refresh token
-        $addToSet: { invalidatedTokens: req.token }, // Add access token to blacklist
+        $unset: { refreshToken: 1 },
     });
 
     // Clear cookies
     const options = {
         httpOnly: true,
-        secure: true,
-        domain: "localhost", // Match the domain used when setting the cookie
-        path: "/", // Match the path used when setting the cookie
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path: "/",
     };
     res.clearCookie("accessToken", options);
     res.clearCookie("refreshToken", options);
@@ -444,12 +443,12 @@ const get_user_profile = asynchandler(async (req, res, next) => {
         return res
             .status(200)
             .json(
-                new ApiResponse(
+                new APIresponse(
                     200,
                     channel[0],
                     "User channel fetched successfully"
                 )
-            ); // Return the first (and only) matched document
+            );
     } catch (error) {
         next(error); // Pass any aggregation errors to error-handling middleware
     }
