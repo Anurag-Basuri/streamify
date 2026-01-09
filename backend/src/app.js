@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
 import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import { v2 as cloudinary } from "cloudinary";
 
 // Load environment variables
@@ -35,6 +37,21 @@ if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
 }
 
+// Rate Limiting - Protect against brute force attacks
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+        success: false,
+        message: "Too many requests, please try again later",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiter to all requests
+app.use(limiter);
+
 // CORS Configuration
 app.use(
     cors({
@@ -51,6 +68,9 @@ app.use(
         crossOriginResourcePolicy: { policy: "cross-origin" },
     })
 );
+
+// Compression - Reduce response size for faster delivery
+app.use(compression());
 
 // Body Parsing Middleware
 app.use(express.json({ limit: "50mb" }));
