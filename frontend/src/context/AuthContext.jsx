@@ -51,11 +51,8 @@ const AuthProvider = ({ children }) => {
         setIsTokenRefreshing(true);
 
         try {
-            const { accessToken, refreshToken: newRefreshToken } =
-                await refreshToken();
-            localStorage.setItem("accessToken", accessToken);
-            localStorage.setItem("refreshToken", newRefreshToken);
-
+            // refreshToken() from authService handles token storage internally
+            await refreshToken();
             const profile = await loadUserProfile();
             setUser(profile);
             return true;
@@ -63,6 +60,7 @@ const AuthProvider = ({ children }) => {
             console.error("Token refresh failed:", error);
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
+            setUser(null);
             navigate("/auth", { state: { sessionExpired: true } });
             return false;
         } finally {
@@ -157,9 +155,7 @@ const AuthProvider = ({ children }) => {
     const login = useCallback(
         async (credentials) => {
             try {
-                const { accessToken, refreshToken } = await signIn(credentials);
-                localStorage.setItem("accessToken", accessToken);
-                localStorage.setItem("refreshToken", refreshToken);
+                await signIn(credentials);
                 const profile = await loadUserProfile();
                 setUser(profile);
                 return true;
@@ -168,28 +164,27 @@ const AuthProvider = ({ children }) => {
                 setUser(null);
                 localStorage.removeItem("accessToken");
                 localStorage.removeItem("refreshToken");
-                return false;
+                throw error;
             }
         },
         [loadUserProfile]
     );
 
-    // Register user
-    const register = useCallback(
-        async (userData) => {
-            try {
-                const { accessToken, refreshToken } = await signUp(userData);
-                localStorage.setItem("accessToken", accessToken);
-                localStorage.setItem("refreshToken", refreshToken);
-                await loadUserProfile();
-                return true;
-            } catch (error) {
-                console.error("Registration error:", error);
-                return false;
-            }
-        },
-        [loadUserProfile]
-    );
+    // Register user (user must login after registration)
+    const register = useCallback(async (userData) => {
+        try {
+            await signUp(userData);
+            // Registration successful, but user needs to login
+            // Backend doesn't return tokens on registration
+            return {
+                success: true,
+                message: "Registration successful. Please login.",
+            };
+        } catch (error) {
+            console.error("Registration error:", error);
+            throw error;
+        }
+    }, []);
 
     // Logout user
     const logoutUser = useCallback(async () => {
