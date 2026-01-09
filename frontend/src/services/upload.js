@@ -1,17 +1,19 @@
-// src/services/upload.js
+import { apiClient } from "./authService";
+
+// Generic file upload service
 export const uploadFile = async (file, type) => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('uploadType', type);
-  
+    formData.append("file", file);
+    formData.append("uploadType", type);
+
     try {
-      const { data } = await api.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return data.url;
+        const { data } = await apiClient.post("/upload", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        return data.url;
     } catch (err) {
-      throw new Error('File upload failed');
+        throw new Error(err.response?.data?.message || "File upload failed");
     }
-  };
+};
