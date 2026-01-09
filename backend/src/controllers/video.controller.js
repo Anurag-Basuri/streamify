@@ -109,8 +109,6 @@ const get_video_by_id = asynchandler(async (req, res) => {
 // Update video details
 const update_video = asynchandler(async (req, res) => {
     const { videoID } = req.params;
-    console.log("Request Body:", req.body);
-    console.log("Request Files:", req.files);
     const updates = {};
 
     // Validate video ID

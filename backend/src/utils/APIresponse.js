@@ -1,4 +1,5 @@
-class APIresponse {
+// Define a standardized API response class
+class ApiResponse {
     constructor(statusCode, data, message = "Success") {
         this.statusCode = statusCode;
         this.data = data;
@@ -7,4 +8,5 @@ class APIresponse {
     }
 }
 
-export { APIresponse };
+// Export both names for backward compatibility during migration
+export { ApiResponse, ApiResponse as APIresponse };
