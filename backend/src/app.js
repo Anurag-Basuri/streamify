@@ -3,14 +3,13 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import session from "express-session";
-// import passport from "passport";
+import helmet from "helmet";
 import { v2 as cloudinary } from "cloudinary";
 
 // Load environment variables
 dotenv.config();
 
 // Import route files
-import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
 import tweetRouter from "./routes/tweet.routes.js";
@@ -22,59 +21,59 @@ import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import historyRouter from "./routes/history.routes.js";
 
-// Initialize Passport Config
-// import "./config/passport.js";
-
 const app = express();
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECRET,
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
 });
 
 // Trust Proxy (for OAuth in production)
 if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
+    app.set("trust proxy", 1);
 }
 
-// Middleware Order is Critical!
+// CORS Configuration
 app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173", // Fallback for development
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
+    cors({
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
 );
 
+// Security Headers
+app.use(
+    helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+);
+
+// Body Parsing Middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Session Middleware (After CORS, Before Passport)
+// Session Middleware
 app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "default_secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // HTTPS in production
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Required for OAuth
-    },
-  })
+    session({
+        secret: process.env.SESSION_SECRET || "default_secret",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === "production",
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24, // 1 day
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        },
+    })
 );
 
-// Initialize Passport (After Session Middleware)
-// app.use(passport.initialize());
-// app.use(passport.session());
-
-// Routes
-app.use("/auth", authRouter);
+// API Routes - All consolidated under /api/v1
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
 app.use("/api/v1/tweets", tweetRouter);
@@ -88,13 +87,31 @@ app.use("/api/v1/history", historyRouter);
 
 // Health Check Endpoint
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK", timestamp: new Date() });
+    res.status(200).json({ status: "OK", timestamp: new Date() });
 });
 
-// Error Handling Middleware
+// 404 Handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.method} ${req.url} not found`,
+    });
+});
+
+// Global Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error("Error:", err.message);
-  res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error:", err);
+
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    res.status(statusCode).json({
+        success: false,
+        statusCode,
+        message,
+        errors: err.errors || [],
+        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    });
 });
 
 export { app };
