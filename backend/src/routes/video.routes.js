@@ -1,7 +1,10 @@
 import Router from "express";
 import { body, param, query } from "express-validator";
 import { uploadFields } from "../middlewares/multer.middleware.js";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import {
+    verifyAccessToken,
+    requireAuth,
+} from "../middlewares/auth.middleware.js";
 import {
     create_new_video,
     get_video_by_id,
@@ -17,57 +20,62 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = Router();
 
-// Route to fetch all videos with pagination
+// ===========================================
+// PUBLIC ROUTES (No authentication required)
+// ===========================================
+
+// Get all videos with pagination
 router.get(
     "/",
     query("page").isInt({ min: 1 }).optional(),
-    query("limit").isInt({ min: 1, max: 10 }).optional(),
+    query("limit").isInt({ min: 1, max: 50 }).optional(),
     validateResult,
     getAllVideos
 );
 
-// Route to fetch a single video by ID
-router
-    .route("/:videoID")
-    .get(
-        param("videoID").isMongoId().withMessage("Invalid video ID"),
-        validateResult,
-        get_video_by_id
-    );
+// Get single video by ID
+router.get(
+    "/:videoID",
+    param("videoID").isMongoId().withMessage("Invalid video ID"),
+    validateResult,
+    get_video_by_id
+);
 
-// Route to increment views
-router
-    .route("/:videoID/views")
-    .post(
-        param("videoID").isMongoId().withMessage("Invalid video ID"),
-        validateResult,
-        incrementViewCount
-    );
+// Increment view count
+router.post(
+    "/:videoID/views",
+    param("videoID").isMongoId().withMessage("Invalid video ID"),
+    validateResult,
+    incrementViewCount
+);
 
-// Apply verifyAccessToken middleware to all routes
-router.use(verifyAccessToken);
+// ===========================================
+// PROTECTED ROUTES (Authentication required)
+// ===========================================
 
 // Validation rules for creating a video
 const createVideoRules = [
     body("title")
         .isLength({ min: 5, max: 100 })
         .withMessage("Title must be between 5 and 100 characters"),
-    body("description")
-        .notEmpty()
-        .withMessage("Description should not be empty"),
-    body("tags").notEmpty().withMessage("Tags should not be empty"),
+    body("description").notEmpty().withMessage("Description is required"),
+    body("tags").notEmpty().withMessage("Tags are required"),
 ];
 
-// Route to upload the video
-router.route("/upload").post(
+// Upload new video
+router.post(
+    "/upload",
+    requireAuth,
     uploadFields,
     createVideoRules,
     validateResult,
     create_new_video
 );
 
-// Route to update a video
-router.route("/update/:videoID").patch(
+// Update video
+router.patch(
+    "/update/:videoID",
+    requireAuth,
     uploadFields,
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     body("title")
@@ -97,34 +105,38 @@ router.route("/update/:videoID").patch(
     update_video
 );
 
-// Route to delete a video
+// Delete video
 router.delete(
     "/:videoID",
+    requireAuth,
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     delete_video
 );
 
-// Route to toggle publish status
+// Toggle publish status
 router.patch(
     "/:videoID/publish",
+    requireAuth,
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     togglePublishStatus
 );
 
-// Route to get all videos of a user
+// Get user's videos
 router.get(
     "/user/:userID",
+    requireAuth,
     param("userID").isMongoId().withMessage("Invalid user ID"),
     validateResult,
     get_User_Videos
 );
 
-// Route to generate download URL
+// Generate download URL
 router.get(
     "/:videoID/download",
-    param("videoID").isMongoId(),
+    requireAuth,
+    param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     generateDownloadUrl
 );
