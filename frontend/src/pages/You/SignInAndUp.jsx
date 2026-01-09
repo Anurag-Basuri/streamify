@@ -84,22 +84,22 @@ const SignInAndUp = () => {
         if (!validateForm()) return;
 
         setSubmissionError("");
+        setSuccessMessage("");
+
         try {
             if (mode === "signup") {
                 const result = await register(formData);
                 if (result?.success) {
-                    // Registration successful - redirect to login
                     navigate("/auth?mode=login", {
-                        state: {
-                            message: "Registration successful! Please login.",
-                        },
+                        state: { message: result.message },
                     });
                 }
             } else {
                 await login(formData);
-                // Login successful - navigate handled by useEffect watching user
+                // Navigation handled by useEffect after user is set
             }
         } catch (error) {
+            // Toast is shown by AuthContext, just set local error for display
             setSubmissionError(error.message || "An unexpected error occurred");
         }
     };
@@ -268,7 +268,7 @@ const SignInAndUp = () => {
                                 <p className="text-center text-gray-300 mt-6">
                                     {mode === "login" ? (
                                         <>
-                                            Don't have an account?{" "}
+                                            Don&apos;t have an account?{" "}
                                             <Link
                                                 to="/auth?mode=signup"
                                                 className="text-purple-400 hover:text-purple-300"
