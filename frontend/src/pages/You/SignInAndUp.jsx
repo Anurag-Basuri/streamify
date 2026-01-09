@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import {
+    useSearchParams,
+    useNavigate,
+    Link,
+    useLocation,
+} from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import useForm from "../../hooks/useForm";
@@ -10,8 +15,12 @@ import PropTypes from "prop-types";
 const SignInAndUp = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { login, register, googleLogin, user, isLoading } = useAuth();
     const [submissionError, setSubmissionError] = useState("");
+    const [successMessage, setSuccessMessage] = useState(
+        location.state?.message || ""
+    );
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -76,16 +85,19 @@ const SignInAndUp = () => {
 
         setSubmissionError("");
         try {
-            const success = await (mode === "signup"
-                ? register(formData)
-                : login(formData));
-
-            if (!success) {
-                setSubmissionError(
-                    mode === "signup"
-                        ? "Registration failed. Please try again."
-                        : "Invalid credentials"
-                );
+            if (mode === "signup") {
+                const result = await register(formData);
+                if (result?.success) {
+                    // Registration successful - redirect to login
+                    navigate("/auth?mode=login", {
+                        state: {
+                            message: "Registration successful! Please login.",
+                        },
+                    });
+                }
+            } else {
+                await login(formData);
+                // Login successful - navigate handled by useEffect watching user
             }
         } catch (error) {
             setSubmissionError(error.message || "An unexpected error occurred");
@@ -196,6 +208,16 @@ const SignInAndUp = () => {
                                             )
                                         }
                                     />
+                                )}
+
+                                {successMessage && (
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="text-green-400 text-sm text-center px-4 py-2 bg-green-900/20 rounded-lg"
+                                    >
+                                        {successMessage}
+                                    </motion.p>
                                 )}
 
                                 {submissionError && (
