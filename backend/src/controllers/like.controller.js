@@ -7,18 +7,16 @@ import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 
+// Toggle like for a video
 const toggleVideoLike = asynchandler(async (req, res) => {
-    console.log("Toggle video like called");
     const { videoId } = req.params;
 
     if (!mongoose.isValidObjectId(videoId)) {
-        console.error("Invalid video ID:", videoId);
         throw new APIerror(400, "Invalid video ID");
     }
 
     const video = await Video.findById(videoId);
     if (!video) {
-        console.error("Video not found:", videoId);
         throw new APIerror(404, "Video not found");
     }
 
@@ -29,65 +27,62 @@ const toggleVideoLike = asynchandler(async (req, res) => {
     });
 
     if (existLike) {
-        console.log("Existing like found. Removing like for video:", videoId);
         await Like.deleteOne({ _id: existLike._id });
+        const likes = await Like.countDocuments({
+            likedEntity: videoId,
+            entityType: "Video",
+        });
 
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: videoId, entityType: "Video" });
-
-        console.log("Video unliked successfully. Updated likes count:", likes);
         return res
             .status(200)
-            .json(
-                new APIresponse(200, { likes: likes, state: 0 }, "Video unliked")
-            );
+            .json(new APIresponse(200, { likes, state: 0 }, "Video unliked"));
     }
 
-    console.log("No existing like found. Adding like for video:", videoId);
-
     try {
-        // Create a new like
         await Like.create({
             likedBy: req.user._id,
             likedEntity: videoId,
             entityType: "Video",
         });
 
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: videoId, entityType: "Video" });
+        const likes = await Like.countDocuments({
+            likedEntity: videoId,
+            entityType: "Video",
+        });
 
-        console.log("Video liked successfully. Updated likes count:", likes);
         return res
             .status(201)
-            .json(
-                new APIresponse(201, { likes: likes, state: 1 }, "Video liked")
-            );
+            .json(new APIresponse(201, { likes, state: 1 }, "Video liked"));
     } catch (error) {
         if (error.code === 11000) {
-            // Handle duplicate key error (race condition)
-            const likes = await Like.countDocuments({ likedEntity: videoId, entityType: "Video" });
+            const likes = await Like.countDocuments({
+                likedEntity: videoId,
+                entityType: "Video",
+            });
             return res
                 .status(200)
                 .json(
-                    new APIresponse(200, { likes: likes, state: 1 }, "Video already liked")
+                    new APIresponse(
+                        200,
+                        { likes, state: 1 },
+                        "Video already liked"
+                    )
                 );
         }
         throw error;
     }
 });
 
+// Toggle like for a comment
 const toggleCommentLike = asynchandler(async (req, res) => {
-    console.log("Toggle comment like called");
     const { commentId } = req.params;
 
     if (!mongoose.isValidObjectId(commentId)) {
-        console.error("Invalid comment ID:", commentId);
         throw new APIerror(400, "Invalid comment ID");
     }
 
     const comment = await Comment.findById(commentId);
     if (!comment) {
-        console.error("Comment not found:", commentId);
         throw new APIerror(404, "Comment not found");
     }
 
@@ -98,65 +93,62 @@ const toggleCommentLike = asynchandler(async (req, res) => {
     });
 
     if (existLike) {
-        console.log("Existing like found. Removing like for comment:", commentId);
         await Like.deleteOne({ _id: existLike._id });
+        const likes = await Like.countDocuments({
+            likedEntity: commentId,
+            entityType: "Comment",
+        });
 
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: commentId, entityType: "Comment" });
-
-        console.log("Comment unliked successfully. Updated likes count:", likes);
         return res
             .status(200)
-            .json(
-                new APIresponse(200, { likes: likes, state: 0 }, "Comment unliked")
-            );
+            .json(new APIresponse(200, { likes, state: 0 }, "Comment unliked"));
     }
 
-    console.log("No existing like found. Adding like for comment:", commentId);
-
     try {
-        // Create a new like
         await Like.create({
             likedBy: req.user._id,
             likedEntity: commentId,
             entityType: "Comment",
         });
 
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: commentId, entityType: "Comment" });
+        const likes = await Like.countDocuments({
+            likedEntity: commentId,
+            entityType: "Comment",
+        });
 
-        console.log("Comment liked successfully. Updated likes count:", likes);
         return res
             .status(201)
-            .json(
-                new APIresponse(201, { likes: likes, state: 1 }, "Comment liked")
-            );
+            .json(new APIresponse(201, { likes, state: 1 }, "Comment liked"));
     } catch (error) {
         if (error.code === 11000) {
-            // Handle duplicate key error (race condition)
-            const likes = await Like.countDocuments({ likedEntity: commentId, entityType: "Comment" });
+            const likes = await Like.countDocuments({
+                likedEntity: commentId,
+                entityType: "Comment",
+            });
             return res
                 .status(200)
                 .json(
-                    new APIresponse(200, { likes: likes, state: 1 }, "Comment already liked")
+                    new APIresponse(
+                        200,
+                        { likes, state: 1 },
+                        "Comment already liked"
+                    )
                 );
         }
         throw error;
     }
 });
 
+// Toggle like for a tweet
 const toggleTweetLike = asynchandler(async (req, res) => {
-    console.log("Toggle tweet like called");
     const { tweetId } = req.params;
 
     if (!mongoose.isValidObjectId(tweetId)) {
-        console.error("Invalid tweet ID:", tweetId);
         throw new APIerror(400, "Invalid tweet ID");
     }
 
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
-        console.error("Tweet not found:", tweetId);
         throw new APIerror(404, "Tweet not found");
     }
 
@@ -167,54 +159,53 @@ const toggleTweetLike = asynchandler(async (req, res) => {
     });
 
     if (existLike) {
-        console.log("Existing like found. Removing like for tweet:", tweetId);
         await Like.deleteOne({ _id: existLike._id });
+        const likes = await Like.countDocuments({
+            likedEntity: tweetId,
+            entityType: "Tweet",
+        });
 
-        // count the number of likes.
-        const likes = await Like.countDocuments({ likedEntity: tweetId, entityType: "Tweet" });
-
-        console.log(
-            "Tweet unliked successfully. Updated likes count:",
-            likes
-        );
         return res
             .status(200)
-            .json(
-                new APIresponse(200, { likes: likes, state: 0 }, "Tweet unliked")
-            );
+            .json(new APIresponse(200, { likes, state: 0 }, "Tweet unliked"));
     }
 
-    console.log("No existing like found. Adding like for tweet:", tweetId);
-
     try {
-        // Create a new like
         await Like.create({
             likedBy: req.user._id,
             likedEntity: tweetId,
             entityType: "Tweet",
         });
 
-        // Count the number of likes
-        const likes = await Like.countDocuments({ likedEntity: tweetId, entityType: "Tweet" });
+        const likes = await Like.countDocuments({
+            likedEntity: tweetId,
+            entityType: "Tweet",
+        });
 
-        console.log("Tweet liked successfully. Updated likes count:", likes);
         return res
             .status(201)
-            .json(new APIresponse(201, { likes: likes, state: 1 }, "Tweet liked"));
+            .json(new APIresponse(201, { likes, state: 1 }, "Tweet liked"));
     } catch (error) {
         if (error.code === 11000) {
-            // Handle duplicate key error (race condition)
-            const likes = await Like.countDocuments({ likedEntity: tweetId, entityType: "Tweet" });
+            const likes = await Like.countDocuments({
+                likedEntity: tweetId,
+                entityType: "Tweet",
+            });
             return res
                 .status(200)
                 .json(
-                    new APIresponse(200, { likes: likes, state: 1 }, "Tweet already liked")
+                    new APIresponse(
+                        200,
+                        { likes, state: 1 },
+                        "Tweet already liked"
+                    )
                 );
         }
         throw error;
     }
 });
 
+// Get all liked entities by the user
 const getLikedEntities = asynchandler(async (req, res) => {
     const { entityType } = req.query;
 
@@ -236,6 +227,7 @@ const getLikedEntities = asynchandler(async (req, res) => {
         );
 });
 
+// Get user's liked videos with pagination
 const getUserLikedVideos = asynchandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
