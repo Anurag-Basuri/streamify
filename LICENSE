@@ -1,6 +1,11 @@
 MIT License
 
-Copyright (c) 2024 Anurag Basuri
+Copyright (c) 2024-2026 Anurag Basuri
+
+================================================================================
+                                  STREAMIFY
+                     Modern Video Streaming Platform
+================================================================================
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,4 +23,40 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. 
+SOFTWARE.
+
+================================================================================
+                              THIRD-PARTY NOTICES
+================================================================================
+
+This project includes or depends on the following open-source packages,
+each with their own licenses:
+
+Frontend Dependencies:
+  - React (MIT License) - https://reactjs.org/
+  - Vite (MIT License) - https://vitejs.dev/
+  - TailwindCSS (MIT License) - https://tailwindcss.com/
+  - Framer Motion (MIT License) - https://www.framer.com/motion/
+  - Axios (MIT License) - https://axios-http.com/
+
+Backend Dependencies:
+  - Express (MIT License) - https://expressjs.com/
+  - Mongoose (MIT License) - https://mongoosejs.com/
+  - Cloudinary (MIT License) - https://cloudinary.com/
+  - Nodemailer (MIT License) - https://nodemailer.com/
+  - FFmpeg (LGPL/GPL) - https://ffmpeg.org/
+
+For the full list of dependencies and their licenses, please refer to 
+the package.json files in the frontend/ and backend/ directories.
+
+================================================================================
+                                   CONTACT
+================================================================================
+
+For questions about this license or the project, please contact:
+
+  Author:  Anurag Basuri
+  GitHub:  https://github.com/Anurag-Basuri
+  Project: https://github.com/Anurag-Basuri/streamify
+
+================================================================================
