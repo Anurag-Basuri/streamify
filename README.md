@@ -188,104 +188,121 @@
 
 ### System Overview
 
-```mermaid
-graph TB
-    subgraph Client["🖥️ Client Layer"]
-        Browser[Web Browser]
-        Mobile[Mobile Browser]
-    end
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://mermaid.ink/svg/pako:eNqFkk1uwzAMhK9CaN0cwAu3QNEuunBXchaMLNpCJVGg5CQt0ruXthM7RYFsJM6QH4aj3aCSBmQG7x54YxFG9aXvtJEqv7Zw74G2LTi6oNK3gQ7m1qMT7MLhGjQ-qNWjJdhSlzLi_GNcU7KiMt1nw-FBVbq-pUqB0ZBu4LPbffXsOz1CrJqosTVkuqMYXO7j9_B-2kY4qoP2A4kPkc17T3z0w9k_T2XYJXQHN2FyhYjnRJqsKnAJkS-odDR5KOqY9uExBHGDLpVehegEn-xFbj2i3weuDfBEuIZaTaoxT5kXwgp_yRNB9xf0zf2uxJ3aTb4N5IinxGVuQy3QapW1_mUX9pVp2r9pLxHvN-pRuF-hlfq8">
+    <source media="(prefers-color-scheme: light)" srcset="https://mermaid.ink/svg/pako:eNqFkk1uwzAMhK9CaN0cwAu3QNEuunBXchaMLNpCJVGg5CQt0ruXthM7RYFsJM6QH4aj3aCSBmQG7x54YxFG9aXvtJEqv7Zw74G2LTi6oNK3gQ7m1qMT7MLhGjQ-qNWjJdhSlzLi_GNcU7KiMt1nw-FBVbq-pUqB0ZBu4LPbffXsOz1CrJqosTVkuqMYXO7j9_B-2kY4qoP2A4kPkc17T3z0w9k_T2XYJXQHN2FyhYjnRJqsKnAJkS-odDR5KOqY9uExBHGDLpVehegEn-xFbj2i3weuDfBEuIZaTaoxT5kXwgp_yRNB9xf0zf2uxJ3aTb4N5IinxGVuQy3QapW1_mUX9pVp2r9pLxHvN-pRuF-hlfq8">
+    <img alt="System Architecture" src="https://mermaid.ink/svg/pako:eNqFkk1uwzAMhK9CaN0cwAu3QNEuunBXchaMLNpCJVGg5CQt0ruXthM7RYFsJM6QH4aj3aCSBmQG7x54YxFG9aXvtJEqv7Zw74G2LTi6oNK3gQ7m1qMT7MLhGjQ-qNWjJdhSlzLi_GNcU7KiMt1nw-FBVbq-pUqB0ZBu4LPbffXsOz1CrJqosTVkuqMYXO7j9_B-2kY4qoP2A4kPkc17T3z0w9k_T2XYJXQHN2FyhYjnRJqsKnAJkS-odDR5KOqY9uExBHGDLpVehegEn-xFbj2i3weuDfBEuIZaTaoxT5kXwgp_yRNB9xf0zf2uxJ3aTb4N5IinxGVuQy3QapW1_mUX9pVp2r9pLxHvN-pRuF-hlfq8">
+  </picture>
+</p>
 
-    subgraph Frontend["⚛️ Frontend - React + Vite"]
-        direction TB
-        App[App.jsx]
-        Router[React Router]
-        Context[Context Providers]
-        Components[UI Components]
-        Hooks[Custom Hooks]
-        Services[API Services]
-    end
-
-    subgraph Backend["🚀 Backend - Node.js + Express"]
-        direction TB
-        Express[Express Server]
-        Routes[Route Handlers]
-        Controllers[Controllers]
-        Middleware[Middleware Layer]
-        Models[Mongoose Models]
-    end
-
-    subgraph Database["💾 Data Layer"]
-        MongoDB[(MongoDB Atlas)]
-    end
-
-    subgraph External["☁️ External Services"]
-        Cloudinary[Cloudinary CDN]
-        SMTP[Email Server]
-    end
-
-    Browser --> App
-    Mobile --> App
-    App --> Router
-    Router --> Context
-    Context --> Components
-    Components --> Hooks
-    Hooks --> Services
-    Services -->|HTTP| Express
-    Express --> Routes
-    Routes --> Middleware
-    Middleware --> Controllers
-    Controllers --> Models
-    Models --> MongoDB
-    Controllers -->|Upload/Fetch Media| Cloudinary
-    Controllers -->|Send Emails| SMTP
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              🖥️ CLIENT LAYER                                │
+│                     ┌──────────────┐  ┌──────────────┐                      │
+│                     │ Web Browser  │  │Mobile Browser│                      │
+│                     └──────┬───────┘  └──────┬───────┘                      │
+└─────────────────────────────┼────────────────┼──────────────────────────────┘
+                              │                │
+                              ▼                ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        ⚛️ FRONTEND (React + Vite)                           │
+│  ┌─────────┐  ┌─────────────┐  ┌────────────┐  ┌───────┐  ┌──────────────┐  │
+│  │ App.jsx │→ │React Router │→ │  Context   │→ │ Hooks │→ │ API Services │  │
+│  └─────────┘  └─────────────┘  └────────────┘  └───────┘  └──────┬───────┘  │
+└──────────────────────────────────────────────────────────────────┼──────────┘
+                                                                   │ HTTP
+                                                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      🚀 BACKEND (Node.js + Express)                         │
+│  ┌─────────┐  ┌────────┐  ┌────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │ Express │→ │ Routes │→ │ Middleware │→ │ Controllers │→ │   Models    │  │
+│  └─────────┘  └────────┘  └────────────┘  └──────┬──────┘  └──────┬──────┘  │
+└──────────────────────────────────────────────────┼───────────────┼──────────┘
+                                                   │               │
+                              ┌────────────────────┼───────────────┘
+                              ▼                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           ☁️ EXTERNAL SERVICES                              │
+│         ┌──────────────┐      ┌──────────────┐      ┌──────────────┐        │
+│         │   MongoDB    │      │  Cloudinary  │      │ Email Server │        │
+│         │    Atlas     │      │     CDN      │      │    (SMTP)    │        │
+│         └──────────────┘      └──────────────┘      └──────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Request Flow
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as API Gateway
-    participant M as Middleware
-    participant R as Controller
-    participant D as Database
-    participant S as Services
-
-    C->>A: HTTP Request
-    A->>M: Rate Limit Check
-    M->>M: Auth Middleware
-    M->>M: Validation
-    M->>R: Validated Request
-    R->>D: Database Query
-    D-->>R: Query Result
-    R->>S: External Service (if needed)
-    S-->>R: Service Response
-    R-->>C: JSON Response
+```
+  ┌──────────┐          ┌──────────┐          ┌────────────┐          ┌──────────┐
+  │  Client  │          │   API    │          │ Middleware │          │Controller│
+  └────┬─────┘          └────┬─────┘          └─────┬──────┘          └────┬─────┘
+       │                     │                      │                      │
+       │  HTTP Request       │                      │                      │
+       │────────────────────>│                      │                      │
+       │                     │                      │                      │
+       │                     │  Rate Limit Check    │                      │
+       │                     │─────────────────────>│                      │
+       │                     │                      │                      │
+       │                     │                      │  Auth Validation     │
+       │                     │                      │──────────────────────>
+       │                     │                      │                      │
+       │                     │                      │                      │  ┌──────────┐
+       │                     │                      │                      │─>│ Database │
+       │                     │                      │                      │  └────┬─────┘
+       │                     │                      │                      │       │
+       │                     │                      │                      │<──────┘
+       │                     │                      │                      │
+       │                     │                      │<─────────────────────│
+       │                     │<─────────────────────│                      │
+       │<────────────────────│                      │                      │
+       │   JSON Response     │                      │                      │
+       │                     │                      │                      │
 ```
 
 ### Authentication Flow
 
-```mermaid
-stateDiagram-v2
-    [*] --> Unauthenticated
-
-    Unauthenticated --> Register: Sign Up
-    Register --> EmailSent: Submit Form
-    EmailSent --> Verified: Click Email Link
-    Verified --> Authenticated: Login
-
-    Unauthenticated --> Authenticated: Login (if verified)
-
-    Authenticated --> TokenRefresh: Access Token Expired
-    TokenRefresh --> Authenticated: New Tokens
-    TokenRefresh --> Unauthenticated: Refresh Failed
-
-    Authenticated --> Unauthenticated: Logout
-
-    Unauthenticated --> ForgotPassword: Forgot Password
-    ForgotPassword --> ResetEmail: Submit Email
-    ResetEmail --> PasswordReset: Click Reset Link
-    PasswordReset --> Unauthenticated: Password Updated
+```
+                                    ┌─────────────────┐
+                                    │ Unauthenticated │
+                                    └────────┬────────┘
+                                             │
+                    ┌────────────────────────┼────────────────────────┐
+                    │                        │                        │
+                    ▼                        ▼                        ▼
+            ┌───────────────┐        ┌──────────────┐        ┌────────────────┐
+            │   Register    │        │    Login     │        │Forgot Password │
+            └───────┬───────┘        └──────┬───────┘        └───────┬────────┘
+                    │                       │                        │
+                    ▼                       │                        ▼
+            ┌───────────────┐               │                ┌────────────────┐
+            │  Email Sent   │               │                │  Reset Email   │
+            └───────┬───────┘               │                └───────┬────────┘
+                    │                       │                        │
+                    ▼                       │                        ▼
+            ┌───────────────┐               │                ┌────────────────┐
+            │   Verified    │               │                │ Password Reset │
+            └───────┬───────┘               │                └───────┬────────┘
+                    │                       │                        │
+                    └───────────┬───────────┘                        │
+                                │                                    │
+                                ▼                                    │
+                    ┌───────────────────────┐                        │
+                    │    Authenticated      │<───────────────────────┘
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────┼───────────┐
+                    │           │           │
+                    ▼           │           ▼
+         ┌──────────────────┐   │   ┌───────────────┐
+         │  Token Refresh   │   │   │    Logout     │
+         └────────┬─────────┘   │   └───────┬───────┘
+                  │             │           │
+                  └─────────────┘           │
+                                            ▼
+                                ┌─────────────────┐
+                                │ Unauthenticated │
+                                └─────────────────┘
 ```
 
 ---
@@ -656,112 +673,127 @@ Content-Type: multipart/form-data
 
 ## 💾 Database Schema
 
-### Entity Relationship Diagram
+### Entity Relationships
 
-```mermaid
-erDiagram
-    USER ||--o{ VIDEO : uploads
-    USER ||--o{ PLAYLIST : creates
-    USER ||--o{ COMMENT : writes
-    USER ||--o{ LIKE : gives
-    USER ||--o{ WATCH_HISTORY : has
-    USER ||--o{ WATCH_LATER : saves
-    USER }o--o{ SUBSCRIPTION : "subscribes to"
-
-    VIDEO ||--o{ COMMENT : has
-    VIDEO ||--o{ LIKE : receives
-    VIDEO }o--o{ PLAYLIST : "belongs to"
-    VIDEO ||--o{ WATCH_HISTORY : tracked_in
-    VIDEO ||--o{ WATCH_LATER : saved_to
-
-    COMMENT ||--o{ LIKE : receives
-
-    USER {
-        ObjectId _id PK
-        String userName UK
-        String email UK
-        String fullName
-        String password
-        String avatar
-        String coverImage
-        Boolean isEmailVerified
-        String emailVerificationToken
-        Date emailVerificationExpires
-        String passwordResetToken
-        Date passwordResetExpires
-        String refreshToken
-        Date createdAt
-        Date updatedAt
-    }
-
-    VIDEO {
-        ObjectId _id PK
-        String title
-        String description
-        String videoUrl
-        String thumbnailUrl
-        String videoPublicId
-        String thumbnailPublicId
-        Number duration
-        Number views
-        Boolean isPublished
-        Boolean isDeleted
-        ObjectId owner FK
-        String[] tags
-        Date createdAt
-        Date updatedAt
-    }
-
-    PLAYLIST {
-        ObjectId _id PK
-        String name
-        String description
-        ObjectId owner FK
-        ObjectId[] videos FK
-        Date createdAt
-        Date updatedAt
-    }
-
-    COMMENT {
-        ObjectId _id PK
-        String content
-        ObjectId video FK
-        ObjectId owner FK
-        Date createdAt
-        Date updatedAt
-    }
-
-    LIKE {
-        ObjectId _id PK
-        ObjectId video FK
-        ObjectId comment FK
-        ObjectId tweet FK
-        ObjectId likedBy FK
-        Date createdAt
-    }
-
-    SUBSCRIPTION {
-        ObjectId _id PK
-        ObjectId subscriber FK
-        ObjectId channel FK
-        Date createdAt
-    }
-
-    WATCH_HISTORY {
-        ObjectId _id PK
-        ObjectId user FK
-        ObjectId video FK
-        Date watchedAt
-        Number progress
-    }
-
-    WATCH_LATER {
-        ObjectId _id PK
-        ObjectId user FK
-        ObjectId video FK
-        Date addedAt
-    }
 ```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            DATABASE RELATIONSHIPS                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────┐         ┌──────────┐         ┌──────────┐
+    │   USER   │────────<│  VIDEO   │>────────│ PLAYLIST │
+    └────┬─────┘         └────┬─────┘         └──────────┘
+         │                    │
+         │    ┌───────────────┼───────────────┐
+         │    │               │               │
+         ▼    ▼               ▼               ▼
+    ┌──────────┐         ┌──────────┐    ┌──────────┐
+    │  LIKE    │         │ COMMENT  │    │ HISTORY  │
+    └──────────┘         └──────────┘    └──────────┘
+         │
+         ▼
+    ┌──────────────┐         ┌──────────────┐
+    │ SUBSCRIPTION │         │ WATCH LATER  │
+    └──────────────┘         └──────────────┘
+
+    Legend:
+    ──────< One-to-Many     >────── Many-to-One
+    ──────○ Optional        ●────── Required
+```
+
+### Collections Schema
+
+<details>
+<summary><b>👤 User Collection</b></summary>
+
+| Field                      | Type     | Description                  |
+| -------------------------- | -------- | ---------------------------- |
+| `_id`                      | ObjectId | Primary key                  |
+| `userName`                 | String   | Unique username              |
+| `email`                    | String   | Unique email                 |
+| `fullName`                 | String   | Display name                 |
+| `password`                 | String   | Hashed password              |
+| `avatar`                   | String   | Profile image URL            |
+| `coverImage`               | String   | Banner image URL             |
+| `isEmailVerified`          | Boolean  | Email verification status    |
+| `emailVerificationToken`   | String   | Token for email verification |
+| `emailVerificationExpires` | Date     | Token expiry                 |
+| `passwordResetToken`       | String   | Password reset token         |
+| `passwordResetExpires`     | Date     | Reset token expiry           |
+| `refreshToken`             | String   | JWT refresh token            |
+| `createdAt`                | Date     | Account creation date        |
+| `updatedAt`                | Date     | Last update date             |
+
+</details>
+
+<details>
+<summary><b>🎥 Video Collection</b></summary>
+
+| Field               | Type     | Description             |
+| ------------------- | -------- | ----------------------- |
+| `_id`               | ObjectId | Primary key             |
+| `title`             | String   | Video title             |
+| `description`       | String   | Video description       |
+| `videoUrl`          | String   | Cloudinary video URL    |
+| `thumbnailUrl`      | String   | Thumbnail URL           |
+| `videoPublicId`     | String   | Cloudinary public ID    |
+| `thumbnailPublicId` | String   | Thumbnail public ID     |
+| `duration`          | Number   | Video length in seconds |
+| `views`             | Number   | View count              |
+| `isPublished`       | Boolean  | Publish status          |
+| `isDeleted`         | Boolean  | Soft delete flag        |
+| `owner`             | ObjectId | Reference to User       |
+| `tags`              | String[] | Video tags              |
+
+</details>
+
+<details>
+<summary><b>📁 Playlist Collection</b></summary>
+
+| Field         | Type       | Description               |
+| ------------- | ---------- | ------------------------- |
+| `_id`         | ObjectId   | Primary key               |
+| `name`        | String     | Playlist name             |
+| `description` | String     | Playlist description      |
+| `owner`       | ObjectId   | Reference to User         |
+| `videos`      | ObjectId[] | Array of Video references |
+
+</details>
+
+<details>
+<summary><b>💬 Comment Collection</b></summary>
+
+| Field     | Type     | Description        |
+| --------- | -------- | ------------------ |
+| `_id`     | ObjectId | Primary key        |
+| `content` | String   | Comment text       |
+| `video`   | ObjectId | Reference to Video |
+| `owner`   | ObjectId | Reference to User  |
+
+</details>
+
+<details>
+<summary><b>❤️ Like Collection</b></summary>
+
+| Field     | Type     | Description                     |
+| --------- | -------- | ------------------------------- |
+| `_id`     | ObjectId | Primary key                     |
+| `video`   | ObjectId | Reference to Video (optional)   |
+| `comment` | ObjectId | Reference to Comment (optional) |
+| `likedBy` | ObjectId | Reference to User               |
+
+</details>
+
+<details>
+<summary><b>🔔 Subscription Collection</b></summary>
+
+| Field        | Type     | Description                 |
+| ------------ | -------- | --------------------------- |
+| `_id`        | ObjectId | Primary key                 |
+| `subscriber` | ObjectId | User who subscribed         |
+| `channel`    | ObjectId | Channel being subscribed to |
+
+</details>
 
 ---
 
