@@ -1,192 +1,118 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary" />
-</p>
+<div align="center">
 
-<h1 align="center">🎬 Streamify</h1>
-<p align="center"><strong>Modern Video Streaming Platform</strong></p>
-<p align="center">A full-stack YouTube-like platform built with React, Node.js, and MongoDB</p>
+# 🎬 Streamify
+
+### A Modern Full-Stack Video Streaming Platform
+
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Express](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Streamify** is a production-ready video streaming platform similar to YouTube, featuring video uploads, user authentication, playlists, subscriptions, and more. Built with modern technologies and best practices.
+
+[Features](#-features) · [Demo](#-demo) · [Installation](#-installation) · [Documentation](#-documentation) · [Contributing](#-contributing)
+
+</div>
 
 ---
 
-## 📸 Screenshots
+## 📑 Table of Contents
 
-> Add your screenshots here by replacing the placeholders below
-
-|                          Home Page                          |                           Video Player                           |                           Profile                            |
-| :---------------------------------------------------------: | :--------------------------------------------------------------: | :----------------------------------------------------------: |
-| ![Home](https://via.placeholder.com/300x200?text=Home+Page) | ![Player](https://via.placeholder.com/300x200?text=Video+Player) | ![Profile](https://via.placeholder.com/300x200?text=Profile) |
+- [Features](#-features)
+- [Demo](#-demo)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [API Reference](#-api-reference)
+- [Database Schema](#-database-schema)
+- [Project Structure](#-project-structure)
+- [Development](#-development)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
 ## ✨ Features
 
+### 🎥 Video Management
+
+| Feature              | Description                                        |
+| -------------------- | -------------------------------------------------- |
+| **Video Upload**     | Upload videos up to 2GB with drag-and-drop support |
+| **Auto Compression** | Server-side video compression using FFmpeg         |
+| **Custom Player**    | Built-in video player with playback controls       |
+| **Thumbnails**       | Auto-generated or custom thumbnail upload          |
+| **Publish Control**  | Publish/unpublish videos with one click            |
+| **Video Editing**    | Update title, description, tags, and thumbnail     |
+
+### 👤 User System
+
+| Feature                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| **Email Verification** | Secure email verification on registration |
+| **Password Reset**     | Email-based password recovery             |
+| **Profile Management** | Custom avatars and cover images           |
+| **Channel System**     | Each user has their own channel           |
+| **JWT Authentication** | Secure token-based authentication         |
+| **Session Management** | Auto token refresh, graceful logout       |
+
+### 📺 Social Features
+
+| Feature           | Description                    |
+| ----------------- | ------------------------------ |
+| **Subscriptions** | Subscribe to channels you love |
+| **Like/Dislike**  | React to videos                |
+| **Comments**      | Comment on videos with replies |
+| **Watch History** | Track your viewing history     |
+| **Watch Later**   | Save videos to watch later     |
+| **Playlists**     | Create and manage playlists    |
+
+### 🛡️ Security & Performance
+
+| Feature              | Description                            |
+| -------------------- | -------------------------------------- |
+| **Rate Limiting**    | Protection against brute force attacks |
+| **Helmet**           | HTTP security headers                  |
+| **CORS**             | Configurable cross-origin settings     |
+| **Input Validation** | Express-validator for all inputs       |
+| **Lazy Loading**     | React.lazy for code splitting          |
+| **GZIP Compression** | Reduced response sizes                 |
+
+---
+
+## 🖼️ Demo
+
+> **Coming Soon**: Live demo and screenshots
+
+### Placeholder Screenshots
+
 <table>
 <tr>
-<td width="50%">
-
-### 🎥 Video Features
-
-- ✅ Upload videos (up to 2GB)
-- ✅ Auto video compression (FFmpeg)
-- ✅ Custom video player
-- ✅ Thumbnails & metadata
-- ✅ Like, comment, share
-- ✅ Watch history tracking
-- ✅ Watch later queue
-- ✅ Playlists management
-
-</td>
-<td width="50%">
-
-### 👤 User Features
-
-- ✅ JWT Authentication
-- ✅ Email verification
-- ✅ Password reset via email
-- ✅ User profiles & avatars
-- ✅ Channel subscriptions
-- ✅ Creator dashboard
-- ✅ Video management
-
-</td>
+<td align="center"><strong>Home Page</strong></td>
+<td align="center"><strong>Video Player</strong></td>
+<td align="center"><strong>User Profile</strong></td>
 </tr>
 <tr>
-<td>
-
-### 🛡️ Security
-
-- ✅ Rate limiting
-- ✅ Helmet security headers
-- ✅ Token refresh mechanism
-- ✅ Input validation
-- ✅ XSS protection
-
-</td>
-<td>
-
-### ⚡ Performance
-
-- ✅ Lazy loading (React.lazy)
-- ✅ Code splitting
-- ✅ GZIP compression
-- ✅ Cloudinary CDN
-- ✅ Optimized queries
-
-</td>
+<td><img src="https://via.placeholder.com/400x250?text=Home+Feed" alt="Home"/></td>
+<td><img src="https://via.placeholder.com/400x250?text=Video+Player" alt="Player"/></td>
+<td><img src="https://via.placeholder.com/400x250?text=Profile" alt="Profile"/></td>
+</tr>
+<tr>
+<td align="center"><strong>Upload Page</strong></td>
+<td align="center"><strong>Playlists</strong></td>
+<td align="center"><strong>Dashboard</strong></td>
+</tr>
+<tr>
+<td><img src="https://via.placeholder.com/400x250?text=Upload" alt="Upload"/></td>
+<td><img src="https://via.placeholder.com/400x250?text=Playlists" alt="Playlists"/></td>
+<td><img src="https://via.placeholder.com/400x250?text=Dashboard" alt="Dashboard"/></td>
 </tr>
 </table>
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart TB
-    subgraph Frontend["🌐 Frontend (React + Vite)"]
-        UI[UI Components]
-        Context[Auth/Theme Context]
-        Services[API Services]
-        Hooks[Custom Hooks]
-    end
-
-    subgraph Backend["⚙️ Backend (Node.js + Express)"]
-        Routes[API Routes]
-        Controllers[Controllers]
-        Middleware[Middleware]
-        Models[Mongoose Models]
-    end
-
-    subgraph External["☁️ External Services"]
-        MongoDB[(MongoDB Atlas)]
-        Cloudinary[Cloudinary CDN]
-        SMTP[SMTP Server]
-    end
-
-    UI --> Services
-    Services --> Routes
-    Routes --> Middleware
-    Middleware --> Controllers
-    Controllers --> Models
-    Models --> MongoDB
-    Controllers --> Cloudinary
-    Controllers --> SMTP
-```
-
----
-
-## 🔄 Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant B as Backend
-    participant DB as MongoDB
-    participant E as Email
-
-    U->>F: Register
-    F->>B: POST /register
-    B->>DB: Create User
-    B->>E: Send Verification Email
-    B->>F: Return User (unverified)
-
-    U->>E: Click Verification Link
-    E->>F: /verify-email/:token
-    F->>B: GET /verify-email/:token
-    B->>DB: Mark Verified
-    B->>F: Success
-
-    U->>F: Login
-    F->>B: POST /login
-    B->>DB: Validate Credentials
-    B->>F: Access + Refresh Tokens
-    F->>F: Store Tokens
-```
-
----
-
-## 📁 Project Structure
-
-```
-streamify/
-├── 📂 frontend/                    # React + Vite Application
-│   ├── 📂 src/
-│   │   ├── 📂 components/          # Reusable UI components
-│   │   │   ├── 📂 Video/           # Video player, cards
-│   │   │   ├── 📂 Playlist/        # Playlist components
-│   │   │   ├── 📂 Upload/          # File upload UI
-│   │   │   └── ...
-│   │   ├── 📂 pages/               # Route pages
-│   │   │   ├── 📂 Display/         # Home, Tweet, Subscription
-│   │   │   ├── 📂 Account/         # History, Playlist, Videos
-│   │   │   └── 📂 You/             # Profile, Auth pages
-│   │   ├── 📂 services/            # API client & services
-│   │   ├── 📂 hooks/               # Custom React hooks
-│   │   ├── 📂 context/             # Auth, Theme providers
-│   │   ├── 📂 constants/           # App constants
-│   │   └── 📂 routes/              # Route definitions
-│   └── 📄 package.json
-│
-├── 📂 backend/                     # Node.js + Express API
-│   ├── 📂 src/
-│   │   ├── 📂 controllers/         # Route handlers
-│   │   │   ├── 📄 user.controller.js
-│   │   │   ├── 📄 video.controller.js
-│   │   │   ├── 📄 email.controller.js
-│   │   │   └── ...
-│   │   ├── 📂 routes/              # Express routes
-│   │   ├── 📂 models/              # Mongoose schemas
-│   │   ├── 📂 middlewares/         # Auth, validation
-│   │   ├── 📂 utils/               # Utilities (email, cloudinary)
-│   │   ├── 📂 templates/           # Email templates (Handlebars)
-│   │   └── 📂 database/            # DB connection
-│   └── 📄 package.json
-│
-└── 📄 README.md
-```
 
 ---
 
@@ -194,140 +120,514 @@ streamify/
 
 ### Frontend
 
-| Technology      | Purpose       |
-| --------------- | ------------- |
-| React 18        | UI Framework  |
-| Vite            | Build Tool    |
-| TailwindCSS     | Styling       |
-| Framer Motion   | Animations    |
-| React Router 7  | Routing       |
-| Axios           | HTTP Client   |
-| React Hot Toast | Notifications |
+| Technology          | Version | Purpose                 |
+| ------------------- | ------- | ----------------------- |
+| **React**           | 18.3    | UI library with hooks   |
+| **Vite**            | 6.0     | Build tool & dev server |
+| **TailwindCSS**     | 3.4     | Utility-first CSS       |
+| **Framer Motion**   | 12.6    | Animations              |
+| **React Router**    | 7.1     | Client-side routing     |
+| **Axios**           | 1.9     | HTTP client             |
+| **React Hot Toast** | 2.5     | Toast notifications     |
+| **Heroicons**       | 2.2     | Icon library            |
 
 ### Backend
 
-| Technology | Purpose           |
-| ---------- | ----------------- |
-| Node.js    | Runtime           |
-| Express 4  | Web Framework     |
-| MongoDB    | Database          |
-| Mongoose   | ODM               |
-| Cloudinary | Media Storage     |
-| Nodemailer | Email Service     |
-| FFmpeg     | Video Compression |
-| JWT        | Authentication    |
+| Technology     | Version | Purpose             |
+| -------------- | ------- | ------------------- |
+| **Node.js**    | 18+     | JavaScript runtime  |
+| **Express**    | 4.21    | Web framework       |
+| **MongoDB**    | 7.0     | NoSQL database      |
+| **Mongoose**   | 8.9     | MongoDB ODM         |
+| **Cloudinary** | 2.5     | Media storage & CDN |
+| **Nodemailer** | 6.9     | Email service       |
+| **FFmpeg**     | -       | Video processing    |
+| **JWT**        | 9.0     | Authentication      |
+
+### DevOps & Tools
+
+| Tool           | Purpose         |
+| -------------- | --------------- |
+| **ESLint**     | Code linting    |
+| **Prettier**   | Code formatting |
+| **Nodemon**    | Dev auto-reload |
+| **Handlebars** | Email templates |
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client Layer"]
+        Browser[Web Browser]
+        Mobile[Mobile Browser]
+    end
+
+    subgraph Frontend["⚛️ Frontend - React + Vite"]
+        direction TB
+        App[App.jsx]
+        Router[React Router]
+        Context[Context Providers]
+        Components[UI Components]
+        Hooks[Custom Hooks]
+        Services[API Services]
+    end
+
+    subgraph Backend["🚀 Backend - Node.js + Express"]
+        direction TB
+        Express[Express Server]
+        Routes[Route Handlers]
+        Controllers[Controllers]
+        Middleware[Middleware Layer]
+        Models[Mongoose Models]
+    end
+
+    subgraph Database["💾 Data Layer"]
+        MongoDB[(MongoDB Atlas)]
+    end
+
+    subgraph External["☁️ External Services"]
+        Cloudinary[Cloudinary CDN]
+        SMTP[Email Server]
+    end
+
+    Browser --> App
+    Mobile --> App
+    App --> Router
+    Router --> Context
+    Context --> Components
+    Components --> Hooks
+    Hooks --> Services
+    Services -->|HTTP| Express
+    Express --> Routes
+    Routes --> Middleware
+    Middleware --> Controllers
+    Controllers --> Models
+    Models --> MongoDB
+    Controllers -->|Upload/Fetch Media| Cloudinary
+    Controllers -->|Send Emails| SMTP
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API Gateway
+    participant M as Middleware
+    participant R as Controller
+    participant D as Database
+    participant S as Services
+
+    C->>A: HTTP Request
+    A->>M: Rate Limit Check
+    M->>M: Auth Middleware
+    M->>M: Validation
+    M->>R: Validated Request
+    R->>D: Database Query
+    D-->>R: Query Result
+    R->>S: External Service (if needed)
+    S-->>R: Service Response
+    R-->>C: JSON Response
+```
+
+### Authentication Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unauthenticated
+
+    Unauthenticated --> Register: Sign Up
+    Register --> EmailSent: Submit Form
+    EmailSent --> Verified: Click Email Link
+    Verified --> Authenticated: Login
+
+    Unauthenticated --> Authenticated: Login (if verified)
+
+    Authenticated --> TokenRefresh: Access Token Expired
+    TokenRefresh --> Authenticated: New Tokens
+    TokenRefresh --> Unauthenticated: Refresh Failed
+
+    Authenticated --> Unauthenticated: Logout
+
+    Unauthenticated --> ForgotPassword: Forgot Password
+    ForgotPassword --> ResetEmail: Submit Email
+    ResetEmail --> PasswordReset: Click Reset Link
+    PasswordReset --> Unauthenticated: Password Updated
+```
+
+---
+
+## 🚀 Installation
 
 ### Prerequisites
 
-- Node.js 18+
-- MongoDB (local or Atlas)
-- Cloudinary account
-- FFmpeg installed
+Before you begin, ensure you have the following installed:
 
-### 1️⃣ Clone & Install
+| Requirement | Version | Check Command      |
+| ----------- | ------- | ------------------ |
+| Node.js     | 18+     | `node --version`   |
+| npm         | 9+      | `npm --version`    |
+| MongoDB     | 6+      | `mongod --version` |
+| FFmpeg      | 4+      | `ffmpeg -version`  |
+| Git         | 2+      | `git --version`    |
+
+### Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/Anurag-Basuri/streamify.git
 cd streamify
-
-# Install dependencies
-cd frontend && npm install
-cd ../backend && npm install
 ```
 
-### 2️⃣ Environment Setup
+### Step 2: Install Dependencies
 
-**Backend** (`backend/.env`):
+```bash
+# Install backend dependencies
+cd backend
+npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install
+```
+
+### Step 3: Environment Setup
+
+Create environment files in both directories (see [Configuration](#-configuration) section).
+
+### Step 4: Start Development Servers
+
+**Terminal 1 - Backend:**
+
+```bash
+cd backend
+npm run dev
+```
+
+**Terminal 2 - Frontend:**
+
+```bash
+cd frontend
+npm run dev
+```
+
+### Step 5: Access Application
+
+| Service      | URL                          |
+| ------------ | ---------------------------- |
+| Frontend     | http://localhost:5173        |
+| Backend API  | http://localhost:8000        |
+| Health Check | http://localhost:8000/health |
+| API Status   | http://localhost:8000/status |
+
+---
+
+## ⚙️ Configuration
+
+### Backend Environment Variables
+
+Create `backend/.env`:
 
 ```env
-# Server
+# ═══════════════════════════════════════════
+# SERVER CONFIGURATION
+# ═══════════════════════════════════════════
 PORT=8000
 NODE_ENV=development
 
-# Database
-MONGODB_URL=mongodb+srv://...
+# ═══════════════════════════════════════════
+# DATABASE
+# ═══════════════════════════════════════════
+MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net
 DB_NAME=streamify
 
-# JWT
-ACCESS_TOKEN_SECRET=your_access_secret
-REFRESH_TOKEN_SECRET=your_refresh_secret
+# ═══════════════════════════════════════════
+# AUTHENTICATION
+# ═══════════════════════════════════════════
+ACCESS_TOKEN_SECRET=your_super_secret_access_key_min_32_chars
+REFRESH_TOKEN_SECRET=your_super_secret_refresh_key_min_32_chars
 ACCESS_TOKEN_EXPIRY=15m
 REFRESH_TOKEN_EXPIRY=7d
+SESSION_SECRET=your_session_secret
 
-# Cloudinary
-CLOUD_NAME=your_cloud_name
-API_KEY=your_api_key
-API_SECRET=your_api_secret
+# ═══════════════════════════════════════════
+# CLOUDINARY (Media Storage)
+# ═══════════════════════════════════════════
+CLOUD_NAME=your_cloudinary_cloud_name
+API_KEY=your_cloudinary_api_key
+API_SECRET=your_cloudinary_api_secret
 
-# Email (Optional)
+# ═══════════════════════════════════════════
+# EMAIL CONFIGURATION (Optional)
+# ═══════════════════════════════════════════
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_password
 EMAIL_FROM="Streamify <noreply@streamify.com>"
 
-# Frontend
-FRONTEND_URL=http://localhost:5173
+# ═══════════════════════════════════════════
+# CORS & FRONTEND
+# ═══════════════════════════════════════════
 CORS_ORIGIN=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
 ```
 
-**Frontend** (`frontend/.env`):
+### Frontend Environment Variables
+
+Create `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:8000
 ```
 
-### 3️⃣ Run
+### Getting Required Credentials
 
-```bash
-# Terminal 1: Backend
-cd backend && npm run dev
+<details>
+<summary><b>📧 Gmail App Password (for Email)</b></summary>
 
-# Terminal 2: Frontend
-cd frontend && npm run dev
+1. Go to [Google Account Security](https://myaccount.google.com/security)
+2. Enable 2-Step Verification
+3. Go to App passwords
+4. Generate a new app password for "Mail"
+5. Use this password as `SMTP_PASS`
+
+</details>
+
+<details>
+<summary><b>☁️ Cloudinary Credentials</b></summary>
+
+1. Sign up at [Cloudinary](https://cloudinary.com/)
+2. Go to Dashboard
+3. Copy Cloud Name, API Key, and API Secret
+4. Use these in your `.env` file
+
+</details>
+
+<details>
+<summary><b>🍃 MongoDB Atlas</b></summary>
+
+1. Sign up at [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Create a new cluster
+3. Create a database user
+4. Get connection string from "Connect" button
+5. Replace `<password>` with your database user password
+
+</details>
+
+---
+
+## 📚 API Reference
+
+### Base URL
+
+```
+http://localhost:8000/api/v1
 ```
 
+### Authentication Endpoints
+
+<details>
+<summary><b>POST /users/register</b> - Register new user</summary>
+
+**Request Body (multipart/form-data):**
+
+```json
+{
+  "userName": "johndoe",
+  "fullName": "John Doe",
+  "email": "john@example.com",
+  "password": "securepassword123",
+  "avatar": "[file]"
+}
+```
+
+**Success Response (201):**
+
+```json
+{
+  "statusCode": 201,
+  "data": {
+    "_id": "...",
+    "userName": "johndoe",
+    "email": "john@example.com",
+    "isEmailVerified": false
+  },
+  "message": "Registration successful! Please check your email.",
+  "success": true
+}
+```
+
+</details>
+
+<details>
+<summary><b>POST /users/login</b> - User login</summary>
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "user": { ... },
+    "accessToken": "eyJhbG...",
+    "refreshToken": "eyJhbG..."
+  },
+  "message": "User logged in successfully",
+  "success": true
+}
+```
+
+</details>
+
+<details>
+<summary><b>GET /users/verify-email/:token</b> - Verify email</summary>
+
+**Success Response (200):**
+
+```json
+{
+  "statusCode": 200,
+  "data": { "isEmailVerified": true },
+  "message": "Email verified successfully",
+  "success": true
+}
+```
+
+</details>
+
+<details>
+<summary><b>POST /users/forgot-password</b> - Request password reset</summary>
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "statusCode": 200,
+  "data": null,
+  "message": "If an account exists, a password reset email has been sent",
+  "success": true
+}
+```
+
+</details>
+
+### Video Endpoints
+
+<details>
+<summary><b>GET /videos</b> - Get all videos</summary>
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | number | 1 | Page number |
+| limit | number | 10 | Items per page |
+| sort | string | -createdAt | Sort field |
+
+**Success Response (200):**
+
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "videos": [...],
+    "totalDocs": 100,
+    "page": 1,
+    "limit": 10,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  },
+  "success": true
+}
+```
+
+</details>
+
+<details>
+<summary><b>POST /videos/upload</b> - Upload video</summary>
+
+**Headers:**
+
+```
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+```
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| videoFile | file | Yes | Video file (mp4, webm) |
+| thumbnail | file | Yes | Thumbnail image |
+| title | string | Yes | Video title |
+| description | string | Yes | Video description |
+| tags | string | Yes | JSON array of tags |
+
+</details>
+
+### Complete API Endpoint List
+
+| Category          | Method | Endpoint                     | Auth | Description        |
+| ----------------- | ------ | ---------------------------- | ---- | ------------------ |
+| **Auth**          | POST   | /users/register              | ❌   | Register user      |
+|                   | POST   | /users/login                 | ❌   | Login              |
+|                   | POST   | /users/logout                | ✅   | Logout             |
+|                   | POST   | /users/refresh-token         | ❌   | Refresh tokens     |
+|                   | GET    | /users/verify-email/:token   | ❌   | Verify email       |
+|                   | POST   | /users/forgot-password       | ❌   | Request reset      |
+|                   | POST   | /users/reset-password/:token | ❌   | Reset password     |
+| **User**          | GET    | /users/current-user          | ✅   | Get profile        |
+|                   | PATCH  | /users/change-password       | ✅   | Change password    |
+|                   | PATCH  | /users/change-avatar         | ✅   | Update avatar      |
+|                   | PATCH  | /users/update-details        | ✅   | Update profile     |
+|                   | GET    | /users/c/:username           | ❌   | Get channel        |
+| **Videos**        | GET    | /videos                      | ❌   | List videos        |
+|                   | GET    | /videos/:id                  | ❌   | Get video          |
+|                   | POST   | /videos/upload               | ✅   | Upload video       |
+|                   | PATCH  | /videos/update/:id           | ✅   | Update video       |
+|                   | DELETE | /videos/:id                  | ✅   | Delete video       |
+|                   | PATCH  | /videos/:id/publish          | ✅   | Toggle publish     |
+|                   | POST   | /videos/:id/views            | ❌   | Increment views    |
+| **Playlists**     | GET    | /playlists                   | ✅   | Get playlists      |
+|                   | POST   | /playlists                   | ✅   | Create playlist    |
+|                   | PATCH  | /playlists/:id               | ✅   | Update playlist    |
+|                   | DELETE | /playlists/:id               | ✅   | Delete playlist    |
+| **Comments**      | GET    | /comments/:videoId           | ❌   | Get comments       |
+|                   | POST   | /comments/:videoId           | ✅   | Add comment        |
+|                   | DELETE | /comments/:id                | ✅   | Delete comment     |
+| **Likes**         | POST   | /likes/video/:id             | ✅   | Like video         |
+|                   | POST   | /likes/comment/:id           | ✅   | Like comment       |
+| **Subscriptions** | POST   | /subscriptions/:channelId    | ✅   | Toggle subscribe   |
+|                   | GET    | /subscriptions               | ✅   | Get subscriptions  |
+| **History**       | GET    | /history                     | ✅   | Get history        |
+|                   | DELETE | /history                     | ✅   | Clear history      |
+| **Watch Later**   | GET    | /watchlater                  | ✅   | Get watch later    |
+|                   | POST   | /watchlater/:videoId         | ✅   | Add to watch later |
+
 ---
 
-## 📡 API Endpoints
+## 💾 Database Schema
 
-### Authentication
-
-| Method | Endpoint                              | Description    |
-| ------ | ------------------------------------- | -------------- |
-| POST   | `/api/v1/users/register`              | Register user  |
-| POST   | `/api/v1/users/login`                 | Login          |
-| POST   | `/api/v1/users/logout`                | Logout         |
-| GET    | `/api/v1/users/verify-email/:token`   | Verify email   |
-| POST   | `/api/v1/users/forgot-password`       | Request reset  |
-| POST   | `/api/v1/users/reset-password/:token` | Reset password |
-
-### Videos
-
-| Method | Endpoint                     | Description    |
-| ------ | ---------------------------- | -------------- |
-| GET    | `/api/v1/videos`             | List videos    |
-| GET    | `/api/v1/videos/:id`         | Get video      |
-| POST   | `/api/v1/videos/upload`      | Upload video   |
-| PATCH  | `/api/v1/videos/update/:id`  | Update video   |
-| DELETE | `/api/v1/videos/:id`         | Delete video   |
-| PATCH  | `/api/v1/videos/:id/publish` | Toggle publish |
-
-### User
-
-| Method | Endpoint                        | Description     |
-| ------ | ------------------------------- | --------------- |
-| GET    | `/api/v1/users/current-user`    | Get profile     |
-| PATCH  | `/api/v1/users/change-avatar`   | Update avatar   |
-| PATCH  | `/api/v1/users/change-password` | Change password |
-
----
-
-## 📊 Database Schema
+### Entity Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -335,56 +635,316 @@ erDiagram
     USER ||--o{ PLAYLIST : creates
     USER ||--o{ COMMENT : writes
     USER ||--o{ LIKE : gives
-    USER }|--o{ SUBSCRIPTION : subscribes
+    USER ||--o{ WATCH_HISTORY : has
+    USER ||--o{ WATCH_LATER : saves
+    USER }o--o{ SUBSCRIPTION : "subscribes to"
+
     VIDEO ||--o{ COMMENT : has
     VIDEO ||--o{ LIKE : receives
-    PLAYLIST ||--o{ VIDEO : contains
+    VIDEO }o--o{ PLAYLIST : "belongs to"
+    VIDEO ||--o{ WATCH_HISTORY : tracked_in
+    VIDEO ||--o{ WATCH_LATER : saved_to
+
+    COMMENT ||--o{ LIKE : receives
 
     USER {
-        ObjectId _id
-        string userName
-        string email
-        string password
-        string avatar
-        boolean isEmailVerified
+        ObjectId _id PK
+        String userName UK
+        String email UK
+        String fullName
+        String password
+        String avatar
+        String coverImage
+        Boolean isEmailVerified
+        String emailVerificationToken
+        Date emailVerificationExpires
+        String passwordResetToken
+        Date passwordResetExpires
+        String refreshToken
+        Date createdAt
+        Date updatedAt
     }
 
     VIDEO {
-        ObjectId _id
-        string title
-        string description
-        string videoUrl
-        string thumbnail
-        ObjectId owner
-        boolean isPublished
+        ObjectId _id PK
+        String title
+        String description
+        String videoUrl
+        String thumbnailUrl
+        String videoPublicId
+        String thumbnailPublicId
+        Number duration
+        Number views
+        Boolean isPublished
+        Boolean isDeleted
+        ObjectId owner FK
+        String[] tags
+        Date createdAt
+        Date updatedAt
     }
 
     PLAYLIST {
-        ObjectId _id
-        string name
-        ObjectId owner
-        ObjectId[] videos
+        ObjectId _id PK
+        String name
+        String description
+        ObjectId owner FK
+        ObjectId[] videos FK
+        Date createdAt
+        Date updatedAt
     }
+
+    COMMENT {
+        ObjectId _id PK
+        String content
+        ObjectId video FK
+        ObjectId owner FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    LIKE {
+        ObjectId _id PK
+        ObjectId video FK
+        ObjectId comment FK
+        ObjectId tweet FK
+        ObjectId likedBy FK
+        Date createdAt
+    }
+
+    SUBSCRIPTION {
+        ObjectId _id PK
+        ObjectId subscriber FK
+        ObjectId channel FK
+        Date createdAt
+    }
+
+    WATCH_HISTORY {
+        ObjectId _id PK
+        ObjectId user FK
+        ObjectId video FK
+        Date watchedAt
+        Number progress
+    }
+
+    WATCH_LATER {
+        ObjectId _id PK
+        ObjectId user FK
+        ObjectId video FK
+        Date addedAt
+    }
+```
+
+---
+
+## 📂 Project Structure
+
+```
+streamify/
+│
+├── 📂 frontend/                          # React Frontend Application
+│   ├── 📂 public/                        # Static assets
+│   ├── 📂 src/
+│   │   ├── 📂 components/                # Reusable UI components
+│   │   │   ├── 📂 Video/                 # Video player, cards, list
+│   │   │   ├── 📂 Playlist/              # Playlist components
+│   │   │   ├── 📂 Upload/                # File upload components
+│   │   │   ├── 📂 Profile/               # Profile components
+│   │   │   ├── 📂 Form/                  # Form components
+│   │   │   ├── 📄 Header.jsx             # Navigation header
+│   │   │   ├── 📄 Sidebar.jsx            # Side navigation
+│   │   │   └── 📄 Modal.jsx              # Modal component
+│   │   │
+│   │   ├── 📂 pages/                     # Route page components
+│   │   │   ├── 📂 Display/               # Home, Tweet, Subscription
+│   │   │   ├── 📂 Account/               # History, Playlist, Videos
+│   │   │   └── 📂 You/                   # Profile, Auth, Create
+│   │   │
+│   │   ├── 📂 context/                   # React Context providers
+│   │   │   ├── 📄 AuthContext.jsx        # Authentication state
+│   │   │   └── 📄 ThemeContext.jsx       # Theme management
+│   │   │
+│   │   ├── 📂 services/                  # API client & services
+│   │   │   ├── 📄 api.js                 # Axios instance & config
+│   │   │   ├── 📄 authService.js         # Auth API calls
+│   │   │   └── 📄 videoService.js        # Video API calls
+│   │   │
+│   │   ├── 📂 hooks/                     # Custom React hooks
+│   │   │   ├── 📄 useAuth.js             # Auth hook
+│   │   │   ├── 📄 useDebounce.js         # Debounce hook
+│   │   │   ├── 📄 useLocalStorage.js     # LocalStorage hook
+│   │   │   └── 📄 useVideos.js           # Videos hook
+│   │   │
+│   │   ├── 📂 routes/                    # Route definitions
+│   │   │   ├── 📄 AppRoutes.jsx          # All routes (lazy loaded)
+│   │   │   └── 📄 ProtectedRoute.jsx     # Auth guard
+│   │   │
+│   │   ├── 📂 constants/                 # App constants
+│   │   │   └── 📄 index.js               # Centralized constants
+│   │   │
+│   │   ├── 📄 App.jsx                    # Root component
+│   │   ├── 📄 main.jsx                   # Entry point
+│   │   └── 📄 index.css                  # Global styles
+│   │
+│   ├── 📄 package.json
+│   ├── 📄 vite.config.js
+│   └── 📄 tailwind.config.js
+│
+├── 📂 backend/                           # Node.js Backend Application
+│   ├── 📂 src/
+│   │   ├── 📂 controllers/               # Request handlers
+│   │   │   ├── 📄 user.controller.js     # User operations
+│   │   │   ├── 📄 video.controller.js    # Video CRUD
+│   │   │   ├── 📄 email.controller.js    # Email verification
+│   │   │   ├── 📄 playlist.controller.js # Playlist operations
+│   │   │   ├── 📄 comment.controller.js  # Comment operations
+│   │   │   ├── 📄 like.controller.js     # Like operations
+│   │   │   └── 📄 subscription.controller.js
+│   │   │
+│   │   ├── 📂 routes/                    # Express routes
+│   │   │   ├── 📄 user.routes.js         # /api/v1/users
+│   │   │   ├── 📄 video.routes.js        # /api/v1/videos
+│   │   │   └── 📄 ...                    # Other routes
+│   │   │
+│   │   ├── 📂 models/                    # Mongoose schemas
+│   │   │   ├── 📄 user.model.js
+│   │   │   ├── 📄 video.model.js
+│   │   │   └── 📄 ...
+│   │   │
+│   │   ├── 📂 middlewares/               # Express middleware
+│   │   │   ├── 📄 auth.middleware.js     # JWT verification
+│   │   │   ├── 📄 multer.middleware.js   # File upload
+│   │   │   └── 📄 validate.middleware.js # Input validation
+│   │   │
+│   │   ├── 📂 utils/                     # Utility functions
+│   │   │   ├── 📄 cloudinary.js          # Cloudinary helpers
+│   │   │   ├── 📄 email.js               # Email service
+│   │   │   ├── 📄 APIerror.js            # Error class
+│   │   │   └── 📄 APIresponse.js         # Response class
+│   │   │
+│   │   ├── 📂 templates/                 # Email templates
+│   │   │   ├── 📄 verify-email.hbs
+│   │   │   ├── 📄 welcome.hbs
+│   │   │   ├── 📄 password-reset.hbs
+│   │   │   └── 📄 password-changed.hbs
+│   │   │
+│   │   ├── 📂 database/                  # Database connection
+│   │   │   └── 📄 index.js               # MongoDB connection
+│   │   │
+│   │   ├── 📄 app.js                     # Express app setup
+│   │   ├── 📄 index.js                   # Server entry point
+│   │   └── 📄 constants.js               # Backend constants
+│   │
+│   ├── 📄 package.json
+│   └── 📄 .env.example
+│
+├── 📄 README.md
+└── 📄 LICENSE
+```
+
+---
+
+## 🔧 Development
+
+### Available Scripts
+
+**Backend:**
+
+```bash
+npm run dev      # Start with nodemon (hot reload)
+npm run start    # Production start
+```
+
+**Frontend:**
+
+```bash
+npm run dev      # Start Vite dev server
+npm run build    # Production build
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
+
+### Code Style
+
+- **ESLint** for JavaScript linting
+- **Prettier** for code formatting
+- **Conventional Commits** for commit messages
+
+### Testing API Endpoints
+
+Use the following tools to test API:
+
+- [Postman](https://www.postman.com/)
+- [Insomnia](https://insomnia.rest/)
+- [Thunder Client](https://www.thunderclient.com/) (VS Code extension)
+
+---
+
+## 🚢 Deployment
+
+### Frontend (Vercel/Netlify)
+
+1. Connect your GitHub repository
+2. Set build command: `npm run build`
+3. Set output directory: `dist`
+4. Add environment variables
+
+### Backend (Railway/Render)
+
+1. Connect your GitHub repository
+2. Set root directory: `backend`
+3. Set start command: `npm start`
+4. Add all environment variables
+
+### Docker (Coming Soon)
+
+```bash
+docker-compose up -d
 ```
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please follow these steps:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** changes (`git commit -m 'feat: add amazing feature'`)
+4. **Push** to branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Commit Convention
+
+| Prefix      | Description        |
+| ----------- | ------------------ |
+| `feat:`     | New feature        |
+| `fix:`      | Bug fix            |
+| `docs:`     | Documentation      |
+| `style:`    | Formatting         |
+| `refactor:` | Code restructuring |
+| `test:`     | Tests              |
+| `chore:`    | Maintenance        |
 
 ---
 
-## 📜 License
+## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/Anurag-Basuri">Anurag Basuri</a>
-</p>
+## 👤 Author
+
+**Anurag Basuri**
+
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Anurag-Basuri)
+
+---
+
+<div align="center">
+
+### ⭐ Star this repo if you find it helpful!
+
+Made with ❤️ and lots of ☕
+
+</div>
