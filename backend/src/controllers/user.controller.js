@@ -7,6 +7,15 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
 import { v2 as cloudinary } from "cloudinary";
+import {
+    sendVerificationEmail,
+    sendPasswordChangedEmail,
+    generateToken,
+    hashToken,
+} from "../utils/email.js";
+
+// Token expiry for email verification
+const EMAIL_VERIFICATION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 // Function to handle user registration
 const registerUser = asynchandler(async (req, res, next) => {
@@ -33,6 +42,10 @@ const registerUser = asynchandler(async (req, res, next) => {
         avatarPublicId = avatarUploadResult?.public_id || null;
     }
 
+    // Generate email verification token
+    const verificationToken = generateToken();
+    const hashedToken = hashToken(verificationToken);
+
     const newUser = await User.create({
         userName,
         fullName,
@@ -40,10 +53,22 @@ const registerUser = asynchandler(async (req, res, next) => {
         password,
         avatar: avatarUrl,
         avatarPublicId,
+        isEmailVerified: false,
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: new Date(
+            Date.now() + EMAIL_VERIFICATION_EXPIRY
+        ),
     });
 
     if (!newUser._id) {
         return next(new APIerror(500, "User creation failed"));
+    }
+
+    // Send verification email (don't fail registration if email fails)
+    try {
+        await sendVerificationEmail(newUser, verificationToken);
+    } catch (error) {
+        console.error("Failed to send verification email:", error);
     }
 
     const userResponse = {
@@ -52,10 +77,15 @@ const registerUser = asynchandler(async (req, res, next) => {
         fullName: newUser.fullName,
         email: newUser.email,
         avatar: newUser.avatar,
+        isEmailVerified: newUser.isEmailVerified,
     };
 
     res.status(201).json(
-        new APIresponse(201, userResponse, "User registered successfully")
+        new APIresponse(
+            201,
+            userResponse,
+            "Registration successful! Please check your email to verify your account."
+        )
     );
 });
 
@@ -181,6 +211,13 @@ const change_current_password = asynchandler(async (req, res, next) => {
 
     user.password = newPassword1;
     await user.save({ validateBeforeSave: false });
+
+    // Send password changed notification email
+    try {
+        await sendPasswordChangedEmail(user);
+    } catch (error) {
+        console.error("Failed to send password changed email:", error);
+    }
 
     return res
         .status(200)
