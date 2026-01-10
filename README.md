@@ -903,6 +903,197 @@ docker-compose up -d
 
 ---
 
+## 🗺️ Roadmap
+
+### 🎯 Short-Term Goals (1-3 Months)
+
+<table>
+<tr>
+<th>Category</th>
+<th>Feature</th>
+<th>Priority</th>
+<th>Status</th>
+</tr>
+
+<tr>
+<td rowspan="4"><strong>🎨 UI/UX</strong></td>
+<td>Dark/Light theme toggle</td>
+<td>🔴 High</td>
+<td>🟡 In Progress</td>
+</tr>
+<tr>
+<td>Mobile-responsive video player</td>
+<td>🔴 High</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Skeleton loading states</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Improved error messages & feedback</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+
+<tr>
+<td rowspan="4"><strong>🔧 Backend</strong></td>
+<td>Redis caching for videos</td>
+<td>🔴 High</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Video quality selection (360p, 720p, 1080p)</td>
+<td>🔴 High</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Improved video compression pipeline</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>API documentation with Swagger</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>🔐 Security</strong></td>
+<td>Two-factor authentication (2FA)</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>OAuth providers (GitHub, Discord)</td>
+<td>🟢 Low</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Account activity logging</td>
+<td>🟢 Low</td>
+<td>📋 Planned</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>✨ Features</strong></td>
+<td>Video chapters/timestamps</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Nested comment replies</td>
+<td>🟠 Medium</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>Share video to social media</td>
+<td>🟢 Low</td>
+<td>📋 Planned</td>
+</tr>
+</table>
+
+### 🚀 Long-Term Goals (3-12 Months)
+
+<table>
+<tr>
+<th>Category</th>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>📺 Streaming</strong></td>
+<td>Live Streaming</td>
+<td>Real-time video broadcasting with WebRTC/HLS</td>
+</tr>
+<tr>
+<td>Adaptive Bitrate Streaming</td>
+<td>Auto-adjust quality based on network conditions</td>
+</tr>
+<tr>
+<td>Live Chat</td>
+<td>Real-time chat during live streams with WebSocket</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>💰 Monetization</strong></td>
+<td>Creator Payments</td>
+<td>Stripe integration for channel memberships</td>
+</tr>
+<tr>
+<td>Super Chat / Tips</td>
+<td>Allow viewers to tip creators during streams</td>
+</tr>
+<tr>
+<td>Premium Subscriptions</td>
+<td>Ad-free experience for paying users</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>🤖 AI Features</strong></td>
+<td>Auto-generated Captions</td>
+<td>Speech-to-text for video subtitles</td>
+</tr>
+<tr>
+<td>Content Moderation</td>
+<td>AI-powered comment and video moderation</td>
+</tr>
+<tr>
+<td>Video Recommendations</td>
+<td>ML-based personalized video suggestions</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>📱 Platform</strong></td>
+<td>Mobile Apps</td>
+<td>React Native apps for iOS and Android</td>
+</tr>
+<tr>
+<td>Desktop App</td>
+<td>Electron app for Windows/Mac/Linux</td>
+</tr>
+<tr>
+<td>TV Apps</td>
+<td>Smart TV applications (Android TV, Roku)</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>🔧 Infrastructure</strong></td>
+<td>Microservices Architecture</td>
+<td>Split into video, user, notification services</td>
+</tr>
+<tr>
+<td>Kubernetes Deployment</td>
+<td>Container orchestration for scalability</td>
+</tr>
+<tr>
+<td>Global CDN</td>
+<td>Multi-region video delivery network</td>
+</tr>
+
+<tr>
+<td rowspan="3"><strong>📊 Analytics</strong></td>
+<td>Creator Dashboard</td>
+<td>Detailed analytics for video performance</td>
+</tr>
+<tr>
+<td>Viewer Insights</td>
+<td>Watch time, retention, demographics</td>
+</tr>
+<tr>
+<td>Revenue Reports</td>
+<td>Earnings breakdown and payout history</td>
+</tr>
+</table>
+
+### 📌 Feature Request
+
+Have an idea? [Open an issue](https://github.com/Anurag-Basuri/streamify/issues/new) with the `enhancement` label!
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:
