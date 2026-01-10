@@ -2,6 +2,9 @@ import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Display/Home.jsx";
 import Profile from "../pages/You/Profile.jsx";
 import SignInAndUp from "../pages/You/SignInAndUp.jsx";
+import ForgotPassword from "../pages/You/ForgotPassword.jsx";
+import ResetPassword from "../pages/You/ResetPassword.jsx";
+import VerifyEmail from "../pages/You/VerifyEmail.jsx";
 import Tweet from "../pages/Display/Tweet.jsx";
 import Subscription from "../pages/Display/Subscription.jsx";
 import History from "../pages/Account/History.jsx";
@@ -22,6 +25,9 @@ const AppRoutes = () => {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<SignInAndUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/verify-email/:token" element={<VerifyEmail />} />
             <Route path="/video/:videoID" element={<VideoPlayer />} />
 
             {/* Protected Routes - Wrap individual routes */}

@@ -275,6 +275,14 @@ const SignInAndUp = () => {
                                             >
                                                 Sign Up
                                             </Link>
+                                            <span className="block mt-2">
+                                                <Link
+                                                    to="/forgot-password"
+                                                    className="text-gray-400 hover:text-purple-300 text-sm"
+                                                >
+                                                    Forgot password?
+                                                </Link>
+                                            </span>
                                         </>
                                     ) : (
                                         <>
