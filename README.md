@@ -32,6 +32,8 @@
 - [Project Structure](#-project-structure)
 - [Development](#-development)
 - [Deployment](#-deployment)
+- [Roadmap](#-roadmap)
+- [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -87,9 +89,7 @@
 
 ## 🖼️ Demo
 
-> **Coming Soon**: Live demo and screenshots
-
-### Placeholder Screenshots
+### 📸 Screenshots
 
 <table>
 <tr>
@@ -98,21 +98,50 @@
 <td align="center"><strong>User Profile</strong></td>
 </tr>
 <tr>
-<td><img src="https://via.placeholder.com/400x250?text=Home+Feed" alt="Home"/></td>
-<td><img src="https://via.placeholder.com/400x250?text=Video+Player" alt="Player"/></td>
-<td><img src="https://via.placeholder.com/400x250?text=Profile" alt="Profile"/></td>
-</tr>
-<tr>
-<td align="center"><strong>Upload Page</strong></td>
-<td align="center"><strong>Playlists</strong></td>
-<td align="center"><strong>Dashboard</strong></td>
-</tr>
-<tr>
-<td><img src="https://via.placeholder.com/400x250?text=Upload" alt="Upload"/></td>
-<td><img src="https://via.placeholder.com/400x250?text=Playlists" alt="Playlists"/></td>
-<td><img src="https://via.placeholder.com/400x250?text=Dashboard" alt="Dashboard"/></td>
+<td><img src="frontend/public/screenshots/home.png" alt="Home Page" width="100%"/></td>
+<td><img src="frontend/public/screenshots/player.png" alt="Video Player" width="100%"/></td>
+<td><img src="frontend/public/screenshots/profile.png" alt="User Profile" width="100%"/></td>
 </tr>
 </table>
+
+### 🎥 Live Demo
+
+> **Live Link**: [https://streamify-demo.vercel.app](https://streamify-demo.vercel.app) (Coming Soon)
+
+---
+
+## ❓ Troubleshooting
+
+<details>
+<summary><b>MongoDB Connection Error</b></summary>
+
+- Ensure your IP is whitelisted in MongoDB Atlas or allow all IPs (`0.0.0.0/0`).
+- Check if `MONGODB_URL` in `.env` is correct and includes username/password.
+- If password has special characters, URL encode them.
+</details>
+
+<details>
+<summary><b>Cloudinary Upload Failed</b></summary>
+
+- Verify `CLOUD_NAME`, `API_KEY`, and `API_SECRET` in `backend/.env`.
+- Ensure your internet connection is stable.
+- Check file size limits in `constants.js` (default 2GB for video).
+</details>
+
+<details>
+<summary><b>Email Not Sending</b></summary>
+
+- Ensure you are using an **App Password** for Gmail, not your login password.
+- Check if `SMTP_HOST` and `SMTP_PORT` are correct.
+- Verify `EMAIL_FROM` is a valid email address.
+</details>
+
+<details>
+<summary><b>CORS Error</b></summary>
+
+- Ensure `CORS_ORIGIN` in `backend/.env` matches your frontend URL (e.g., `http://localhost:5173`).
+- If testing from a different device, ensure backend is accessible via network IP.
+</details>
 
 ---
 
