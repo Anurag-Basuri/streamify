@@ -5,12 +5,12 @@ import {
     logoutUser,
     refreshAccessToken,
     registerUser,
-    change_current_password,
-    change_Avatar,
-    change_CoverImage,
-    get_current_user,
-    update_account_details,
-    get_user_profile,
+    changePassword,
+    changeAvatar,
+    changeCoverImage,
+    getCurrentUser,
+    updateAccountDetails,
+    getUserProfile,
 } from "../controllers/user.controller.js";
 import {
     verifyEmail,
@@ -124,7 +124,7 @@ router.post("/resend-verification", requireAuth, resendVerification);
 router.post("/logout", requireAuth, logoutUser);
 
 // Get current user profile
-router.get("/current-user", requireAuth, get_current_user);
+router.get("/current-user", requireAuth, getCurrentUser);
 
 // Change password
 router.patch(
@@ -132,27 +132,26 @@ router.patch(
     requireAuth,
     [
         body("oldPassword").notEmpty().withMessage("Old password is required"),
-        body("newPassword1").isLength({ min: 6 }).withMessage("New password must be at least 6 characters"),
-        body("newPassword2").notEmpty().withMessage("Confirm password is required"),
+        body("newPassword1")
+            .isLength({ min: 6 })
+            .withMessage("New password must be at least 6 characters"),
+        body("newPassword2")
+            .notEmpty()
+            .withMessage("Confirm password is required"),
     ],
     validateResult,
-    change_current_password
+    changePassword
 );
 
 // Change avatar
-router.patch(
-    "/change-avatar",
-    requireAuth,
-    uploadAvatar,
-    change_Avatar
-);
+router.patch("/change-avatar", requireAuth, uploadAvatar, changeAvatar);
 
 // Change cover image
 router.patch(
     "/change-cover-image",
     requireAuth,
     uploadCoverImage,
-    change_CoverImage
+    changeCoverImage
 );
 
 // Update account details
@@ -160,11 +159,10 @@ router.patch(
     "/update-details",
     requireAuth,
     uploadFields,
-    update_account_details
+    updateAccountDetails
 );
 
 // Get user channel profile (public with optional auth for subscription status)
-router.get("/c/:username", verifyAccessToken, get_user_profile);
+router.get("/c/:username", verifyAccessToken, getUserProfile);
 
 export default router;
-

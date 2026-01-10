@@ -6,13 +6,13 @@ import {
     requireAuth,
 } from "../middlewares/auth.middleware.js";
 import {
-    create_new_video,
-    get_video_by_id,
-    update_video,
-    delete_video,
+    createVideo,
+    getVideoById,
+    updateVideo,
+    deleteVideo,
     togglePublishStatus,
     incrementViewCount,
-    get_User_Videos,
+    getUserVideos,
     getAllVideos,
     generateDownloadUrl,
 } from "../controllers/video.controller.js";
@@ -38,7 +38,7 @@ router.get(
     "/:videoID",
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
-    get_video_by_id
+    getVideoById
 );
 
 // Increment view count
@@ -69,7 +69,7 @@ router.post(
     uploadFields,
     createVideoRules,
     validateResult,
-    create_new_video
+    createVideo
 );
 
 // Update video
@@ -102,7 +102,7 @@ router.patch(
             return true;
         }),
     validateResult,
-    update_video
+    updateVideo
 );
 
 // Delete video
@@ -111,7 +111,7 @@ router.delete(
     requireAuth,
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
-    delete_video
+    deleteVideo
 );
 
 // Toggle publish status
@@ -129,7 +129,7 @@ router.get(
     requireAuth,
     param("userID").isMongoId().withMessage("Invalid user ID"),
     validateResult,
-    get_User_Videos
+    getUserVideos
 );
 
 // Generate download URL
