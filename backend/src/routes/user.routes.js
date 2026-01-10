@@ -12,7 +12,16 @@ import {
     update_account_details,
     get_user_profile,
 } from "../controllers/user.controller.js";
-import { verifyAccessToken, requireAuth } from "../middlewares/auth.middleware.js";
+import {
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
+    resendVerification,
+} from "../controllers/email.controller.js";
+import {
+    verifyAccessToken,
+    requireAuth,
+} from "../middlewares/auth.middleware.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 import {
     uploadAvatar,
@@ -29,27 +38,34 @@ const router = Router();
 // Validation Rules
 const registerValidationRules = [
     body("userName")
-        .notEmpty().withMessage("Username is required")
+        .notEmpty()
+        .withMessage("Username is required")
         .trim()
-        .isLength({ min: 3, max: 30 }).withMessage("Username must be 3-30 characters"),
+        .isLength({ min: 3, max: 30 })
+        .withMessage("Username must be 3-30 characters"),
     body("fullName")
-        .notEmpty().withMessage("Full Name is required")
+        .notEmpty()
+        .withMessage("Full Name is required")
         .trim()
-        .isLength({ min: 3, max: 30 }).withMessage("Full Name must be 3-30 characters"),
+        .isLength({ min: 3, max: 30 })
+        .withMessage("Full Name must be 3-30 characters"),
     body("email")
-        .isEmail().withMessage("Please provide a valid email")
+        .isEmail()
+        .withMessage("Please provide a valid email")
         .normalizeEmail(),
     body("password")
-        .notEmpty().withMessage("Password is required")
-        .isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+        .notEmpty()
+        .withMessage("Password is required")
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters"),
 ];
 
 const loginValidationRules = [
     body("email")
-        .isEmail().withMessage("Please provide a valid email")
+        .isEmail()
+        .withMessage("Please provide a valid email")
         .normalizeEmail(),
-    body("password")
-        .notEmpty().withMessage("Password is required"),
+    body("password").notEmpty().withMessage("Password is required"),
 ];
 
 // Register new user
@@ -62,15 +78,43 @@ router.post(
 );
 
 // Login user
-router.post(
-    "/login",
-    loginValidationRules,
-    validateResult,
-    loginUser
-);
+router.post("/login", loginValidationRules, validateResult, loginUser);
 
 // Refresh access token
 router.post("/refresh-token", refreshAccessToken);
+
+// ===========================================
+// EMAIL ROUTES (Mostly public)
+// ===========================================
+
+// Verify email with token
+router.get("/verify-email/:token", verifyEmail);
+
+// Request password reset
+router.post(
+    "/forgot-password",
+    [body("email").isEmail().withMessage("Please provide a valid email")],
+    validateResult,
+    forgotPassword
+);
+
+// Reset password with token
+router.post(
+    "/reset-password/:token",
+    [
+        body("password")
+            .isLength({ min: 6 })
+            .withMessage("Password must be at least 6 characters"),
+        body("confirmPassword")
+            .notEmpty()
+            .withMessage("Confirm password is required"),
+    ],
+    validateResult,
+    resetPassword
+);
+
+// Resend verification email (requires auth)
+router.post("/resend-verification", requireAuth, resendVerification);
 
 // ===========================================
 // PROTECTED ROUTES (Authentication required)
@@ -123,3 +167,4 @@ router.patch(
 router.get("/c/:username", verifyAccessToken, get_user_profile);
 
 export default router;
+
