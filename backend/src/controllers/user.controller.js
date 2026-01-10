@@ -189,13 +189,13 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
             );
     } catch (error) {
         return next(
-            new APIerror(401, error?.message || "Inavlid refresh token")
+            new APIerror(401, error?.message || "Invalid refresh token")
         );
     }
 });
 
-// Function for changing the current password
-const change_current_password = asynchandler(async (req, res, next) => {
+// Change current password
+const changePassword = asynchandler(async (req, res, next) => {
     const { oldPassword, newPassword1, newPassword2 } = req.body;
 
     if (newPassword1 !== newPassword2) {
@@ -224,8 +224,8 @@ const change_current_password = asynchandler(async (req, res, next) => {
         .json(new APIresponse(200, null, "Password changed successfully"));
 });
 
-// Get current User
-const get_current_user = asynchandler(async (req, res, next) => {
+// Get current user
+const getCurrentUser = asynchandler(async (req, res, next) => {
     return res
         .status(200)
         .json(
@@ -234,7 +234,7 @@ const get_current_user = asynchandler(async (req, res, next) => {
 });
 
 // Update account details
-const update_account_details = asynchandler(async (req, res, next) => {
+const updateAccountDetails = asynchandler(async (req, res, next) => {
     const { userName, email, fullName } = req.body;
     const userID = req.user?._id;
 
@@ -291,7 +291,7 @@ const update_account_details = asynchandler(async (req, res, next) => {
 });
 
 // Change Avatar image
-const change_Avatar = asynchandler(async (req, res, next) => {
+const changeAvatar = asynchandler(async (req, res, next) => {
     const userID = req.user?._id;
 
     // Step 1: Check if an avatar file is provided
@@ -352,7 +352,7 @@ const change_Avatar = asynchandler(async (req, res, next) => {
 });
 
 // Change Cover Image
-const change_CoverImage = asynchandler(async (req, res, next) => {
+const changeCoverImage = asynchandler(async (req, res, next) => {
     const userID = req.user?._id;
 
     // Step 1: Check if a cover image file is provided
@@ -414,7 +414,7 @@ const change_CoverImage = asynchandler(async (req, res, next) => {
 });
 
 // Get user channel details;; First aggregation pipeline
-const get_user_profile = asynchandler(async (req, res, next) => {
+const getUserProfile = asynchandler(async (req, res, next) => {
     const { userName } = req.params;
 
     if (!userName?.trim()) {
@@ -490,14 +490,14 @@ const get_user_profile = asynchandler(async (req, res, next) => {
 });
 
 export {
-    change_Avatar,
-    change_CoverImage,
-    change_current_password,
-    get_current_user,
+    changeAvatar,
+    changeCoverImage,
+    changePassword,
+    getCurrentUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
     registerUser,
-    update_account_details,
-    get_user_profile,
+    updateAccountDetails,
+    getUserProfile,
 };

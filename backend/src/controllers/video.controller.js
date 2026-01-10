@@ -11,7 +11,7 @@ import fs from "fs";
 import { compressVideo } from "../middlewares/multer.middleware.js";
 
 // Create a new video
-const create_new_video = asynchandler(async (req, res) => {
+const createVideo = asynchandler(async (req, res) => {
     // Define compressedPath here so it's accessible in the catch block
     let compressedPath;
 
@@ -83,7 +83,7 @@ const create_new_video = asynchandler(async (req, res) => {
 });
 
 // Get a single video by ID
-const get_video_by_id = asynchandler(async (req, res) => {
+const getVideoById = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
     if (!mongoose.isValidObjectId(videoID)) {
@@ -107,7 +107,7 @@ const get_video_by_id = asynchandler(async (req, res) => {
 });
 
 // Update video details
-const update_video = asynchandler(async (req, res) => {
+const updateVideo = asynchandler(async (req, res) => {
     const { videoID } = req.params;
     const updates = {};
 
@@ -177,7 +177,7 @@ const update_video = asynchandler(async (req, res) => {
 });
 
 // Delete video (soft delete)
-const delete_video = asynchandler(async (req, res) => {
+const deleteVideo = asynchandler(async (req, res) => {
     const { videoID } = req.params;
 
     // Validate video ID
@@ -352,7 +352,7 @@ const incrementViewCount = asynchandler(async (req, res) => {
 });
 
 // Get user videos
-const get_User_Videos = asynchandler(async (req, res) => {
+const getUserVideos = asynchandler(async (req, res) => {
     const { sort = "newest", search = "" } = req.query;
 
     const sortOptions = {
@@ -398,13 +398,13 @@ const generateDownloadUrl = asynchandler(async (req, res) => {
 });
 
 export {
-    create_new_video,
-    get_video_by_id,
-    update_video,
-    delete_video,
+    createVideo,
+    getVideoById,
+    updateVideo,
+    deleteVideo,
     togglePublishStatus,
     incrementViewCount,
-    get_User_Videos,
+    getUserVideos,
     generateDownloadUrl,
     getAllVideos,
 };
