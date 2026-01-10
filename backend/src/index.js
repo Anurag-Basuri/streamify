@@ -1,12 +1,138 @@
+/**
+ * Streamify Backend Server Entry Point
+ * Handles server initialization, database connection, and graceful shutdown
+ */
 import { app } from "./app.js";
-import ConnectDB from "./database/index.js";
+import connectDB from "./database/index.js";
+import { verifyCloudinaryConnection } from "./utils/cloudinary.js";
+import { verifyEmailConnection } from "./utils/email.js";
 
-ConnectDB()
-    .then(() => {
-        app.listen(process.env.PORT || 8000, () => {
-            console.log(`⚙️ Server is running at port : ${process.env.PORT}`);
+// Configuration
+const PORT = process.env.PORT || 8000;
+const NODE_ENV = process.env.NODE_ENV || "development";
+
+// Server instance reference for graceful shutdown
+let server = null;
+
+/**
+ * Validates required environment variables
+ */
+const validateEnvironment = () => {
+    const required = [
+        "MONGODB_URL",
+        "DB_NAME",
+        "ACCESS_TOKEN_SECRET",
+        "REFRESH_TOKEN_SECRET",
+        "CLOUD_NAME",
+        "API_KEY",
+        "API_SECRET",
+    ];
+
+    const missing = required.filter((key) => !process.env[key]);
+
+    if (missing.length > 0) {
+        console.error("❌ Missing required environment variables:");
+        missing.forEach((key) => console.error(`   - ${key}`));
+        process.exit(1);
+    }
+
+    console.log("✅ Environment variables validated");
+};
+
+/**
+ * Graceful shutdown handler
+ */
+const gracefulShutdown = async (signal) => {
+    console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
+
+    // Stop accepting new connections
+    if (server) {
+        server.close(() => {
+            console.log("✅ HTTP server closed");
         });
-    })
-    .catch((err) => {
-        console.log("❌ MONGO db connection failed !!! ", err);
-    });
+    }
+
+    // Close database connection
+    try {
+        const mongoose = await import("mongoose");
+        await mongoose.default.connection.close();
+        console.log("✅ MongoDB connection closed");
+    } catch (error) {
+        console.error("❌ Error closing MongoDB connection:", error.message);
+    }
+
+    console.log("👋 Graceful shutdown complete");
+    process.exit(0);
+};
+
+/**
+ * Starts the server
+ */
+const startServer = async () => {
+    try {
+        console.log("\n🚀 Starting Streamify Server...\n");
+        console.log(`📍 Environment: ${NODE_ENV}`);
+
+        // Step 1: Validate environment
+        validateEnvironment();
+
+        // Step 2: Connect to MongoDB
+        await connectDB();
+
+        // Step 3: Verify Cloudinary connection (non-blocking)
+        verifyCloudinaryConnection().catch((err) => {
+            console.warn("⚠️ Cloudinary verification failed:", err.message);
+        });
+
+        // Step 4: Verify Email connection (non-blocking, optional)
+        if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+            verifyEmailConnection().catch((err) => {
+                console.warn("⚠️ Email verification failed:", err.message);
+            });
+        }
+
+        // Step 5: Start HTTP server
+        server = app.listen(PORT, () => {
+            console.log(`\n⚙️  Server is running at http://localhost:${PORT}`);
+            console.log(`📊 Health check: http://localhost:${PORT}/health`);
+            console.log(`📚 API Base: http://localhost:${PORT}/api/v1\n`);
+        });
+
+        // Handle server errors
+        server.on("error", (error) => {
+            if (error.code === "EADDRINUSE") {
+                console.error(`❌ Port ${PORT} is already in use`);
+            } else {
+                console.error("❌ Server error:", error.message);
+            }
+            process.exit(1);
+        });
+
+        // Step 6: Setup graceful shutdown handlers
+        process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+        process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+        // Handle uncaught exceptions
+        process.on("uncaughtException", (error) => {
+            console.error("❌ Uncaught Exception:", error);
+            gracefulShutdown("uncaughtException");
+        });
+
+        // Handle unhandled promise rejections
+        process.on("unhandledRejection", (reason, promise) => {
+            console.error(
+                "❌ Unhandled Rejection at:",
+                promise,
+                "reason:",
+                reason
+            );
+            gracefulShutdown("unhandledRejection");
+        });
+    } catch (error) {
+        console.error("❌ Failed to start server:", error.message);
+        process.exit(1);
+    }
+};
+
+// Start the server
+startServer();
