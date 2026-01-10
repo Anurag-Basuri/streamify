@@ -11,6 +11,11 @@ const AUTH_ENDPOINTS = {
     CHANGE_PASSWORD: "/api/v1/users/change-password",
     CHANGE_AVATAR: "/api/v1/users/change-avatar",
     CHANGE_COVER: "/api/v1/users/change-cover-image",
+    // Email endpoints
+    VERIFY_EMAIL: (token) => `/api/v1/users/verify-email/${token}`,
+    FORGOT_PASSWORD: "/api/v1/users/forgot-password",
+    RESET_PASSWORD: (token) => `/api/v1/users/reset-password/${token}`,
+    RESEND_VERIFICATION: "/api/v1/users/resend-verification",
 };
 
 /**
@@ -186,6 +191,76 @@ export const changePassword = async (passwords) => {
 export const handleGoogleAuth = () => {
     console.warn("Google OAuth is currently disabled");
     // window.location.href = `${API_CONFIG.baseURL}/api/v1/users/auth/google`;
+};
+
+// ==========================================
+// Email Verification & Password Reset
+// ==========================================
+
+/**
+ * Verify email with token
+ * @param {string} token - Verification token from email
+ * @returns {Promise<Object>}
+ */
+export const verifyEmail = async (token) => {
+    try {
+        const response = await api.get(AUTH_ENDPOINTS.VERIFY_EMAIL(token));
+        return response.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Request password reset email
+ * @param {string} email - User's email
+ * @returns {Promise<Object>}
+ */
+export const forgotPassword = async (email) => {
+    try {
+        const response = await api.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
+            email,
+        });
+        return response.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Reset password with token
+ * @param {string} token - Reset token from email
+ * @param {string} password - New password
+ * @param {string} confirmPassword - Confirm new password
+ * @returns {Promise<Object>}
+ */
+export const resetPassword = async (token, password, confirmPassword) => {
+    try {
+        const response = await api.post(AUTH_ENDPOINTS.RESET_PASSWORD(token), {
+            password,
+            confirmPassword,
+        });
+        return response.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Resend verification email (requires auth)
+ * @returns {Promise<Object>}
+ */
+export const resendVerification = async () => {
+    try {
+        const response = await api.post(AUTH_ENDPOINTS.RESEND_VERIFICATION);
+        return response.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
 };
 
 // Re-export for backward compatibility
