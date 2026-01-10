@@ -1,117 +1,150 @@
-# 🎬 Streamify - Modern Video Streaming Platform
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary" />
+</p>
 
-Streamify is a full‑stack video streaming platform (React + Vite frontend, Node.js + Express backend, MongoDB). This README is updated to match the current workspace layout and includes quick links to the most relevant files.
-
-Quick links
-- Frontend entry: [`App`](frontend/src/App.jsx) ([frontend/src/App.jsx](frontend/src/App.jsx)) — rendered by [`main`](frontend/src/main.jsx) ([frontend/src/main.jsx](frontend/src/main.jsx))
-- Frontend config: [`vite.config.js`](vite.config.js) ([vite.config.js](vite.config.js)), [`tailwind.config.js`](frontend/tailwind.config.js) ([frontend/tailwind.config.js](frontend/tailwind.config.js)), [`package.json`](frontend/package.json) ([frontend/package.json](frontend/package.json))
-- Backend entry: [`index.js`](backend/src/index.js) ([backend/src/index.js](backend/src/index.js)) and [`app.js`](backend/src/app.js) ([backend/src/app.js](backend/src/app.js))
-- Backend config: [`package.json`](backend/package.json) ([backend/package.json](backend/package.json)), DB connect: [`database/index.js`](backend/src/database/index.js) ([backend/src/database/index.js](backend/src/database/index.js))
-- Key backend utilities: [`cloudinary`](backend/src/utils/cloudinary.js) ([backend/src/utils/cloudinary.js](backend/src/utils/cloudinary.js)), [`tokens`](backend/src/utils/tokens.js) ([backend/src/utils/tokens.js](backend/src/utils/tokens.js)), [`APIresponse`](backend/src/utils/APIresponse.js) ([backend/src/utils/APIresponse.js](backend/src/utils/APIresponse.js))
-
-Project structure (high-level)
-- frontend/
-  - UI and routing in [`frontend/src/`](frontend/src)
-  - Main components: [`Header.jsx`](frontend/src/components/Header.jsx) ([frontend/src/components/Header.jsx](frontend/src/components/Header.jsx)), [`Sidebar.jsx`](frontend/src/components/Sidebar.jsx) ([frontend/src/components/Sidebar.jsx](frontend/src/components/Sidebar.jsx)), video components in [`frontend/src/components/Video/`](frontend/src/components/Video)
-  - Upload UI: [`FileUploadArea.jsx`](frontend/src/components/Upload/FileUploadArea.jsx) ([frontend/src/components/Upload/FileUploadArea.jsx](frontend/src/components/Upload/FileUploadArea.jsx))
-  - Hooks: [`useAuth`](frontend/src/hooks/useAuth.js) ([frontend/src/hooks/useAuth.js](frontend/src/hooks/useAuth.js)), [`useUpload`](frontend/src/hooks/useUpload.js) ([frontend/src/hooks/useUpload.js](frontend/src/hooks/useUpload.js)), [`useVideos`](frontend/src/hooks/useVideos.js) ([frontend/src/hooks/useVideos.js](frontend/src/hooks/useVideos.js))
-- backend/
-  - API controllers: [`backend/src/controllers/video.controller.js`](backend/src/controllers/video.controller.js) ([backend/src/controllers/video.controller.js](backend/src/controllers/video.controller.js)), auth controller: [`auth.controller.js`](backend/src/controllers/auth.controller.js) ([backend/src/controllers/auth.controller.js](backend/src/controllers/auth.controller.js))
-  - Routes: [`video.routes.js`](backend/src/routes/video.routes.js) ([backend/src/routes/video.routes.js](backend/src/routes/video.routes.js)), [`auth.routes.js`](backend/src/routes/auth.routes.js) ([backend/src/routes/auth.routes.js](backend/src/routes/auth.routes.js)), playlist/watchlater/history routes under [`backend/src/routes/`](backend/src/routes)
-  - Middlewares: auth [`auth.middleware.js`](backend/src/middlewares/auth.middleware.js) ([backend/src/middlewares/auth.middleware.js](backend/src/middlewares/auth.middleware.js)), file upload [`multer.middleware.js`](backend/src/middlewares/multer.middleware.js) ([backend/src/middlewares/multer.middleware.js](backend/src/middlewares/multer.middleware.js))
-
-Getting started (dev)
-1. Frontend
-   - Open [frontend/package.json](frontend/package.json) and run:
-     ```sh
-     npm --prefix frontend run dev
-     ```
-   - Frontend uses Vite and Tailwind; main app is  (frontend/src/main.jsx).
-
-2. Backend
-   - Ensure MongoDB running and required env values set in  (see below).
-   - Run:
-     ```sh
-     npm --prefix backend run dev
-     ```
-   - Backend entry is  (backend/src/index.js); core Express app is  (backend/src/app.js).
-
-Environment variables
-- Frontend: create `frontend/.env` with:
-```
-VITE_API_URL=http://localhost:8000
-VITE_CLOUD_NAME=your_cloudinary_cloud_name
-```
-- Backend: create `backend/.env` with:
-```
-PORT=8000
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-```
-
-**Note:** Replace `your_mongodb_uri`, `your_jwt_secret`, `your_cloudinary_cloud_name`, `your_cloudinary_api_key`, and `your_cloudinary_api_secret` with your actual configuration values.
+<h1 align="center">🎬 Streamify</h1>
+<p align="center"><strong>Modern Video Streaming Platform</strong></p>
+<p align="center">A full-stack YouTube-like platform built with React, Node.js, and MongoDB</p>
 
 ---
 
-## 🌟 Features
+## 📸 Screenshots
 
-### User Experience
-- **Dark/Light Theme** with instant toggle (TailwindCSS)
-- **Responsive Design** for mobile, tablet, and desktop
-- **Animated UI** (Framer Motion)
-- **Real-time Search** and filtering
-- **Infinite Scroll** for video feeds
+> Add your screenshots here by replacing the placeholders below
 
-### Video Features
-- **Video Upload** (up to 2GB, with thumbnail support)
-- **Custom Video Player** with playback controls
-- **Video Compression** (FFmpeg integration)
-- **Thumbnails & Metadata** management
-- **Edit, Delete, and Publish/Unpublish** your videos
-- **Watch History** and **Watch Later** queue
-- **Playlists**: create, edit, and manage
-- **Like/Comment System**
-
-### User Features
-- **JWT Authentication** (register, login, Google OAuth)
-- **User Profiles** with avatars and cover images
-- **Playlist Management**
-- **Subscriptions** to channels
-- **Video History Tracking**
-- **Download Videos** (if allowed)
-
-### Technical Features
-- **RESTful API** with Express.js
-- **Cloudinary** for media storage
-- **Multer** for file uploads
-- **FFmpeg** for server-side video compression
-- **API Rate Limiting & Security**
-- **Robust Error Handling**
-- **Environment-based configuration**
+|                          Home Page                          |                           Video Player                           |                           Profile                            |
+| :---------------------------------------------------------: | :--------------------------------------------------------------: | :----------------------------------------------------------: |
+| ![Home](https://via.placeholder.com/300x200?text=Home+Page) | ![Player](https://via.placeholder.com/300x200?text=Video+Player) | ![Profile](https://via.placeholder.com/300x200?text=Profile) |
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Features
 
-### Frontend
-- [React](https://reactjs.org/) (Vite)
-- [TailwindCSS](https://tailwindcss.com/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [Axios](https://axios-http.com/)
-- [React Router](https://reactrouter.com/)
-- [React Hot Toast](https://react-hot-toast.com/)
-- [Heroicons](https://heroicons.com/)
+<table>
+<tr>
+<td width="50%">
 
-### Backend
-- [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/)
-- [MongoDB](https://www.mongodb.com/) & [Mongoose](https://mongoosejs.com/)
-- [Cloudinary](https://cloudinary.com/)
-- [Multer](https://github.com/expressjs/multer)
-- [FFmpeg](https://ffmpeg.org/) (via [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg))
-- [JWT](https://jwt.io/) Authentication
+### 🎥 Video Features
+
+- ✅ Upload videos (up to 2GB)
+- ✅ Auto video compression (FFmpeg)
+- ✅ Custom video player
+- ✅ Thumbnails & metadata
+- ✅ Like, comment, share
+- ✅ Watch history tracking
+- ✅ Watch later queue
+- ✅ Playlists management
+
+</td>
+<td width="50%">
+
+### 👤 User Features
+
+- ✅ JWT Authentication
+- ✅ Email verification
+- ✅ Password reset via email
+- ✅ User profiles & avatars
+- ✅ Channel subscriptions
+- ✅ Creator dashboard
+- ✅ Video management
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🛡️ Security
+
+- ✅ Rate limiting
+- ✅ Helmet security headers
+- ✅ Token refresh mechanism
+- ✅ Input validation
+- ✅ XSS protection
+
+</td>
+<td>
+
+### ⚡ Performance
+
+- ✅ Lazy loading (React.lazy)
+- ✅ Code splitting
+- ✅ GZIP compression
+- ✅ Cloudinary CDN
+- ✅ Optimized queries
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TB
+    subgraph Frontend["🌐 Frontend (React + Vite)"]
+        UI[UI Components]
+        Context[Auth/Theme Context]
+        Services[API Services]
+        Hooks[Custom Hooks]
+    end
+
+    subgraph Backend["⚙️ Backend (Node.js + Express)"]
+        Routes[API Routes]
+        Controllers[Controllers]
+        Middleware[Middleware]
+        Models[Mongoose Models]
+    end
+
+    subgraph External["☁️ External Services"]
+        MongoDB[(MongoDB Atlas)]
+        Cloudinary[Cloudinary CDN]
+        SMTP[SMTP Server]
+    end
+
+    UI --> Services
+    Services --> Routes
+    Routes --> Middleware
+    Middleware --> Controllers
+    Controllers --> Models
+    Models --> MongoDB
+    Controllers --> Cloudinary
+    Controllers --> SMTP
+```
+
+---
+
+## 🔄 Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant DB as MongoDB
+    participant E as Email
+
+    U->>F: Register
+    F->>B: POST /register
+    B->>DB: Create User
+    B->>E: Send Verification Email
+    B->>F: Return User (unverified)
+
+    U->>E: Click Verification Link
+    E->>F: /verify-email/:token
+    F->>B: GET /verify-email/:token
+    B->>DB: Mark Verified
+    B->>F: Success
+
+    U->>F: Login
+    F->>B: POST /login
+    B->>DB: Validate Credentials
+    B->>F: Access + Refresh Tokens
+    F->>F: Store Tokens
+```
 
 ---
 
@@ -119,166 +152,219 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 ```
 streamify/
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page-level components (routes)
-│   │   ├── context/       # React context providers
-│   │   ├── services/      # API and utility services
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── routes/        # Route definitions
-│   │   └── utils/         # Utility functions
-│   └── public/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/   # Express route controllers
-│   │   ├── models/        # Mongoose models
-│   │   ├── routes/        # Express routes
-│   │   ├── middlewares/   # Custom middlewares (auth, multer, etc.)
-│   │   └── database/      # DB connection logic
-│   └── uploads/           # Uploaded files (if not using Cloudinary)
-└── README.md
+├── 📂 frontend/                    # React + Vite Application
+│   ├── 📂 src/
+│   │   ├── 📂 components/          # Reusable UI components
+│   │   │   ├── 📂 Video/           # Video player, cards
+│   │   │   ├── 📂 Playlist/        # Playlist components
+│   │   │   ├── 📂 Upload/          # File upload UI
+│   │   │   └── ...
+│   │   ├── 📂 pages/               # Route pages
+│   │   │   ├── 📂 Display/         # Home, Tweet, Subscription
+│   │   │   ├── 📂 Account/         # History, Playlist, Videos
+│   │   │   └── 📂 You/             # Profile, Auth pages
+│   │   ├── 📂 services/            # API client & services
+│   │   ├── 📂 hooks/               # Custom React hooks
+│   │   ├── 📂 context/             # Auth, Theme providers
+│   │   ├── 📂 constants/           # App constants
+│   │   └── 📂 routes/              # Route definitions
+│   └── 📄 package.json
+│
+├── 📂 backend/                     # Node.js + Express API
+│   ├── 📂 src/
+│   │   ├── 📂 controllers/         # Route handlers
+│   │   │   ├── 📄 user.controller.js
+│   │   │   ├── 📄 video.controller.js
+│   │   │   ├── 📄 email.controller.js
+│   │   │   └── ...
+│   │   ├── 📂 routes/              # Express routes
+│   │   ├── 📂 models/              # Mongoose schemas
+│   │   ├── 📂 middlewares/         # Auth, validation
+│   │   ├── 📂 utils/               # Utilities (email, cloudinary)
+│   │   ├── 📂 templates/           # Email templates (Handlebars)
+│   │   └── 📂 database/            # DB connection
+│   └── 📄 package.json
+│
+└── 📄 README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ Tech Stack
+
+### Frontend
+
+| Technology      | Purpose       |
+| --------------- | ------------- |
+| React 18        | UI Framework  |
+| Vite            | Build Tool    |
+| TailwindCSS     | Styling       |
+| Framer Motion   | Animations    |
+| React Router 7  | Routing       |
+| Axios           | HTTP Client   |
+| React Hot Toast | Notifications |
+
+### Backend
+
+| Technology | Purpose           |
+| ---------- | ----------------- |
+| Node.js    | Runtime           |
+| Express 4  | Web Framework     |
+| MongoDB    | Database          |
+| Mongoose   | ODM               |
+| Cloudinary | Media Storage     |
+| Nodemailer | Email Service     |
+| FFmpeg     | Video Compression |
+| JWT        | Authentication    |
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** v16 or higher
-- **npm** v8 or higher
-- **MongoDB** (local or Atlas)
-- **Cloudinary** account (for media storage)
-- **FFmpeg** installed and available in your system PATH
+- Node.js 18+
+- MongoDB (local or Atlas)
+- Cloudinary account
+- FFmpeg installed
 
-### Installation
+### 1️⃣ Clone & Install
 
-1. **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/streamify.git
-    cd streamify
-    ```
+```bash
+git clone https://github.com/Anurag-Basuri/streamify.git
+cd streamify
 
-2. **Install Dependencies**
-    ```bash
-    # Frontend
-    cd frontend
-    npm install
-
-    # Backend
-    cd ../backend
-    npm install
-    ```
-
-3. **Environment Setup**
-
-    - **Frontend (`frontend/.env`):**
-        ```
-        VITE_API_URL=http://localhost:8000
-        VITE_CLOUD_NAME=your_cloudinary_cloud_name
-        ```
-
-    - **Backend (`backend/.env`):**
-        ```
-        PORT=8000
-        MONGODB_URI=your_mongodb_uri
-        JWT_SECRET=your_jwt_secret
-        CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-        CLOUDINARY_API_KEY=your_cloudinary_api_key
-        CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-        ```
-
-4. **Run the Application**
-    ```bash
-    # Frontend
-    cd frontend
-    npm run dev
-
-    # Backend
-    cd ../backend
-    npm run dev
-    ```
-
----
-
-## 🔑 Key Components
-
-### Frontend
-- **Sidebar.jsx** - Navigation sidebar with theme toggle
-- **Header.jsx** - Main navigation header with search
-- **VideoCard.jsx** - Video display component
-- **PlaylistManager.jsx** - Playlist management UI
-- **ThemeProvider.jsx** - Theme context provider
-- **WatchLater.jsx** & **History.jsx** - User video queues
-- **YourVideos.jsx** - Manage your uploaded videos (edit, delete, publish, update thumbnail)
-
-### Backend APIs
-- `/api/v1/auth` - Authentication (register, login, Google OAuth)
-- `/api/v1/videos` - Video CRUD, search, publish/unpublish, compression
-- `/api/v1/playlists` - Playlist CRUD
-- `/api/v1/users` - User profile and settings
-- `/api/v1/comments` - Comment system
-- `/api/v1/watchlater` - Watch Later queue
-- `/api/v1/history` - Watch History
-
----
-
-## 🧩 API Endpoints (Sample)
-
-| Method | Endpoint                        | Description                  |
-|--------|---------------------------------|------------------------------|
-| POST   | `/api/v1/auth/register`         | Register a new user          |
-| POST   | `/api/v1/auth/login`            | Login                        |
-| GET    | `/api/v1/videos`                | List all videos              |
-| POST   | `/api/v1/videos`                | Upload a new video           |
-| PATCH  | `/api/v1/videos/update/:id`     | Update video details         |
-| PATCH  | `/api/v1/videos/:id/publish`    | Toggle publish status        |
-| DELETE | `/api/v1/videos/:id`            | Delete a video               |
-| GET    | `/api/v1/videos/user`           | Get current user's videos    |
-| GET    | `/api/v1/playlists`             | List playlists               |
-| ...    | ...                             | ...                          |
-
----
-
-## 🎨 Theme Customization
-
-The application supports both light and dark themes via TailwindCSS.  
-You can customize colors in `tailwind.config.js` and use the theme toggle in the UI.
-
-```css
-/* Example theme.css */
-:root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --primary: #6d28d9;
-}
-
-[data-theme='dark'] {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --primary: #7c3aed;
-}
+# Install dependencies
+cd frontend && npm install
+cd ../backend && npm install
 ```
 
----
+### 2️⃣ Environment Setup
 
-## 📝 Environment Variables
+**Backend** (`backend/.env`):
 
-**Frontend (`frontend/.env`):**
-```
-VITE_API_URL=http://localhost:8000
-VITE_CLOUD_NAME=your_cloudinary_cloud_name
-```
-
-**Backend (`backend/.env`):**
-```
+```env
+# Server
 PORT=8000
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+NODE_ENV=development
+
+# Database
+MONGODB_URL=mongodb+srv://...
+DB_NAME=streamify
+
+# JWT
+ACCESS_TOKEN_SECRET=your_access_secret
+REFRESH_TOKEN_SECRET=your_refresh_secret
+ACCESS_TOKEN_EXPIRY=15m
+REFRESH_TOKEN_EXPIRY=7d
+
+# Cloudinary
+CLOUD_NAME=your_cloud_name
+API_KEY=your_api_key
+API_SECRET=your_api_secret
+
+# Email (Optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+EMAIL_FROM="Streamify <noreply@streamify.com>"
+
+# Frontend
+FRONTEND_URL=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173
+```
+
+**Frontend** (`frontend/.env`):
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+### 3️⃣ Run
+
+```bash
+# Terminal 1: Backend
+cd backend && npm run dev
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+---
+
+## 📡 API Endpoints
+
+### Authentication
+
+| Method | Endpoint                              | Description    |
+| ------ | ------------------------------------- | -------------- |
+| POST   | `/api/v1/users/register`              | Register user  |
+| POST   | `/api/v1/users/login`                 | Login          |
+| POST   | `/api/v1/users/logout`                | Logout         |
+| GET    | `/api/v1/users/verify-email/:token`   | Verify email   |
+| POST   | `/api/v1/users/forgot-password`       | Request reset  |
+| POST   | `/api/v1/users/reset-password/:token` | Reset password |
+
+### Videos
+
+| Method | Endpoint                     | Description    |
+| ------ | ---------------------------- | -------------- |
+| GET    | `/api/v1/videos`             | List videos    |
+| GET    | `/api/v1/videos/:id`         | Get video      |
+| POST   | `/api/v1/videos/upload`      | Upload video   |
+| PATCH  | `/api/v1/videos/update/:id`  | Update video   |
+| DELETE | `/api/v1/videos/:id`         | Delete video   |
+| PATCH  | `/api/v1/videos/:id/publish` | Toggle publish |
+
+### User
+
+| Method | Endpoint                        | Description     |
+| ------ | ------------------------------- | --------------- |
+| GET    | `/api/v1/users/current-user`    | Get profile     |
+| PATCH  | `/api/v1/users/change-avatar`   | Update avatar   |
+| PATCH  | `/api/v1/users/change-password` | Change password |
+
+---
+
+## 📊 Database Schema
+
+```mermaid
+erDiagram
+    USER ||--o{ VIDEO : uploads
+    USER ||--o{ PLAYLIST : creates
+    USER ||--o{ COMMENT : writes
+    USER ||--o{ LIKE : gives
+    USER }|--o{ SUBSCRIPTION : subscribes
+    VIDEO ||--o{ COMMENT : has
+    VIDEO ||--o{ LIKE : receives
+    PLAYLIST ||--o{ VIDEO : contains
+
+    USER {
+        ObjectId _id
+        string userName
+        string email
+        string password
+        string avatar
+        boolean isEmailVerified
+    }
+
+    VIDEO {
+        ObjectId _id
+        string title
+        string description
+        string videoUrl
+        string thumbnail
+        ObjectId owner
+        boolean isPublished
+    }
+
+    PLAYLIST {
+        ObjectId _id
+        string name
+        ObjectId owner
+        ObjectId[] videos
+    }
 ```
 
 ---
@@ -286,34 +372,19 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ---
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-## 🙏 Acknowledgments
-
-- [React](https://reactjs.org/)
-- [TailwindCSS](https://tailwindcss.com/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [MongoDB](https://www.mongodb.com/)
-- [Cloudinary](https://cloudinary.com/)
-- [FFmpeg](https://ffmpeg.org/)
-- [Heroicons](https://heroicons.com/)
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/)
-- [Multer](https://github.com/expressjs/multer)
-- [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg)
-
----
-
-**Streamify** is built for learning, experimentation, and as a foundation for your own video platform ideas.  
-Feel free to fork, contribute, and make it your own!
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/Anurag-Basuri">Anurag Basuri</a>
+</p>
