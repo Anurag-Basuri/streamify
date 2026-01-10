@@ -65,6 +65,15 @@ const userSchema = new Schema(
             unique: true,
             sparse: true,
         },
+        // Email verification
+        isEmailVerified: {
+            type: Boolean,
+            default: false,
+        },
+        emailVerificationToken: String,
+        emailVerificationExpires: Date,
+        passwordResetToken: String,
+        passwordResetExpires: Date,
     },
     {
         timestamps: true,
