@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+/**
+ * SignInAndUp Page
+ * Modern, industry-level authentication with glassmorphism and animations
+ */
+import { useEffect, useState, useMemo } from "react";
 import {
     useSearchParams,
     useNavigate,
@@ -8,55 +12,472 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import useForm from "../../hooks/useForm";
-import { FiEye, FiEyeOff, FiUser, FiMail, FiLock } from "react-icons/fi";
-import { FcGoogle } from "react-icons/fc";
+import {
+    FiEye,
+    FiEyeOff,
+    FiUser,
+    FiMail,
+    FiLock,
+    FiArrowRight,
+    FiCheck,
+    FiAlertCircle,
+    FiLoader,
+} from "react-icons/fi";
 import PropTypes from "prop-types";
+
+// ============================================================================
+// ANIMATION VARIANTS
+// ============================================================================
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    },
+    exit: { opacity: 0, y: -20 },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring", stiffness: 300, damping: 24 },
+    },
+};
+
+const slideVariants = {
+    enter: (direction) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction) => ({ x: direction < 0 ? 300 : -300, opacity: 0 }),
+};
+
+// ============================================================================
+// GOOGLE ICON COMPONENT
+// ============================================================================
+
+const GoogleIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-5 h-5">
+        <path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        />
+        <path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        />
+        <path
+            fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        />
+        <path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        />
+    </svg>
+);
+
+// ============================================================================
+// SOCIAL AUTH BUTTON
+// ============================================================================
+
+const SocialAuthButton = ({ provider, onClick, isLoading, disabled }) => {
+    const providers = {
+        google: {
+            icon: <GoogleIcon />,
+            label: "Continue with Google",
+            bgClass: "bg-white hover:bg-gray-50",
+            textClass: "text-gray-700",
+            borderClass: "border border-gray-300",
+        },
+        github: {
+            icon: (
+                <svg
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                    fill="currentColor"
+                >
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+            ),
+            label: "Continue with GitHub",
+            bgClass: "bg-[#24292e] hover:bg-[#2c3136]",
+            textClass: "text-white",
+            borderClass: "border border-transparent",
+        },
+    };
+
+    const config = providers[provider];
+
+    return (
+        <motion.button
+            type="button"
+            onClick={onClick}
+            disabled={disabled || isLoading}
+            className={`
+                w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl
+                font-medium transition-all duration-200
+                ${config.bgClass} ${config.textClass} ${config.borderClass}
+                disabled:opacity-50 disabled:cursor-not-allowed
+                shadow-sm hover:shadow-md
+            `}
+            whileHover={{ scale: disabled ? 1 : 1.01 }}
+            whileTap={{ scale: disabled ? 1 : 0.99 }}
+        >
+            {isLoading ? (
+                <FiLoader className="w-5 h-5 animate-spin" />
+            ) : (
+                config.icon
+            )}
+            <span>{isLoading ? "Connecting..." : config.label}</span>
+        </motion.button>
+    );
+};
+
+SocialAuthButton.propTypes = {
+    provider: PropTypes.oneOf(["google", "github"]).isRequired,
+    onClick: PropTypes.func.isRequired,
+    isLoading: PropTypes.bool,
+    disabled: PropTypes.bool,
+};
+
+// ============================================================================
+// INPUT FIELD COMPONENT
+// ============================================================================
+
+const InputField = ({
+    label,
+    type = "text",
+    name,
+    value,
+    onChange,
+    onBlur,
+    error,
+    icon: Icon,
+    placeholder,
+    autoComplete,
+}) => {
+    const [isFocused, setIsFocused] = useState(false);
+
+    return (
+        <motion.div variants={itemVariants} className="space-y-1.5">
+            <label
+                htmlFor={name}
+                className="block text-sm font-medium text-[var(--text-secondary)]"
+            >
+                {label}
+            </label>
+            <div className="relative">
+                <div
+                    className={`
+                    absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200
+                    ${
+                        isFocused
+                            ? "text-[var(--brand-primary)]"
+                            : "text-[var(--text-tertiary)]"
+                    }
+                    ${error ? "text-[var(--error)]" : ""}
+                `}
+                >
+                    <Icon size={18} />
+                </div>
+                <input
+                    id={name}
+                    type={type}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={(e) => {
+                        setIsFocused(false);
+                        onBlur?.(e);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    autoComplete={autoComplete}
+                    placeholder={placeholder}
+                    className={`
+                        w-full pl-11 pr-4 py-3.5 rounded-xl
+                        bg-[var(--input-bg)] border-2 transition-all duration-200
+                        text-[var(--text-primary)] placeholder-[var(--text-tertiary)]
+                        focus:outline-none
+                        ${
+                            error
+                                ? "border-[var(--error)] focus:border-[var(--error)] focus:ring-2 focus:ring-[var(--error)]/20"
+                                : "border-[var(--input-border)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+                        }
+                    `}
+                />
+            </div>
+            <AnimatePresence>
+                {error && (
+                    <motion.p
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="flex items-center gap-1.5 text-sm text-[var(--error)]"
+                    >
+                        <FiAlertCircle size={14} />
+                        {error}
+                    </motion.p>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
+InputField.propTypes = {
+    label: PropTypes.string.isRequired,
+    type: PropTypes.string,
+    name: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    onBlur: PropTypes.func,
+    error: PropTypes.string,
+    icon: PropTypes.elementType.isRequired,
+    placeholder: PropTypes.string,
+    autoComplete: PropTypes.string,
+};
+
+// ============================================================================
+// PASSWORD FIELD COMPONENT
+// ============================================================================
+
+const PasswordField = ({
+    label,
+    name,
+    value,
+    onChange,
+    onBlur,
+    error,
+    showStrength = false,
+}) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+
+    const getStrength = (password) => {
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+        if (/\d/.test(password)) score++;
+        if (/[^a-zA-Z0-9]/.test(password)) score++;
+        return score;
+    };
+
+    const strength = showStrength ? getStrength(value) : 0;
+    const strengthLabels = ["Weak", "Fair", "Good", "Strong"];
+    const strengthColors = [
+        "bg-red-500",
+        "bg-orange-500",
+        "bg-yellow-500",
+        "bg-green-500",
+    ];
+
+    return (
+        <motion.div variants={itemVariants} className="space-y-1.5">
+            <label
+                htmlFor={name}
+                className="block text-sm font-medium text-[var(--text-secondary)]"
+            >
+                {label}
+            </label>
+            <div className="relative">
+                <div
+                    className={`
+                    absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200
+                    ${
+                        isFocused
+                            ? "text-[var(--brand-primary)]"
+                            : "text-[var(--text-tertiary)]"
+                    }
+                    ${error ? "text-[var(--error)]" : ""}
+                `}
+                >
+                    <FiLock size={18} />
+                </div>
+                <input
+                    id={name}
+                    type={showPassword ? "text" : "password"}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={(e) => {
+                        setIsFocused(false);
+                        onBlur?.(e);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    autoComplete={
+                        name === "password"
+                            ? "current-password"
+                            : "new-password"
+                    }
+                    placeholder="••••••••"
+                    className={`
+                        w-full pl-11 pr-12 py-3.5 rounded-xl
+                        bg-[var(--input-bg)] border-2 transition-all duration-200
+                        text-[var(--text-primary)] placeholder-[var(--text-tertiary)]
+                        focus:outline-none
+                        ${
+                            error
+                                ? "border-[var(--error)] focus:border-[var(--error)] focus:ring-2 focus:ring-[var(--error)]/20"
+                                : "border-[var(--input-border)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+                        }
+                    `}
+                />
+                <motion.button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors p-1"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    {showPassword ? (
+                        <FiEyeOff size={18} />
+                    ) : (
+                        <FiEye size={18} />
+                    )}
+                </motion.button>
+            </div>
+
+            {/* Password strength indicator */}
+            {showStrength && value && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-2 pt-1"
+                >
+                    <div className="flex gap-1">
+                        {[0, 1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                    i < strength
+                                        ? strengthColors[strength - 1]
+                                        : "bg-[var(--bg-tertiary)]"
+                                }`}
+                            />
+                        ))}
+                    </div>
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                        Password strength:{" "}
+                        <span
+                            className={
+                                strength > 2
+                                    ? "text-green-500"
+                                    : "text-[var(--text-secondary)]"
+                            }
+                        >
+                            {strengthLabels[strength - 1] || "Too weak"}
+                        </span>
+                    </p>
+                </motion.div>
+            )}
+
+            <AnimatePresence>
+                {error && (
+                    <motion.p
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="flex items-center gap-1.5 text-sm text-[var(--error)]"
+                    >
+                        <FiAlertCircle size={14} />
+                        {error}
+                    </motion.p>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
+PasswordField.propTypes = {
+    label: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    onBlur: PropTypes.func,
+    error: PropTypes.string,
+    showStrength: PropTypes.bool,
+};
+
+// ============================================================================
+// DIVIDER COMPONENT
+// ============================================================================
+
+const Divider = ({ text }) => (
+    <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[var(--divider)]" />
+        </div>
+        <div className="relative flex justify-center">
+            <span className="px-4 text-sm text-[var(--text-tertiary)] bg-[var(--bg-elevated)]">
+                {text}
+            </span>
+        </div>
+    </div>
+);
+
+Divider.propTypes = {
+    text: PropTypes.string.isRequired,
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const SignInAndUp = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { login, register, googleLogin, user, isLoading } = useAuth();
+
     const [submissionError, setSubmissionError] = useState("");
     const [successMessage, setSuccessMessage] = useState(
         location.state?.message || ""
     );
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
+    const [[direction], setDirection] = useState([0]);
 
     const mode = searchParams.get("mode") || "login";
-    const redirect = searchParams.get("redirect") || "/profile";
+    const redirect = searchParams.get("redirect") || "/";
 
-    const validationRules = {
-        fullName: {
-            required: mode === "signup",
-            minLength: 2,
-            pattern: /^[a-zA-Z\s]*$/,
-            message: "Full name can only contain letters and spaces",
-        },
-        userName: {
-            required: mode === "signup",
-            minLength: 3,
-            pattern: /^[a-zA-Z0-9_]*$/,
-            message:
-                "Username can only contain letters, numbers and underscores",
-        },
-        email: {
-            required: true,
-            pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            message: "Please enter a valid email address",
-        },
-        password: {
-            required: true,
-            minLength: 6,
-            message: "Password must be at least 6 characters",
-        },
-        confirmPassword: {
-            required: mode === "signup",
-            validate: (value, formData) => value === formData.password,
-            message: "Passwords do not match",
-        },
-    };
+    // Change direction when mode changes
+    useEffect(() => {
+        setDirection([mode === "signup" ? 1 : -1]);
+    }, [mode]);
+
+    const validationRules = useMemo(
+        () => ({
+            fullName: {
+                required: mode === "signup",
+                minLength: 2,
+                pattern: /^[a-zA-Z\s]*$/,
+                message: "Full name can only contain letters and spaces",
+            },
+            userName: {
+                required: mode === "signup",
+                minLength: 3,
+                pattern: /^[a-zA-Z0-9_]*$/,
+                message:
+                    "Username can only contain letters, numbers and underscores",
+            },
+            email: {
+                required: true,
+                pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Please enter a valid email address",
+            },
+            password: {
+                required: true,
+                minLength: 6,
+                message: "Password must be at least 6 characters",
+            },
+            confirmPassword: {
+                required: mode === "signup",
+                validate: (value, formData) => value === formData.password,
+                message: "Passwords do not match",
+            },
+        }),
+        [mode]
+    );
 
     const { formData, handleChange, errors, validateForm, handleBlur } =
         useForm(
@@ -72,9 +493,7 @@ const SignInAndUp = () => {
 
     useEffect(() => {
         if (user) {
-            const timeout = setTimeout(() => {
-                navigate(redirect);
-            }, 500); // Add slight delay for animation to complete
+            const timeout = setTimeout(() => navigate(redirect), 500);
             return () => clearTimeout(timeout);
         }
     }, [user, navigate, redirect]);
@@ -96,450 +515,305 @@ const SignInAndUp = () => {
                 }
             } else {
                 await login(formData);
-                // Navigation handled by useEffect after user is set
             }
         } catch (error) {
-            // Toast is shown by AuthContext, just set local error for display
             setSubmissionError(error.message || "An unexpected error occurred");
         }
     };
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-            },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 },
+    const handleGoogleLogin = async () => {
+        try {
+            setGoogleLoading(true);
+            await googleLogin();
+        } catch (error) {
+            setSubmissionError(error.message || "Google login failed");
+        } finally {
+            setGoogleLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen pt-20 px-4 flex items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 overflow-hidden">
-            {/* Enhanced Particles Background */}
-            <ParticlesBackground />
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-[var(--bg-primary)]">
+            {/* Background decoration */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-[var(--brand-primary)]/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[var(--brand-secondary)]/10 rounded-full blur-3xl" />
+            </div>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="w-full max-w-md z-10"
+                className="w-full max-w-md relative z-10"
             >
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" custom={direction}>
                     <motion.div
                         key={mode}
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="show"
-                        className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl shadow-2xl border border-white/20 relative overflow-hidden"
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                        }}
+                        className="bg-[var(--bg-elevated)] rounded-2xl shadow-xl border border-[var(--border-light)] p-8"
                     >
-                        {/* Improved Shimmer Effect */}
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/30 to-indigo-500/30 opacity-30 animate-shimmer" />
-
-                        <motion.div variants={itemVariants}>
-                            <LogoAnimation mode={mode} />
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode === "signup" && (
-                                    <>
-                                        <FormField
-                                            label="Full Name"
-                                            name="fullName"
-                                            type="text"
-                                            value={formData.fullName}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            error={errors.fullName}
-                                            icon={<FiUser />}
-                                        />
-                                        <FormField
-                                            label="Username"
-                                            name="userName"
-                                            type="text"
-                                            value={formData.userName}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            error={errors.userName}
-                                            icon={<FiUser />}
-                                        />
-                                    </>
+                        {/* Header */}
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="show"
+                            className="text-center mb-8"
+                        >
+                            <motion.div
+                                variants={itemVariants}
+                                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] mb-4"
+                            >
+                                {mode === "signup" ? (
+                                    <FiUser className="w-8 h-8 text-white" />
+                                ) : (
+                                    <FiLock className="w-8 h-8 text-white" />
                                 )}
+                            </motion.div>
+                            <motion.h1
+                                variants={itemVariants}
+                                className="text-2xl font-bold text-[var(--text-primary)]"
+                            >
+                                {mode === "signup"
+                                    ? "Create Account"
+                                    : "Welcome Back"}
+                            </motion.h1>
+                            <motion.p
+                                variants={itemVariants}
+                                className="text-[var(--text-secondary)] mt-2"
+                            >
+                                {mode === "signup"
+                                    ? "Start your streaming journey today"
+                                    : "Sign in to continue to Streamify"}
+                            </motion.p>
+                        </motion.div>
 
-                                <FormField
-                                    label="Email"
-                                    name="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={errors.email}
-                                    icon={<FiMail />}
+                        {/* Social Auth */}
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="show"
+                            className="space-y-3 mb-6"
+                        >
+                            <motion.div variants={itemVariants}>
+                                <SocialAuthButton
+                                    provider="google"
+                                    onClick={handleGoogleLogin}
+                                    isLoading={googleLoading}
+                                    disabled={isLoading}
                                 />
+                            </motion.div>
+                        </motion.div>
 
-                                <PasswordField
-                                    label="Password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={errors.password}
-                                    showPassword={showPassword}
-                                    togglePassword={() =>
-                                        setShowPassword(!showPassword)
-                                    }
-                                />
+                        <Divider text="or continue with email" />
 
-                                {mode === "signup" && (
-                                    <PasswordField
-                                        label="Confirm Password"
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
+                        {/* Form */}
+                        <motion.form
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="show"
+                            onSubmit={handleSubmit}
+                            className="space-y-4"
+                        >
+                            {mode === "signup" && (
+                                <>
+                                    <InputField
+                                        label="Full Name"
+                                        name="fullName"
+                                        value={formData.fullName}
                                         onChange={handleChange}
                                         onBlur={handleBlur}
-                                        error={errors.confirmPassword}
-                                        showPassword={showConfirmPassword}
-                                        togglePassword={() =>
-                                            setShowConfirmPassword(
-                                                !showConfirmPassword
-                                            )
-                                        }
+                                        error={errors.fullName}
+                                        icon={FiUser}
+                                        placeholder="John Doe"
+                                        autoComplete="name"
                                     />
-                                )}
+                                    <InputField
+                                        label="Username"
+                                        name="userName"
+                                        value={formData.userName}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={errors.userName}
+                                        icon={FiUser}
+                                        placeholder="johndoe"
+                                        autoComplete="username"
+                                    />
+                                </>
+                            )}
 
+                            <InputField
+                                label="Email"
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={errors.email}
+                                icon={FiMail}
+                                placeholder="you@example.com"
+                                autoComplete="email"
+                            />
+
+                            <PasswordField
+                                label="Password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={errors.password}
+                                showStrength={mode === "signup"}
+                            />
+
+                            {mode === "signup" && (
+                                <PasswordField
+                                    label="Confirm Password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={errors.confirmPassword}
+                                />
+                            )}
+
+                            {/* Forgot Password Link */}
+                            {mode === "login" && (
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="text-right"
+                                >
+                                    <Link
+                                        to="/forgot-password"
+                                        className="text-sm text-[var(--brand-primary)] hover:underline"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </motion.div>
+                            )}
+
+                            {/* Messages */}
+                            <AnimatePresence>
                                 {successMessage && (
-                                    <motion.p
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="text-green-400 text-sm text-center px-4 py-2 bg-green-900/20 rounded-lg"
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-2 p-4 rounded-xl bg-[var(--success-light)] text-[var(--success)]"
                                     >
-                                        {successMessage}
-                                    </motion.p>
+                                        <FiCheck size={18} />
+                                        <p className="text-sm">
+                                            {successMessage}
+                                        </p>
+                                    </motion.div>
                                 )}
-
                                 {submissionError && (
-                                    <motion.p
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="text-red-400 text-sm text-center px-4 py-2 bg-red-900/20 rounded-lg"
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="flex items-center gap-2 p-4 rounded-xl bg-[var(--error-light)] text-[var(--error)]"
                                     >
-                                        {submissionError}
-                                    </motion.p>
+                                        <FiAlertCircle size={18} />
+                                        <p className="text-sm">
+                                            {submissionError}
+                                        </p>
+                                    </motion.div>
                                 )}
+                            </AnimatePresence>
 
-                                <motion.button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg font-semibold 
-                                         hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 relative overflow-hidden"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    {isLoading ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
-                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce-delay" />
-                                            <div className="w-2 h-2 bg-white rounded-full animate-bounce-double-delay" />
+                            {/* Submit Button */}
+                            <motion.button
+                                variants={itemVariants}
+                                type="submit"
+                                disabled={isLoading || googleLoading}
+                                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl
+                                    bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]
+                                    text-white font-semibold text-lg
+                                    hover:shadow-lg hover:shadow-[var(--brand-primary)]/25
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                    transition-all duration-200"
+                                whileHover={{ scale: isLoading ? 1 : 1.01 }}
+                                whileTap={{ scale: isLoading ? 1 : 0.99 }}
+                            >
+                                {isLoading ? (
+                                    <FiLoader className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        <span>
+                                            {mode === "signup"
+                                                ? "Create Account"
+                                                : "Sign In"}
                                         </span>
-                                    ) : mode === "signup" ? (
-                                        "Create Account"
-                                    ) : (
-                                        "Sign In"
-                                    )}
-                                </motion.button>
+                                        <FiArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
+                            </motion.button>
+                        </motion.form>
 
-                                <AnimatedDivider />
-
-                                <motion.button
-                                    type="button"
-                                    onClick={googleLogin}
-                                    className="w-full bg-white/10 text-white py-3 px-4 rounded-lg flex items-center justify-center gap-2
-                                         hover:bg-white/20 transition-all duration-300"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <FcGoogle className="w-5 h-5" />
-                                    Continue with Google
-                                </motion.button>
-
-                                <p className="text-center text-gray-300 mt-6">
-                                    {mode === "login" ? (
-                                        <>
-                                            Don&apos;t have an account?{" "}
-                                            <Link
-                                                to="/auth?mode=signup"
-                                                className="text-purple-400 hover:text-purple-300"
-                                            >
-                                                Sign Up
-                                            </Link>
-                                            <span className="block mt-2">
-                                                <Link
-                                                    to="/forgot-password"
-                                                    className="text-gray-400 hover:text-purple-300 text-sm"
-                                                >
-                                                    Forgot password?
-                                                </Link>
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            Already have an account?{" "}
-                                            <Link
-                                                to="/auth?mode=login"
-                                                className="text-purple-400 hover:text-purple-300"
-                                            >
-                                                Sign In
-                                            </Link>
-                                        </>
-                                    )}
-                                </p>
-                            </form>
+                        {/* Footer */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="mt-8 text-center"
+                        >
+                            <p className="text-[var(--text-secondary)]">
+                                {mode === "login" ? (
+                                    <>
+                                        Don't have an account?{" "}
+                                        <Link
+                                            to="/auth?mode=signup"
+                                            className="text-[var(--brand-primary)] font-medium hover:underline"
+                                        >
+                                            Sign up
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        Already have an account?{" "}
+                                        <Link
+                                            to="/auth?mode=login"
+                                            className="text-[var(--brand-primary)] font-medium hover:underline"
+                                        >
+                                            Sign in
+                                        </Link>
+                                    </>
+                                )}
+                            </p>
                         </motion.div>
+
+                        {/* Terms */}
+                        {mode === "signup" && (
+                            <motion.p
+                                variants={itemVariants}
+                                className="mt-4 text-xs text-center text-[var(--text-tertiary)]"
+                            >
+                                By creating an account, you agree to our{" "}
+                                <Link
+                                    to="/terms"
+                                    className="underline hover:text-[var(--text-secondary)]"
+                                >
+                                    Terms of Service
+                                </Link>{" "}
+                                and{" "}
+                                <Link
+                                    to="/privacy"
+                                    className="underline hover:text-[var(--text-secondary)]"
+                                >
+                                    Privacy Policy
+                                </Link>
+                            </motion.p>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </motion.div>
         </div>
     );
 };
-
-const ParticlesBackground = () => {
-    const [dimensions, setDimensions] = useState({
-        width: typeof window !== "undefined" ? window.innerWidth : 0,
-        height: typeof window !== "undefined" ? window.innerHeight : 0,
-    });
-
-    useEffect(() => {
-        const updateDimensions = () => {
-            setDimensions({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        updateDimensions();
-        window.addEventListener("resize", updateDimensions);
-        return () => window.removeEventListener("resize", updateDimensions);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(30)].map((_, i) => (
-                <motion.div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 bg-white/10 rounded-full"
-                    initial={{
-                        x: Math.random() * dimensions.width,
-                        y: Math.random() * dimensions.height,
-                        scale: 0,
-                    }}
-                    animate={{
-                        y: [0, -100, 0],
-                        scale: [0, 1, 0],
-                        opacity: [0, 1, 0],
-                    }}
-                    transition={{
-                        duration: 4 + Math.random() * 4,
-                        repeat: Infinity,
-                        delay: Math.random() * 2,
-                        ease: "easeInOut",
-                    }}
-                />
-            ))}
-        </div>
-    );
-};
-
-const LogoAnimation = ({ mode }) => (
-    <motion.div
-        className="text-center mb-8"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-    >
-        <motion.div
-            className="w-20 h-20 mx-auto mb-4 relative"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full opacity-20 animate-float" />
-            <div className="absolute inset-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20" />
-            <motion.div
-                className="absolute inset-0 flex items-center justify-center text-white text-2xl"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2 }}
-            >
-                {mode === "signup" ? <FiUser /> : <FiLock />}
-            </motion.div>
-        </motion.div>
-    </motion.div>
-);
-
-LogoAnimation.propTypes = {
-    mode: PropTypes.oneOf(["login", "signup"]).isRequired,
-};
-
-const FormField = ({
-    label,
-    type,
-    name,
-    value,
-    onChange,
-    onBlur,
-    error,
-    icon,
-}) => {
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            className="group"
-        >
-            <label className="block text-gray-300 mb-1 text-sm font-medium">
-                {label}
-            </label>
-            <motion.div
-                className="relative"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-            >
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-white">
-                    {icon}
-                </span>
-                <input
-                    type={type}
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    onBlur={onBlur}
-                    className="w-full bg-white/10 text-white pl-10 pr-4 py-3 rounded-lg border border-white/20 
-                            focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300
-                            placeholder-gray-400 hover:bg-white/15"
-                    placeholder={`Enter your ${label.toLowerCase()}`}
-                />
-            </motion.div>
-            <AnimatePresence>
-                {error && (
-                    <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-red-400 text-xs mt-1 ml-1"
-                    >
-                        {error}
-                    </motion.p>
-                )}
-            </AnimatePresence>
-        </motion.div>
-    );
-};
-
-FormField.propTypes = {
-    label: PropTypes.string.isRequired,
-    type: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-    onChange: PropTypes.func.isRequired,
-    onBlur: PropTypes.func.isRequired,
-    error: PropTypes.string,
-    icon: PropTypes.element.isRequired,
-};
-
-const PasswordField = ({
-    label,
-    name,
-    value,
-    onChange,
-    onBlur,
-    error,
-    showPassword,
-    togglePassword,
-}) => (
-    <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-    >
-        <label className="block text-gray-300 mb-1 text-sm">{label}</label>
-        <motion.div
-            className="relative group"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-        >
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-white">
-                <FiLock />
-            </span>
-            <input
-                type={showPassword ? "text" : "password"}
-                name={name}
-                value={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                className="w-full bg-white/10 text-white pl-10 pr-10 py-2 rounded-lg border border-gray-300/20 
-                         focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300
-                         hover:bg-white/[0.15]"
-            />
-            <motion.button
-                type="button"
-                onClick={togglePassword}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-            >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-            </motion.button>
-        </motion.div>
-        <AnimatePresence mode="wait">
-            {error && (
-                <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="text-red-400 text-sm mt-1"
-                >
-                    {error}
-                </motion.p>
-            )}
-        </AnimatePresence>
-    </motion.div>
-);
-
-PasswordField.propTypes = {
-    label: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-    onChange: PropTypes.func.isRequired,
-    onBlur: PropTypes.func.isRequired,
-    error: PropTypes.string,
-    showPassword: PropTypes.bool.isRequired,
-    togglePassword: PropTypes.func.isRequired,
-};
-
-const AnimatedDivider = () => (
-    <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-            <motion.div
-                className="w-full border-t border-gray-300/20"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.5 }}
-            />
-        </div>
-        <div className="relative flex justify-center text-sm">
-            <motion.span
-                className="px-2 text-gray-300 bg-transparent"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-            >
-                Or continue with
-            </motion.span>
-        </div>
-    </div>
-);
 
 export default SignInAndUp;
