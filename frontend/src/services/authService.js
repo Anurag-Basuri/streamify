@@ -16,6 +16,9 @@ const AUTH_ENDPOINTS = {
     FORGOT_PASSWORD: "/api/v1/users/forgot-password",
     RESET_PASSWORD: (token) => `/api/v1/users/reset-password/${token}`,
     RESEND_VERIFICATION: "/api/v1/users/resend-verification",
+    // Google OAuth endpoints
+    GOOGLE_AUTH: "/api/v1/users/auth/google",
+    GOOGLE_CLIENT_ID: "/api/v1/users/auth/google/client-id",
 };
 
 /**
@@ -185,12 +188,132 @@ export const changePassword = async (passwords) => {
     }
 };
 
+// ==========================================
+// Google OAuth
+// ==========================================
+
+// Cache for Google Client ID
+let cachedGoogleClientId = null;
+
 /**
- * Initiate Google OAuth login (disabled until backend enables it)
+ * Get Google Client ID from backend
+ * @returns {Promise<string|null>} Google Client ID or null if not configured
  */
-export const handleGoogleAuth = () => {
-    console.warn("Google OAuth is currently disabled");
-    // window.location.href = `${API_CONFIG.baseURL}/api/v1/users/auth/google`;
+export const getGoogleClientId = async () => {
+    if (cachedGoogleClientId !== null) {
+        return cachedGoogleClientId;
+    }
+
+    try {
+        const response = await api.get(AUTH_ENDPOINTS.GOOGLE_CLIENT_ID);
+        const { clientId, enabled } = response.data.data;
+        cachedGoogleClientId = enabled ? clientId : null;
+        return cachedGoogleClientId;
+    } catch (error) {
+        console.error("Failed to get Google Client ID:", error);
+        cachedGoogleClientId = null;
+        return null;
+    }
+};
+
+/**
+ * Authenticate with Google credential
+ * @param {string} credential - Google ID token from Google Sign-In
+ * @returns {Promise<Object>} User data with tokens
+ */
+export const googleSignIn = async (credential) => {
+    try {
+        const response = await api.post(AUTH_ENDPOINTS.GOOGLE_AUTH, {
+            credential,
+        });
+        const { accessToken, refreshToken, user } = response.data.data;
+
+        TokenService.setTokens(accessToken, refreshToken);
+
+        return { user, accessToken, refreshToken };
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Initialize Google Sign-In and handle the popup flow
+ * @returns {Promise<Object>} User data with tokens
+ */
+export const handleGoogleAuth = async () => {
+    const clientId = await getGoogleClientId();
+
+    if (!clientId) {
+        throw new ApiError(503, "Google Sign-In is not configured");
+    }
+
+    return new Promise((resolve, reject) => {
+        // Load Google Identity Services script if not loaded
+        if (!window.google?.accounts) {
+            const script = document.createElement("script");
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.defer = true;
+            script.onload = () => initGoogleAuth(clientId, resolve, reject);
+            script.onerror = () =>
+                reject(new ApiError(500, "Failed to load Google Sign-In"));
+            document.head.appendChild(script);
+        } else {
+            initGoogleAuth(clientId, resolve, reject);
+        }
+    });
+};
+
+/**
+ * Initialize Google Auth and show popup
+ */
+const initGoogleAuth = (clientId, resolve, reject) => {
+    try {
+        window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response) => {
+                try {
+                    const result = await googleSignIn(response.credential);
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            },
+        });
+
+        // Trigger the One Tap prompt or popup
+        window.google.accounts.id.prompt((notification) => {
+            if (
+                notification.isNotDisplayed() ||
+                notification.isSkippedMoment()
+            ) {
+                // Fall back to button click if One Tap doesn't show
+                const buttonDiv = document.createElement("div");
+                buttonDiv.id = "google-signin-button";
+                buttonDiv.style.cssText =
+                    "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;";
+                document.body.appendChild(buttonDiv);
+
+                window.google.accounts.id.renderButton(buttonDiv, {
+                    theme: "outline",
+                    size: "large",
+                    type: "standard",
+                    text: "continue_with",
+                });
+
+                // Auto-click the button
+                setTimeout(() => {
+                    const btn = buttonDiv.querySelector('[role="button"]');
+                    if (btn) btn.click();
+                    // Clean up after a delay
+                    setTimeout(() => buttonDiv.remove(), 100);
+                }, 100);
+            }
+        });
+    } catch (error) {
+        reject(new ApiError(500, "Failed to initialize Google Sign-In"));
+    }
 };
 
 // ==========================================
