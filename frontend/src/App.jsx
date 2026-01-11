@@ -30,7 +30,8 @@ function App() {
     return (
         <ThemeProvider>
             <AuthProvider>
-                <div className="min-h-screen bg-[#0D0D1A] relative">
+                {/* Root container with theme background */}
+                <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
                     {/* Header */}
                     <Header
                         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -68,21 +69,21 @@ function App() {
                             minHeight: `calc(100vh - ${headerHeight}px)`,
                         }}
                     >
-                        <div className="p-4 sm:p-6 lg:p-8 mx-auto max-w-7xl">
+                        <main className="p-4 sm:p-6 lg:p-8 mx-auto max-w-7xl">
                             <AppRoutes />
-                        </div>
+                        </main>
                     </div>
 
                     {/* Mobile Sidebar */}
                     <AnimatePresence>
                         {isMobile && (
                             <motion.div
-                                className="fixed top-0 left-0 right-0 bottom-0 z-50" // Increased z-index
+                                className="fixed top-0 left-0 right-0 bottom-0 z-50"
                                 initial={{ x: "-100%" }}
                                 animate={{ x: isSidebarOpen ? 0 : "-100%" }}
                                 exit={{ x: "-100%" }}
                                 transition={{ type: "tween", duration: 0.2 }}
-                                style={{ top: headerHeight }} // Start below header
+                                style={{ top: headerHeight }}
                             >
                                 <Sidebar
                                     isOpen={isSidebarOpen}
@@ -101,9 +102,9 @@ function App() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black/50 z-40" // Adjusted z-index
+                                className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-40"
                                 onClick={() => setIsSidebarOpen(false)}
-                                style={{ top: headerHeight }} // Start below header
+                                style={{ top: headerHeight }}
                             />
                         )}
                     </AnimatePresence>
