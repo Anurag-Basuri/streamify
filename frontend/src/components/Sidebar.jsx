@@ -8,8 +8,6 @@ import {
     Clock,
     User,
     X,
-    Sun,
-    Moon,
     Settings,
     PlusSquare,
     Film,
@@ -20,6 +18,7 @@ import {
 import { useState } from "react";
 import useAuth from "../hooks/useAuth";
 import useTheme from "../hooks/useTheme";
+import ThemeToggle from "./ThemeToggle";
 
 const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
     const { user, isAuthenticated } = useAuth();
@@ -121,41 +120,22 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
                 </div>
 
                 {/* Theme Toggle */}
-                <div className="border-t border-[var(--divider)] mt-auto pt-2">
-                    <button
-                        onClick={toggleTheme}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg 
-                            hover:bg-[var(--sidebar-hover)] transition-all duration-200
-                            text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                        aria-label={`Switch to ${
-                            isDark ? "light" : "dark"
-                        } theme`}
+                <div className="border-t border-[var(--divider)] mt-auto pt-3 pb-1 px-2">
+                    <div
+                        className={`flex items-center ${
+                            isOpen ? "justify-between" : "justify-center"
+                        } px-2 py-2 rounded-lg hover:bg-[var(--sidebar-hover)] transition-colors`}
                     >
-                        <motion.div
-                            initial={false}
-                            animate={{ rotate: isDark ? 0 : 180 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            {isDark ? (
-                                <Sun
-                                    size={20}
-                                    className="text-amber-400"
-                                    aria-hidden="true"
-                                />
-                            ) : (
-                                <Moon
-                                    size={20}
-                                    className="text-indigo-500"
-                                    aria-hidden="true"
-                                />
-                            )}
-                        </motion.div>
                         {isOpen && (
-                            <span className="text-sm font-medium">
-                                {isDark ? "Light Mode" : "Dark Mode"}
+                            <span className="text-sm font-medium text-[var(--text-secondary)]">
+                                {isDark ? "Dark Mode" : "Light Mode"}
                             </span>
                         )}
-                    </button>
+                        <ThemeToggle
+                            variant={isOpen ? "switch" : "icon"}
+                            size="sm"
+                        />
+                    </div>
                 </div>
             </div>
         </motion.nav>
