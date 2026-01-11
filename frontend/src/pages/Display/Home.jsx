@@ -212,14 +212,16 @@ const Home = () => {
                 ))
             ) : (
                 <div className="col-span-full text-center py-12">
-                    <p className="text-gray-400 text-lg">No videos available</p>
+                    <p className="text-[var(--text-tertiary)] text-lg">
+                        No videos available
+                    </p>
                 </div>
             ),
         [isLoading, videos, handleVideoAction, watchLater, isAuthenticated]
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 pt-20">
+        <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <HeroSection />
 
@@ -245,10 +247,10 @@ const Home = () => {
                                 initial={{ scale: 0.95 }}
                                 animate={{ scale: 1 }}
                                 exit={{ scale: 0.95 }}
-                                className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4"
+                                className="bg-[var(--bg-elevated)] border border-[var(--border-light)] p-6 rounded-xl max-w-md w-full mx-4 shadow-xl"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <h3 className="text-xl font-bold mb-4">
+                                <h3 className="text-xl font-bold mb-4 text-[var(--text-primary)]">
                                     Add to Playlist
                                 </h3>
 
@@ -260,20 +262,20 @@ const Home = () => {
                                             setNewPlaylistName(e.target.value)
                                         }
                                         placeholder="New playlist name"
-                                        className="w-full p-2 rounded bg-gray-700"
+                                        className="w-full p-3 rounded-xl bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent"
                                     />
                                     <button
                                         onClick={() =>
                                             handlePlaylistOperations("create")
                                         }
-                                        className="mt-2 w-full bg-purple-600 hover:bg-purple-700 p-2 rounded"
+                                        className="mt-3 w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white p-3 rounded-xl font-medium transition-colors"
                                     >
                                         Create & Add
                                     </button>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h4 className="font-medium mb-2">
+                                    <h4 className="font-medium mb-2 text-[var(--text-secondary)]">
                                         Existing Playlists
                                     </h4>
                                     {playlists.map((playlist) => (
@@ -285,7 +287,7 @@ const Home = () => {
                                                     playlist._id
                                                 )
                                             }
-                                            className="w-full text-left p-2 hover:bg-gray-700 rounded"
+                                            className="w-full text-left p-3 hover:bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] transition-colors"
                                         >
                                             {playlist.name}
                                         </button>
