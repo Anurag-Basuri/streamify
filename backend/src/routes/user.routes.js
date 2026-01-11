@@ -19,6 +19,10 @@ import {
     resendVerification,
 } from "../controllers/email.controller.js";
 import {
+    googleAuth,
+    getGoogleClientId,
+} from "../controllers/google.controller.js";
+import {
     verifyAccessToken,
     requireAuth,
 } from "../middlewares/auth.middleware.js";
@@ -34,6 +38,10 @@ const router = Router();
 // ===========================================
 // PUBLIC ROUTES (No authentication required)
 // ===========================================
+
+// Google OAuth Routes
+router.post("/auth/google", googleAuth);
+router.get("/auth/google/client-id", getGoogleClientId);
 
 // Validation Rules
 const registerValidationRules = [
