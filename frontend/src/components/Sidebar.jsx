@@ -23,7 +23,7 @@ import useTheme from "../hooks/useTheme";
 
 const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
     const { user, isAuthenticated } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { isDark, toggleTheme } = useTheme();
     const [activeHover, setActiveHover] = useState(null);
 
     const handleMouseEnter = (label) => setActiveHover(label);
@@ -121,24 +121,38 @@ const Sidebar = ({ isOpen, toggleSidebar, isMobile }) => {
                 </div>
 
                 {/* Theme Toggle */}
-                <div className="border-t border-border mt-auto pt-2">
+                <div className="border-t border-[var(--divider)] mt-auto pt-2">
                     <button
                         onClick={toggleTheme}
-                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-                        aria-label={`Toggle ${
-                            theme === "dark" ? "light" : "dark"
+                        className="flex items-center gap-3 w-full px-3 py-2 rounded-lg 
+                            hover:bg-[var(--sidebar-hover)] transition-all duration-200
+                            text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        aria-label={`Switch to ${
+                            isDark ? "light" : "dark"
                         } theme`}
                     >
-                        {theme === "dark" ? (
-                            <Sun size={20} aria-hidden="true" />
-                        ) : (
-                            <Moon size={20} aria-hidden="true" />
-                        )}
+                        <motion.div
+                            initial={false}
+                            animate={{ rotate: isDark ? 0 : 180 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {isDark ? (
+                                <Sun
+                                    size={20}
+                                    className="text-amber-400"
+                                    aria-hidden="true"
+                                />
+                            ) : (
+                                <Moon
+                                    size={20}
+                                    className="text-indigo-500"
+                                    aria-hidden="true"
+                                />
+                            )}
+                        </motion.div>
                         {isOpen && (
-                            <span className="text-sm">
-                                {theme === "dark"
-                                    ? "Light Theme"
-                                    : "Dark Theme"}
+                            <span className="text-sm font-medium">
+                                {isDark ? "Light Mode" : "Dark Mode"}
                             </span>
                         )}
                     </button>
