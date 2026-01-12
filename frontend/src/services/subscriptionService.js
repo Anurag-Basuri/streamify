@@ -6,28 +6,13 @@ import { api, ApiError } from "./api";
 import { SUBSCRIPTIONS } from "../constants/api.constants";
 
 /**
- * Toggle subscription to a channel
+ * Toggle subscription to a channel (subscribe if not subscribed, unsubscribe if subscribed)
  * @param {string} channelId - Channel/User ID to subscribe/unsubscribe
- * @returns {Promise<Object>} { subscribed: boolean, subscribersCount: number }
+ * @returns {Promise<Object>} { subscribed: boolean, subscribersCount: number, message: string }
  */
 export const toggleSubscription = async (channelId) => {
     try {
         const response = await api.post(SUBSCRIPTIONS.TOGGLE(channelId));
-        return response.data.data;
-    } catch (error) {
-        if (error.isApiError) throw error;
-        throw ApiError.fromAxiosError(error);
-    }
-};
-
-/**
- * Check if current user is subscribed to a channel
- * @param {string} channelId - Channel/User ID to check
- * @returns {Promise<Object>} { isSubscribed: boolean }
- */
-export const checkSubscription = async (channelId) => {
-    try {
-        const response = await api.get(SUBSCRIPTIONS.CHECK(channelId));
         return response.data.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -76,11 +61,39 @@ export const getUserSubscriptions = async ({ page = 1, limit = 20 } = {}) => {
     }
 };
 
+/**
+ * Check if current user is subscribed to a channel
+ * Note: This calls the toggle endpoint with GET-like behavior to check status
+ * Based on backend returning subscription status in toggle response
+ * For now, we'll check by fetching subscribed channels and checking if channelId is in the list
+ * @param {string} channelId - Channel/User ID to check
+ * @returns {Promise<Object>} { isSubscribed: boolean }
+ */
+export const checkSubscription = async (channelId) => {
+    try {
+        // Fetch user's subscriptions and check if channelId exists
+        const response = await api.get(SUBSCRIPTIONS.USER_SUBSCRIPTIONS);
+        const subscriptions = response.data.data;
+        const channelList = Array.isArray(subscriptions)
+            ? subscriptions
+            : subscriptions.docs || subscriptions.channels || [];
+
+        const isSubscribed = channelList.some(
+            (sub) => sub._id === channelId || sub.channel?._id === channelId
+        );
+        return { isSubscribed };
+    } catch (error) {
+        // If error fetching subscriptions, assume not subscribed
+        console.error("Failed to check subscription:", error);
+        return { isSubscribed: false };
+    }
+};
+
 export const subscriptionService = {
     toggleSubscription,
-    checkSubscription,
     getChannelSubscribers,
     getUserSubscriptions,
+    checkSubscription,
 };
 
 export default subscriptionService;
