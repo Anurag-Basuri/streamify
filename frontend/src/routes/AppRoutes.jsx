@@ -16,26 +16,43 @@ const PageLoader = () => (
     </div>
 );
 
-// Lazy load pages for better initial bundle size
+// ============================================================================
+// LAZY LOADED PAGES
+// ============================================================================
+
+// Public Pages
 const Home = lazy(() => import("../pages/Display/Home.jsx"));
-const Profile = lazy(() => import("../pages/You/Profile.jsx"));
+const SearchResults = lazy(() => import("../pages/Display/SearchResults.jsx"));
+const Tweet = lazy(() => import("../pages/Display/Tweet.jsx"));
+const Subscription = lazy(() => import("../pages/Display/Subscription.jsx"));
+const VideoPlayer = lazy(() => import("../components/Video/VideoPlayer.jsx"));
+
+// Auth Pages
 const SignInAndUp = lazy(() => import("../pages/You/SignInAndUp.jsx"));
 const ForgotPassword = lazy(() => import("../pages/You/ForgotPassword.jsx"));
 const ResetPassword = lazy(() => import("../pages/You/ResetPassword.jsx"));
 const VerifyEmail = lazy(() => import("../pages/You/VerifyEmail.jsx"));
-const Tweet = lazy(() => import("../pages/Display/Tweet.jsx"));
-const Subscription = lazy(() => import("../pages/Display/Subscription.jsx"));
+
+// Protected Account Pages
+const Dashboard = lazy(() => import("../pages/Account/Dashboard.jsx"));
+const Settings = lazy(() => import("../pages/Account/Settings.jsx"));
+const Profile = lazy(() => import("../pages/You/Profile.jsx"));
 const History = lazy(() => import("../pages/Account/History.jsx"));
 const Download = lazy(() => import("../pages/Account/Download.jsx"));
 const Playlist = lazy(() => import("../pages/Account/Playlist.jsx"));
 const Watchlater = lazy(() => import("../pages/Account/Watchlater.jsx"));
 const YourVideos = lazy(() => import("../pages/Account/YourVideos.jsx"));
+const LikedVideos = lazy(() => import("../pages/Account/LikedVideos.jsx"));
+const Notifications = lazy(() => import("../pages/Account/Notifications.jsx"));
 const Create = lazy(() => import("../pages/You/Create.jsx"));
-const VideoPlayer = lazy(() => import("../components/Video/VideoPlayer.jsx"));
 const EditVideo = lazy(() => import("../pages/Account/EditVideos.jsx"));
 const PlaylistDetail = lazy(() =>
     import("../components/Playlist/PlaylistDetail.jsx")
 );
+
+// ============================================================================
+// ROUTE WRAPPERS
+// ============================================================================
 
 /**
  * Wraps a component with Suspense for lazy loading
@@ -57,11 +74,19 @@ const withProtection = (Component) => (
     </ProtectedRoute>
 );
 
+// ============================================================================
+// ROUTES CONFIGURATION
+// ============================================================================
+
 const AppRoutes = () => {
     return (
         <Routes>
-            {/* Public Routes */}
+            {/* ============ PUBLIC ROUTES ============ */}
             <Route path="/" element={withSuspense(Home)} />
+            <Route path="/search" element={withSuspense(SearchResults)} />
+            <Route path="/video/:videoID" element={withSuspense(VideoPlayer)} />
+
+            {/* Auth Routes */}
             <Route path="/auth" element={withSuspense(SignInAndUp)} />
             <Route
                 path="/forgot-password"
@@ -75,31 +100,45 @@ const AppRoutes = () => {
                 path="/verify-email/:token"
                 element={withSuspense(VerifyEmail)}
             />
-            <Route path="/video/:videoID" element={withSuspense(VideoPlayer)} />
 
-            {/* Protected Routes */}
-            <Route path="/tweet" element={withProtection(Tweet)} />
-            <Route
-                path="/subscription"
-                element={withProtection(Subscription)}
-            />
-            <Route path="/history" element={withProtection(History)} />
+            {/* ============ PROTECTED ROUTES ============ */}
+
+            {/* Dashboard & Profile */}
+            <Route path="/dashboard" element={withProtection(Dashboard)} />
             <Route path="/profile" element={withProtection(Profile)} />
-            <Route path="/downloads" element={withProtection(Download)} />
-            <Route path="/playlist" element={withProtection(Playlist)} />
+            <Route path="/settings" element={withProtection(Settings)} />
             <Route
-                path="/playlist/:playlistID"
-                element={withProtection(PlaylistDetail)}
+                path="/notifications"
+                element={withProtection(Notifications)}
             />
-            <Route path="/watchlater" element={withProtection(Watchlater)} />
+
+            {/* Content Management */}
+            <Route path="/create" element={withProtection(Create)} />
             <Route path="/uservideos" element={withProtection(YourVideos)} />
             <Route
                 path="/edit-video/:videoID"
                 element={withProtection(EditVideo)}
             />
-            <Route path="/create" element={withProtection(Create)} />
 
-            {/* 404 Handling */}
+            {/* Library */}
+            <Route path="/history" element={withProtection(History)} />
+            <Route path="/liked" element={withProtection(LikedVideos)} />
+            <Route path="/watchlater" element={withProtection(Watchlater)} />
+            <Route path="/playlist" element={withProtection(Playlist)} />
+            <Route
+                path="/playlist/:playlistID"
+                element={withProtection(PlaylistDetail)}
+            />
+            <Route path="/downloads" element={withProtection(Download)} />
+
+            {/* Social */}
+            <Route path="/tweet" element={withProtection(Tweet)} />
+            <Route
+                path="/subscription"
+                element={withProtection(Subscription)}
+            />
+
+            {/* ============ FALLBACK ============ */}
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );

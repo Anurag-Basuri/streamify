@@ -26,3 +26,15 @@ export { default as EmptyState } from "./EmptyState";
 
 // Error handling
 export { default as ErrorBoundary } from "./ErrorBoundary";
+
+// Guest prompts
+export {
+    default as GuestPrompt,
+    AuthRequiredPrompt,
+    GuestSignupBanner,
+    FeatureTeaser,
+    useAuthGuard,
+} from "./GuestPrompt";
+
+// Quick actions FAB
+export { default as QuickActions } from "./QuickActions";
