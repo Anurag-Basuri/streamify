@@ -24,7 +24,6 @@ export {
     getCurrentUser,
     updateAvatar,
     updateCoverImage,
-    updateUserDetails,
     changePassword,
     verifyEmail,
     forgotPassword,
