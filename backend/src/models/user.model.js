@@ -74,6 +74,30 @@ const userSchema = new Schema(
         emailVerificationExpires: Date,
         passwordResetToken: String,
         passwordResetExpires: Date,
+        // Notification preferences
+        notificationPreferences: {
+            email: {
+                likes: { type: Boolean, default: true },
+                comments: { type: Boolean, default: true },
+                subscriptions: { type: Boolean, default: true },
+                uploads: { type: Boolean, default: true },
+                system: { type: Boolean, default: true },
+            },
+            push: {
+                likes: { type: Boolean, default: true },
+                comments: { type: Boolean, default: true },
+                subscriptions: { type: Boolean, default: true },
+                uploads: { type: Boolean, default: true },
+                system: { type: Boolean, default: true },
+            },
+            inApp: {
+                likes: { type: Boolean, default: true },
+                comments: { type: Boolean, default: true },
+                subscriptions: { type: Boolean, default: true },
+                uploads: { type: Boolean, default: true },
+                system: { type: Boolean, default: true },
+            },
+        },
     },
     {
         timestamps: true,
