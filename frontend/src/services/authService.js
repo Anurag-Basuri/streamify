@@ -11,12 +11,10 @@ const AUTH_ENDPOINTS = {
     CHANGE_PASSWORD: "/api/v1/users/change-password",
     CHANGE_AVATAR: "/api/v1/users/change-avatar",
     CHANGE_COVER: "/api/v1/users/change-cover-image",
-    // Email endpoints
     VERIFY_EMAIL: (token) => `/api/v1/users/verify-email/${token}`,
     FORGOT_PASSWORD: "/api/v1/users/forgot-password",
     RESET_PASSWORD: (token) => `/api/v1/users/reset-password/${token}`,
     RESEND_VERIFICATION: "/api/v1/users/resend-verification",
-    // Google OAuth endpoints
     GOOGLE_AUTH: "/api/v1/users/auth/google",
     GOOGLE_CLIENT_ID: "/api/v1/users/auth/google/client-id",
 };
