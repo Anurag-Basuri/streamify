@@ -118,3 +118,15 @@ export {
     getChannelSubscribers,
     getUserSubscriptions,
 } from "./subscriptionService";
+
+// ============================================================================
+// TWEET SERVICE
+// ============================================================================
+
+export {
+    getTweets,
+    createTweet,
+    getUserTweets,
+    updateTweet,
+    deleteTweet,
+} from "./tweetService";

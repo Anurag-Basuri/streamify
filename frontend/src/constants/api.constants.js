@@ -148,12 +148,16 @@ export const SUBSCRIPTIONS = {
 // ============================================================================
 
 export const TWEETS = {
+    // GET / - Get latest tweets (public)
     LIST: BASE.TWEETS,
-    CREATE: BASE.TWEETS,
-    GET: (id) => `${BASE.TWEETS}/${id}`,
-    UPDATE: (id) => `${BASE.TWEETS}/${id}`,
-    DELETE: (id) => `${BASE.TWEETS}/${id}`,
-    USER_TWEETS: (userId) => `${BASE.TWEETS}/user/${userId}`,
+    // POST /create - Create new tweet
+    CREATE: `${BASE.TWEETS}/create`,
+    // GET /:userId - Get user's tweets
+    USER_TWEETS: (userId) => `${BASE.TWEETS}/${userId}`,
+    // PUT /:tweetId - Update tweet
+    UPDATE: (tweetId) => `${BASE.TWEETS}/${tweetId}`,
+    // DELETE /:tweetId - Delete tweet
+    DELETE: (tweetId) => `${BASE.TWEETS}/${tweetId}`,
 };
 
 // ============================================================================
