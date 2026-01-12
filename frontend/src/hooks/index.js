@@ -18,6 +18,7 @@ export { default as useAuth } from "./useAuth";
 
 export { default as useVideos } from "./useVideos";
 export { default as useVideo } from "./useVideo";
+export { default as useVideoPlayer } from "./useVideoPlayer";
 export { default as useVideoEdit } from "./useVideoEdit";
 export { default as useVideoFilter } from "./useVideoFilter";
 export { default as usePlaylist } from "./usePlaylist";
