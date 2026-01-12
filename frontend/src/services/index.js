@@ -1,5 +1,21 @@
-// Centralized service exports
+/**
+ * Services Index
+ * Central export for all API services
+ *
+ * Usage:
+ * import { api, signIn, getAllVideos } from '@/services';
+ */
+
+// ============================================================================
+// API CLIENT
+// ============================================================================
+
 export { api, apiClient, ApiError, TokenService, API_CONFIG } from "./api";
+
+// ============================================================================
+// AUTH SERVICES
+// ============================================================================
+
 export {
     signIn,
     signUp,
@@ -8,9 +24,22 @@ export {
     getCurrentUser,
     updateAvatar,
     updateCoverImage,
+    updateUserDetails,
     changePassword,
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
+    resendVerification,
+    // Google OAuth
     handleGoogleAuth,
+    googleSignIn,
+    getGoogleClientId,
 } from "./authService";
+
+// ============================================================================
+// VIDEO SERVICES
+// ============================================================================
+
 export {
     getAllVideos,
     getVideoById,
@@ -22,4 +51,9 @@ export {
     getUserVideos,
     getDownloadUrl,
 } from "./videoService";
+
+// ============================================================================
+// UPLOAD SERVICE
+// ============================================================================
+
 export { uploadFile } from "./upload";
