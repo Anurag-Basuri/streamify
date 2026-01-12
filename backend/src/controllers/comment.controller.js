@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { Like } from "../models/like.model.js";
+import { Video } from "../models/video.model.js";
+import { Tweet } from "../models/tweet.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
+import { notifyNewComment } from "../utils/notifications.js";
 
 // Get all comments for an entity (Video or Tweet)
 const getEntityComments = asynchandler(async (req, res) => {
@@ -111,12 +114,44 @@ const addComment = asynchandler(async (req, res) => {
         throw new APIerror(400, "Comment content is required");
     }
 
+    // Get the content owner for notification
+    let contentDoc = null;
+    let contentOwner = null;
+    if (entityType === "Video") {
+        contentDoc = await Video.findById(entityId).populate(
+            "owner",
+            "_id userName fullName"
+        );
+        contentOwner = contentDoc?.owner;
+    } else if (entityType === "Tweet") {
+        contentDoc = await Tweet.findById(entityId).populate(
+            "owner",
+            "_id userName fullName"
+        );
+        contentOwner = contentDoc?.owner;
+    }
+
+    if (!contentDoc) {
+        throw new APIerror(404, `${entityType} not found`);
+    }
+
     const comment = await Comment.create({
         content,
         owner: req.user._id,
         entity: entityId,
         entityType,
     });
+
+    // Send notification to content owner (async, non-blocking)
+    if (contentOwner) {
+        notifyNewComment({
+            contentOwner,
+            commenter: req.user,
+            content: contentDoc,
+            contentType: entityType,
+            comment,
+        }).catch((err) => console.error("Notification error:", err.message));
+    }
 
     return res
         .status(201)
@@ -258,10 +293,16 @@ const countComments = asynchandler(async (req, res) => {
         entityType,
     });
 
-    return res.status(200).json(
-        new APIresponse(200, { count }, "Comments count fetched successfully")
-    );
-})
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { count },
+                "Comments count fetched successfully"
+            )
+        );
+});
 
 export {
     getEntityComments,

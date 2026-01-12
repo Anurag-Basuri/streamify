@@ -4,6 +4,7 @@ import { Subscription } from "../models/subscription.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { APIresponse } from "../utils/APIresponse.js";
+import { notifyNewSubscription } from "../utils/notifications.js";
 
 // Toggle Subscription (Subscribe/Unsubscribe a channel)
 const toggleSubscription = asynchandler(async (req, res) => {
@@ -38,6 +39,12 @@ const toggleSubscription = asynchandler(async (req, res) => {
         subscriber: req.user._id,
         channel: channelId,
     });
+
+    // Send notification to channel owner (async, non-blocking)
+    notifyNewSubscription({
+        channel,
+        subscriber: req.user,
+    }).catch((err) => console.error("Notification error:", err.message));
 
     return res
         .status(201)

@@ -6,6 +6,7 @@ import { Tweet } from "../models/tweet.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
+import { notifyVideoLike } from "../utils/notifications.js";
 
 // Toggle like for a video
 const toggleVideoLike = asynchandler(async (req, res) => {
@@ -15,7 +16,10 @@ const toggleVideoLike = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid video ID");
     }
 
-    const video = await Video.findById(videoId);
+    const video = await Video.findById(videoId).populate(
+        "owner",
+        "_id userName fullName"
+    );
     if (!video) {
         throw new APIerror(404, "Video not found");
     }
@@ -49,6 +53,13 @@ const toggleVideoLike = asynchandler(async (req, res) => {
             likedEntity: videoId,
             entityType: "Video",
         });
+
+        // Send notification to video owner (async, non-blocking)
+        notifyVideoLike({
+            videoOwner: video.owner,
+            liker: req.user,
+            video,
+        }).catch((err) => console.error("Notification error:", err.message));
 
         return res
             .status(201)
@@ -213,12 +224,12 @@ const getLikedEntities = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid or missing entity type");
     }
 
-    const likes = await Like.find({ 
+    const likes = await Like.find({
         likedBy: req.user._id,
-        entityType 
+        entityType,
     })
-    .populate("likedEntity")
-    .exec();
+        .populate("likedEntity")
+        .exec();
 
     return res
         .status(200)
@@ -233,40 +244,42 @@ const getUserLikedVideos = asynchandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const likes = await Like.find({ 
+    const likes = await Like.find({
         likedBy: req.user._id,
-        entityType: "Video"
+        entityType: "Video",
     })
-    .populate({
-        path: "likedEntity",
-        populate: {
-            path: "owner",
-            select: "userName avatar"
-        }
-    })
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+        .populate({
+            path: "likedEntity",
+            populate: {
+                path: "owner",
+                select: "userName avatar",
+            },
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
-    const total = await Like.countDocuments({ 
+    const total = await Like.countDocuments({
         likedBy: req.user._id,
-        entityType: "Video"
+        entityType: "Video",
     });
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(200, {
-                videos: likes.map(like => like.likedEntity),
+    return res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                videos: likes.map((like) => like.likedEntity),
                 pagination: {
                     currentPage: page,
                     totalPages: Math.ceil(total / limit),
                     totalItems: total,
                     hasNext: page < Math.ceil(total / limit),
-                    hasPrev: page > 1
-                }
-            }, "Liked videos fetched successfully")
-        );
+                    hasPrev: page > 1,
+                },
+            },
+            "Liked videos fetched successfully"
+        )
+    );
 });
 
 export {
@@ -274,5 +287,5 @@ export {
     toggleCommentLike,
     toggleTweetLike,
     getLikedEntities,
-    getUserLikedVideos
+    getUserLikedVideos,
 };
