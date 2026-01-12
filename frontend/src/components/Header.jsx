@@ -7,7 +7,6 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
     Menu,
     X,
-    Bell,
     User,
     Search,
     LogOut,
@@ -19,8 +18,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
 import useAuth from "../hooks/useAuth.js";
 import useTheme from "../hooks/useTheme.js";
-import { useNotifications } from "../context/NotificationContext";
 import { LogoIcon } from "./Logo.jsx";
+import NotificationDropdown from "./Header/NotificationDropdown.jsx";
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -305,7 +304,6 @@ const AuthButtons = () => (
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
     const { isAuthenticated, user, logout } = useAuth();
-    const { unreadCount } = useNotifications();
     const navigate = useNavigate();
 
     const handleSearch = (query) => {
@@ -366,12 +364,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (
                         <>
-                            <IconButton
-                                icon={Bell}
-                                label="Notifications"
-                                badge={unreadCount}
-                                onClick={() => navigate("/notifications")}
-                            />
+                            <NotificationDropdown />
                             <ProfileDropdown user={user} onLogout={logout} />
                         </>
                     ) : (

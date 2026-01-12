@@ -10,12 +10,39 @@ import {
     QuickActions,
     GuestSignupBanner,
 } from "./components/Common";
+import { showInfo } from "./components/Common/ToastProvider";
 import { AnimatePresence, motion } from "framer-motion";
+import { Bell } from "lucide-react";
 
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [headerHeight, setHeaderHeight] = useState(64);
+
+    // Handle notification toasts when new notifications arrive
+    useEffect(() => {
+        const handleNewNotification = (event) => {
+            const notification = event.detail;
+            if (notification && notification.message) {
+                showInfo(notification.message, {
+                    icon: (
+                        <Bell
+                            size={18}
+                            className="text-[var(--brand-primary)]"
+                        />
+                    ),
+                    duration: 4000,
+                });
+            }
+        };
+
+        window.addEventListener("notification:received", handleNewNotification);
+        return () =>
+            window.removeEventListener(
+                "notification:received",
+                handleNewNotification
+            );
+    }, []);
 
     useEffect(() => {
         const checkMobile = () => {
