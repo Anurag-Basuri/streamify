@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import ToastProvider from "./components/Common/ToastProvider.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 
 function App() {
@@ -109,6 +110,9 @@ function App() {
                         )}
                     </AnimatePresence>
                 </div>
+
+                {/* Toast Notifications */}
+                <ToastProvider />
             </AuthProvider>
         </ThemeProvider>
     );
