@@ -12,6 +12,7 @@ import { PageTransition, EmptyState } from "../../components/Common";
 import VideoCard from "../../components/Video/VideoCard";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton";
 import { showError } from "../../components/Common/ToastProvider";
+import { LIKES } from "../../constants";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -35,7 +36,7 @@ const LikedVideos = () => {
     const fetchLikedVideos = async () => {
         try {
             setLoading(true);
-            const response = await api.get("/api/v1/likes/videos");
+            const response = await api.get(LIKES.LIKED_VIDEOS);
             setVideos(response.data?.data || []);
         } catch (error) {
             showError("Failed to load liked videos");
@@ -48,7 +49,7 @@ const LikedVideos = () => {
     const handleVideoAction = async (action, videoId) => {
         if (action === "unlike") {
             try {
-                await api.post(`/api/v1/likes/toggle/v/${videoId}`);
+                await api.post(LIKES.TOGGLE_VIDEO(videoId));
                 setVideos(videos.filter((v) => v._id !== videoId));
             } catch (error) {
                 showError("Failed to unlike video");

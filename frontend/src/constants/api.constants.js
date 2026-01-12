@@ -8,15 +8,15 @@
 // ============================================================================
 
 const BASE = {
-    USERS: "/users",
-    VIDEOS: "/videos",
-    PLAYLISTS: "/playlists",
-    COMMENTS: "/comments",
-    LIKES: "/likes",
-    SUBSCRIPTIONS: "/subscriptions",
-    TWEETS: "/tweets",
-    DASHBOARD: "/dashboard",
-    HEALTHCHECK: "/healthcheck",
+    USERS: "/api/v1/users",
+    VIDEOS: "/api/v1/videos",
+    PLAYLISTS: "/api/v1/playlists",
+    COMMENTS: "/api/v1/comments",
+    LIKES: "/api/v1/likes",
+    SUBSCRIPTIONS: "/api/v1/subscriptions",
+    TWEETS: "/api/v1/tweets",
+    DASHBOARD: "/api/v1/dashboard",
+    HEALTHCHECK: "/api/v1/healthcheck",
 };
 
 // ============================================================================

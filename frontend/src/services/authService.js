@@ -1,23 +1,6 @@
 // Authentication service - handles all auth-related API calls
 import { api, ApiError, TokenService } from "./api";
-
-// Auth API endpoints
-const AUTH_ENDPOINTS = {
-    LOGIN: "/api/v1/users/login",
-    REGISTER: "/api/v1/users/register",
-    LOGOUT: "/api/v1/users/logout",
-    REFRESH_TOKEN: "/api/v1/users/refresh-token",
-    CURRENT_USER: "/api/v1/users/current-user",
-    CHANGE_PASSWORD: "/api/v1/users/change-password",
-    CHANGE_AVATAR: "/api/v1/users/change-avatar",
-    CHANGE_COVER: "/api/v1/users/change-cover-image",
-    VERIFY_EMAIL: (token) => `/api/v1/users/verify-email/${token}`,
-    FORGOT_PASSWORD: "/api/v1/users/forgot-password",
-    RESET_PASSWORD: (token) => `/api/v1/users/reset-password/${token}`,
-    RESEND_VERIFICATION: "/api/v1/users/resend-verification",
-    GOOGLE_AUTH: "/api/v1/users/auth/google",
-    GOOGLE_CLIENT_ID: "/api/v1/users/auth/google/client-id",
-};
+import { AUTH, USERS } from "../constants";
 
 /**
  * Sign in user with email and password
@@ -26,7 +9,7 @@ const AUTH_ENDPOINTS = {
  */
 export const signIn = async (credentials) => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.LOGIN, credentials);
+        const response = await api.post(AUTH.LOGIN, credentials);
         const { accessToken, refreshToken, user } = response.data.data;
 
         TokenService.setTokens(accessToken, refreshToken);
@@ -45,12 +28,8 @@ export const signIn = async (credentials) => {
  */
 export const signUp = async (userData) => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.REGISTER, userData);
-        return {
-            success: true,
-            user: response.data.data,
-            message: "Registration successful! Please login.",
-        };
+        const response = await api.post(AUTH.REGISTER, userData);
+        return response.data.data;
     } catch (error) {
         if (error.isApiError) throw error;
         throw ApiError.fromAxiosError(error);
@@ -62,7 +41,7 @@ export const signUp = async (userData) => {
  */
 export const logout = async () => {
     try {
-        await api.post(AUTH_ENDPOINTS.LOGOUT);
+        await api.post(AUTH.LOGOUT);
     } catch (error) {
         // Log error but don't throw - always clear local state
         console.error("Logout API error:", error);
@@ -89,7 +68,7 @@ export const refreshToken = async () => {
     }
 
     try {
-        const response = await api.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {
+        const response = await api.post(AUTH.REFRESH_TOKEN, {
             refreshToken: storedRefreshToken,
         });
 
@@ -111,7 +90,7 @@ export const refreshToken = async () => {
  */
 export const getCurrentUser = async () => {
     try {
-        const response = await api.get(AUTH_ENDPOINTS.CURRENT_USER);
+        const response = await api.get(AUTH.CURRENT_USER);
         return response.data.data;
     } catch (error) {
         if (error.statusCode === 401) {
@@ -120,6 +99,15 @@ export const getCurrentUser = async () => {
         if (error.isApiError) throw error;
         throw ApiError.fromAxiosError(error);
     }
+};
+
+/**
+ * Update user details
+ * @param {Object} data - { fullName, email }
+ */
+export const updateAccountDetails = async (data) => {
+    const response = await api.patch(USERS.UPDATE_DETAILS, data);
+    return response.data.data;
 };
 
 /**
@@ -134,7 +122,7 @@ export const updateAvatar = async (file, onProgress) => {
 
     try {
         const response = await api.upload(
-            AUTH_ENDPOINTS.CHANGE_AVATAR,
+            USERS.CHANGE_AVATAR,
             formData,
             onProgress
         );
@@ -157,7 +145,7 @@ export const updateCoverImage = async (file, onProgress) => {
 
     try {
         const response = await api.upload(
-            AUTH_ENDPOINTS.CHANGE_COVER,
+            USERS.CHANGE_COVER,
             formData,
             onProgress
         );
@@ -170,15 +158,12 @@ export const updateCoverImage = async (file, onProgress) => {
 
 /**
  * Change user password
- * @param {Object} passwords - { oldPassword, newPassword1, newPassword2 }
+ * @param {Object} passwords - { oldPassword, newPassword }
  * @returns {Promise<Object>} Success message
  */
 export const changePassword = async (passwords) => {
     try {
-        const response = await api.patch(
-            AUTH_ENDPOINTS.CHANGE_PASSWORD,
-            passwords
-        );
+        const response = await api.post(AUTH.CHANGE_PASSWORD, passwords);
         return response.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -203,7 +188,7 @@ export const getGoogleClientId = async () => {
     }
 
     try {
-        const response = await api.get(AUTH_ENDPOINTS.GOOGLE_CLIENT_ID);
+        const response = await api.get(AUTH.GOOGLE_CLIENT_ID);
         const { clientId, enabled } = response.data.data;
         cachedGoogleClientId = enabled ? clientId : null;
         return cachedGoogleClientId;
@@ -221,7 +206,7 @@ export const getGoogleClientId = async () => {
  */
 export const googleSignIn = async (credential) => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.GOOGLE_AUTH, {
+        const response = await api.post(AUTH.GOOGLE_AUTH, {
             credential,
         });
         const { accessToken, refreshToken, user } = response.data.data;
@@ -325,7 +310,7 @@ const initGoogleAuth = (clientId, resolve, reject) => {
  */
 export const verifyEmail = async (token) => {
     try {
-        const response = await api.get(AUTH_ENDPOINTS.VERIFY_EMAIL(token));
+        const response = await api.get(AUTH.VERIFY_EMAIL(token));
         return response.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -340,7 +325,7 @@ export const verifyEmail = async (token) => {
  */
 export const forgotPassword = async (email) => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
+        const response = await api.post(AUTH.FORGOT_PASSWORD, {
             email,
         });
         return response.data;
@@ -359,7 +344,7 @@ export const forgotPassword = async (email) => {
  */
 export const resetPassword = async (token, password, confirmPassword) => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.RESET_PASSWORD(token), {
+        const response = await api.post(AUTH.RESET_PASSWORD(token), {
             password,
             confirmPassword,
         });
@@ -376,7 +361,7 @@ export const resetPassword = async (token, password, confirmPassword) => {
  */
 export const resendVerification = async () => {
     try {
-        const response = await api.post(AUTH_ENDPOINTS.RESEND_VERIFICATION);
+        const response = await api.post(AUTH.RESEND_VERIFICATION);
         return response.data;
     } catch (error) {
         if (error.isApiError) throw error;

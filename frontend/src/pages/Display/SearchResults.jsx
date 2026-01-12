@@ -20,6 +20,7 @@ import VideoCard from "../../components/Video/VideoCard";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton";
 import { showError } from "../../components/Common/ToastProvider";
 import useDebounce from "../../hooks/useDebounce";
+import { VIDEOS } from "../../constants";
 
 // ============================================================================
 // FILTER SIDEBAR
@@ -182,7 +183,8 @@ const SearchResults = () => {
                 }),
             });
 
-            const response = await api.get(`/api/v1/videos?${params}`);
+            // Use VIDEOS.LIST constant
+            const response = await api.get(`${VIDEOS.LIST}?${params}`);
             setVideos(response.data?.data?.docs || []);
         } catch (error) {
             showError("Search failed");
@@ -301,7 +303,7 @@ const SearchResults = () => {
                                 title="No results found"
                                 description={`No videos matched "${query}". Try different keywords.`}
                                 actionLabel="Clear search"
-                                onAction={() => {
+                                action={() => {
                                     setSearchInput("");
                                     setSearchParams({});
                                 }}

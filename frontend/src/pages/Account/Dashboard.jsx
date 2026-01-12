@@ -23,6 +23,7 @@ import useAuth from "../../hooks/useAuth";
 import { api } from "../../services/api";
 import { PageTransition, EmptyState } from "../../components/Common";
 import { showError } from "../../components/Common/ToastProvider";
+import { DASHBOARD } from "../../constants";
 
 // ============================================================================
 // STAT CARD COMPONENT
@@ -150,7 +151,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const response = await api.get("/api/v1/dashboard/stats");
+            const response = await api.get(DASHBOARD.STATS);
             setStats(
                 response.data?.data || {
                     totalViews: 0,
