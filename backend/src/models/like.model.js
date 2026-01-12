@@ -27,4 +27,7 @@ likeSchema.index(
     { unique: true }
 );
 
+// Speed up counts / lookups for a given entity
+likeSchema.index({ entityType: 1, likedEntity: 1, createdAt: -1 });
+
 export const Like = mongoose.model("Like", likeSchema);

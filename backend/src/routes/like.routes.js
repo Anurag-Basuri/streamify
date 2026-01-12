@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
     getLikedEntities,
     toggleCommentLike,
@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 // Apply authentication middleware to all routes
-router.use(verifyAccessToken);
+router.use(requireAuth);
 
 // Toggle like routes - these match exactly what the frontend expects
 router.post("/toggle/video/:videoId", toggleVideoLike);

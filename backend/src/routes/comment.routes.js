@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { body } from "express-validator";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import {
+    verifyAccessToken,
+    requireAuth,
+} from "../middlewares/auth.middleware.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 import {
     addComment,
@@ -12,37 +15,47 @@ import {
 
 const router = Router();
 
-// Verify if user is logged in
-router.use(verifyAccessToken);
-
 // Handle base route for comments
 router.get("/", (req, res) => {
-    res.status(400).json({ success: false, message: "Please specify an entityType and entityId" });
+    res.status(400).json({
+        success: false,
+        message: "Please specify an entityType and entityId",
+    });
 });
 
-// Get comments for an entity
-router.get("/:entityType/:entityId", getEntityComments);
+// Count comments for an entity (public)
+router.get("/count/:entityType/:entityId", verifyAccessToken, countComments);
 
-// Add a comment
+// Get comments for an entity (public; optional auth for isLiked)
+router.get("/:entityType/:entityId", verifyAccessToken, getEntityComments);
+
+// Add a comment (auth required)
 router.post(
     "/:entityType/:entityId",
-    body("content").isString().trim().notEmpty().withMessage("Comment is required"),
+    requireAuth,
+    body("content")
+        .isString()
+        .trim()
+        .notEmpty()
+        .withMessage("Comment is required"),
     validateResult,
     addComment
 );
 
-// Update a comment
+// Update a comment (auth required)
 router.put(
     "/:commentId",
-    body("content").isString().trim().notEmpty().withMessage("Comment is required"),
+    requireAuth,
+    body("content")
+        .isString()
+        .trim()
+        .notEmpty()
+        .withMessage("Comment is required"),
     validateResult,
     updateComment
 );
 
-// Delete a comment
-router.delete("/:commentId", deleteComment);
-
-// Count comments for an entity
-router.get("/count/:entityType/:entityId", countComments);
+// Delete a comment (auth required)
+router.delete("/:commentId", requireAuth, deleteComment);
 
 export default router;

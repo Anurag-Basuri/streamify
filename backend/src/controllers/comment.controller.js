@@ -24,6 +24,9 @@ const getEntityComments = asynchandler(async (req, res) => {
     }
 
     const match = { entity: entityId, entityType };
+    const viewerId = req.user?._id
+        ? new mongoose.Types.ObjectId(req.user._id)
+        : null;
 
     const comments = await Comment.aggregate([
         {
@@ -52,8 +55,22 @@ const getEntityComments = asynchandler(async (req, res) => {
         {
             $lookup: {
                 from: "likes",
-                localField: "_id",
-                foreignField: "likedEntity",
+                let: { commentId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    {
+                                        $eq: ["$likedEntity", "$$commentId"],
+                                    },
+                                    { $eq: ["$entityType", "Comment"] },
+                                ],
+                            },
+                        },
+                    },
+                    { $project: { likedBy: 1 } },
+                ],
                 as: "likes",
             },
         },
@@ -67,12 +84,9 @@ const getEntityComments = asynchandler(async (req, res) => {
                     avatar: "$ownerDetails.avatar",
                 },
                 likesCount: { $size: "$likes" },
-                isLiked: {
-                    $in: [
-                        new mongoose.Types.ObjectId(req.user._id),
-                        "$likes.likedBy",
-                    ],
-                },
+                isLiked: viewerId
+                    ? { $in: [viewerId, "$likes.likedBy"] }
+                    : false,
             },
         },
     ]);
@@ -142,6 +156,8 @@ const addComment = asynchandler(async (req, res) => {
         entityType,
     });
 
+    await comment.populate("owner", "_id userName avatar");
+
     // Send notification to content owner (async, non-blocking)
     if (contentOwner) {
         notifyNewComment({
@@ -183,6 +199,8 @@ const updateComment = asynchandler(async (req, res) => {
             "Comment not found or you do not own this comment"
         );
     }
+
+    await comment.populate("owner", "_id userName avatar");
 
     return res
         .status(200)
