@@ -4,7 +4,9 @@ import {
     useState,
     useEffect,
     useCallback,
+    useRef,
 } from "react";
+import { io } from "socket.io-client";
 import useAuth from "../hooks/useAuth";
 import {
     getNotifications,
@@ -13,15 +15,18 @@ import {
     deleteNotification,
     clearAllNotifications,
 } from "../services/notificationService";
-import { showError } from "../components/Common/ToastProvider";
+import { showError, showSuccess } from "../components/Common/ToastProvider";
+import { API_CONFIG } from "../config/api.config";
 
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
+    const socketRef = useRef(null);
 
     const loadNotifications = useCallback(
         async (silent = false) => {
@@ -46,17 +51,75 @@ export const NotificationProvider = ({ children }) => {
         [isAuthenticated]
     );
 
-    // Initial load and polling
+    // Initial load and polling (fallback)
     useEffect(() => {
         loadNotifications();
 
-        // Poll every 60 seconds
+        // Poll every 5 minutes as fallback (Socket.io is primary)
         const interval = setInterval(() => {
             if (isAuthenticated) loadNotifications(true);
-        }, 60000);
+        }, 300000);
 
         return () => clearInterval(interval);
     }, [loadNotifications, isAuthenticated]);
+
+    // Socket.io connection for real-time notifications
+    useEffect(() => {
+        if (!isAuthenticated || !user?._id) {
+            // Disconnect if not authenticated
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+                setIsConnected(false);
+            }
+            return;
+        }
+
+        // Create socket connection
+        const socket = io(API_CONFIG.baseURL, {
+            withCredentials: true,
+            transports: ["websocket", "polling"],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+        });
+
+        socketRef.current = socket;
+
+        socket.on("connect", () => {
+            console.log("🔌 Socket connected");
+            setIsConnected(true);
+            // Join user-specific room
+            socket.emit("user:join", user._id);
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("🔌 Socket disconnected:", reason);
+            setIsConnected(false);
+        });
+
+        socket.on("connect_error", (error) => {
+            console.error("Socket connection error:", error.message);
+            setIsConnected(false);
+        });
+
+        // Handle incoming notifications
+        socket.on("notification:new", (notification) => {
+            console.log("📬 New notification received:", notification);
+            setNotifications((prev) => [notification, ...prev]);
+            setUnreadCount((prev) => prev + 1);
+
+            // Show toast for new notification
+            showSuccess(notification.message, { duration: 4000 });
+        });
+
+        return () => {
+            if (socket) {
+                socket.emit("user:leave", user._id);
+                socket.disconnect();
+            }
+        };
+    }, [isAuthenticated, user?._id]);
 
     const markRead = async (id) => {
         try {
@@ -114,6 +177,7 @@ export const NotificationProvider = ({ children }) => {
                 notifications,
                 unreadCount,
                 loading,
+                isConnected,
                 refresh: loadNotifications,
                 markRead,
                 markAllRead,
