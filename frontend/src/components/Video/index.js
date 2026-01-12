@@ -3,18 +3,14 @@
  * Central export for all video-related components
  */
 
-// Main video display
+// Main video display (default exports)
 export { default as VideoCard } from "./VideoCard";
 export { default as VideoPlayer } from "./VideoPlayer";
-export { default as VideoInfo } from "./VideoInfo";
-
-// Skeleton and loading states
-export { default as VideoCardSkeleton } from "./VideoCardSkeleton";
 export { default as LoadingState } from "./LoadingState";
-
-// Error and empty states
 export { default as ErrorState } from "./ErrorState";
-export { default as VideoEmptyState } from "./EmptyState";
+export { default as EmptyState } from "./EmptyState";
 
-// Actions
-export { default as WatchLaterButton } from "./WatchLaterButton";
+// Named exports
+export { VideoCardSkeleton } from "./VideoCardSkeleton";
+export { VideoInfo } from "./VideoInfo";
+export { WatchLaterButton } from "./WatchLaterButton";
