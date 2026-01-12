@@ -135,6 +135,7 @@ export const LIKES = {
 
 export const SUBSCRIPTIONS = {
     TOGGLE: (channelId) => `${BASE.SUBSCRIPTIONS}/c/${channelId}`,
+    CHECK: (channelId) => `${BASE.SUBSCRIPTIONS}/check/${channelId}`,
     CHANNEL_SUBSCRIBERS: (channelId) => `${BASE.SUBSCRIPTIONS}/c/${channelId}`,
     USER_SUBSCRIPTIONS: `${BASE.SUBSCRIPTIONS}/u`,
 };

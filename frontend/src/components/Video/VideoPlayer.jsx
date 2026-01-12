@@ -32,6 +32,10 @@ import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
 import useVideoPlayer from "../../hooks/useVideoPlayer";
 import { api } from "../../services/api";
+import {
+    checkSubscription as checkSub,
+    toggleSubscription,
+} from "../../services";
 import { showSuccess, showError, showInfo } from "../Common/ToastProvider";
 
 // ============================================================================
@@ -551,13 +555,11 @@ const VideoPlayer = () => {
     }, [isAuthenticated]);
 
     // Check subscription status
-    const checkSubscription = useCallback(async () => {
+    const checkSubscriptionStatus = useCallback(async () => {
         if (!isAuthenticated || !video?.owner?._id) return;
         try {
-            const { data } = await api.get(
-                `/api/v1/subscriptions/check/${video.owner._id}`
-            );
-            setIsSubscribed(data.data?.isSubscribed || false);
+            const result = await checkSub(video.owner._id);
+            setIsSubscribed(result?.isSubscribed || false);
         } catch (err) {
             console.error("Failed to check subscription:", err);
         }
@@ -572,8 +574,8 @@ const VideoPlayer = () => {
     }, [isAuthenticated, fetchWatchLater, fetchPlaylists]);
 
     useEffect(() => {
-        checkSubscription();
-    }, [checkSubscription]);
+        checkSubscriptionStatus();
+    }, [checkSubscriptionStatus]);
 
     // Keyboard shortcuts (disabled on mobile)
     useEffect(() => {
@@ -629,11 +631,11 @@ const VideoPlayer = () => {
 
         try {
             setSubscribing(true);
-            await api.post(`/api/v1/subscriptions/toggle/${video.owner._id}`);
-            setIsSubscribed((prev) => !prev);
+            const result = await toggleSubscription(video.owner._id);
+            setIsSubscribed(result?.subscribed ?? !isSubscribed);
             showSuccess(isSubscribed ? "Unsubscribed" : "Subscribed!");
         } catch (err) {
-            showError(err.response?.data?.message || "Subscription failed");
+            showError(err.message || "Subscription failed");
         } finally {
             setSubscribing(false);
         }
