@@ -20,6 +20,8 @@ import {
 import useAuth from "../../hooks/useAuth";
 import { PageTransition, EmptyState } from "../../components/Common";
 import { showSuccess, showError } from "../../components/Common/ToastProvider";
+import { useNotifications } from "../../context/NotificationContext";
+import { formatRelativeTime } from "../../utils";
 
 // ============================================================================
 // NOTIFICATION ITEM COMPONENT
@@ -79,7 +81,7 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }) => {
                     {notification.message}
                 </p>
                 <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                    {notification.time}
+                    {formatRelativeTime(notification.createdAt)}
                 </p>
                 {notification.link && (
                     <Link
@@ -95,7 +97,7 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }) => {
             <div className="flex items-center gap-2">
                 {!notification.read && (
                     <button
-                        onClick={() => onMarkRead(notification.id)}
+                        onClick={() => onMarkRead(notification._id)}
                         className="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
                         title="Mark as read"
                     >
@@ -106,7 +108,7 @@ const NotificationItem = ({ notification, onMarkRead, onDelete }) => {
                     </button>
                 )}
                 <button
-                    onClick={() => onDelete(notification.id)}
+                    onClick={() => onDelete(notification._id)}
                     className="p-2 hover:bg-[var(--error-light)] rounded-lg transition-colors group"
                     title="Delete"
                 >
@@ -128,9 +130,9 @@ const FilterTabs = ({ active, onChange, counts }) => {
     const filters = [
         { id: "all", label: "All", count: counts.all },
         { id: "unread", label: "Unread", count: counts.unread },
-        { id: "likes", label: "Likes", count: counts.likes },
-        { id: "comments", label: "Comments", count: counts.comments },
-        { id: "subscribers", label: "Subscribers", count: counts.subscribers },
+        { id: "like", label: "Likes", count: counts.like },
+        { id: "comment", label: "Comments", count: counts.comment },
+        { id: "subscribe", label: "Subscribers", count: counts.subscribe },
     ];
 
     return (
@@ -170,8 +172,15 @@ const FilterTabs = ({ active, onChange, counts }) => {
 const Notifications = () => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        notifications,
+        loading,
+        refresh,
+        markRead,
+        markAllRead,
+        removeNotification,
+        clearAll,
+    } = useNotifications();
     const [filter, setFilter] = useState("all");
 
     useEffect(() => {
@@ -179,103 +188,39 @@ const Notifications = () => {
             navigate("/auth");
             return;
         }
-        fetchNotifications();
-    }, [isAuthenticated, navigate]);
+        refresh();
+    }, [isAuthenticated, navigate, refresh]);
 
-    const fetchNotifications = async () => {
-        setLoading(true);
-        // Mock notifications for now
-        setTimeout(() => {
-            setNotifications([
-                {
-                    id: 1,
-                    type: "like",
-                    message: "John Doe liked your video 'Amazing Tutorial'",
-                    time: "2 hours ago",
-                    read: false,
-                    link: "/video/123",
-                },
-                {
-                    id: 2,
-                    type: "comment",
-                    message: "Jane Smith commented on your video",
-                    time: "4 hours ago",
-                    read: false,
-                    link: "/video/123",
-                },
-                {
-                    id: 3,
-                    type: "subscribe",
-                    message: "Mike Johnson subscribed to your channel",
-                    time: "Yesterday",
-                    read: true,
-                },
-                {
-                    id: 4,
-                    type: "upload",
-                    message: "Your video has finished processing",
-                    time: "2 days ago",
-                    read: true,
-                    link: "/video/456",
-                },
-                {
-                    id: 5,
-                    type: "like",
-                    message: "5 people liked your video",
-                    time: "3 days ago",
-                    read: true,
-                },
-                {
-                    id: 6,
-                    type: "system",
-                    message:
-                        "Welcome to Streamify! Complete your profile to get started.",
-                    time: "1 week ago",
-                    read: true,
-                    link: "/profile",
-                },
-            ]);
-            setLoading(false);
-        }, 500);
+    const handleMarkRead = async (id) => {
+        await markRead(id);
     };
 
-    const handleMarkRead = (id) => {
-        setNotifications(
-            notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-        );
+    const handleMarkAllRead = async () => {
+        await markAllRead();
     };
 
-    const handleMarkAllRead = () => {
-        setNotifications(notifications.map((n) => ({ ...n, read: true })));
-        showSuccess("All notifications marked as read");
+    const handleDelete = async (id) => {
+        await removeNotification(id);
     };
 
-    const handleDelete = (id) => {
-        setNotifications(notifications.filter((n) => n.id !== id));
-    };
-
-    const handleClearAll = () => {
+    const handleClearAll = async () => {
         if (window.confirm("Clear all notifications?")) {
-            setNotifications([]);
-            showSuccess("All notifications cleared");
+            await clearAll();
         }
     };
 
     const filteredNotifications = notifications.filter((n) => {
         if (filter === "all") return true;
         if (filter === "unread") return !n.read;
-        if (filter === "likes") return n.type === "like";
-        if (filter === "comments") return n.type === "comment";
-        if (filter === "subscribers") return n.type === "subscribe";
-        return true;
+        return n.type === filter;
     });
 
     const counts = {
         all: notifications.length,
         unread: notifications.filter((n) => !n.read).length,
-        likes: notifications.filter((n) => n.type === "like").length,
-        comments: notifications.filter((n) => n.type === "comment").length,
-        subscribers: notifications.filter((n) => n.type === "subscribe").length,
+        like: notifications.filter((n) => n.type === "like").length,
+        comment: notifications.filter((n) => n.type === "comment").length,
+        subscribe: notifications.filter((n) => n.type === "subscribe").length,
     };
 
     return (
@@ -368,7 +313,7 @@ const Notifications = () => {
                         <AnimatePresence mode="popLayout">
                             {filteredNotifications.map((notification) => (
                                 <NotificationItem
-                                    key={notification.id}
+                                    key={notification._id}
                                     notification={notification}
                                     onMarkRead={handleMarkRead}
                                     onDelete={handleDelete}
