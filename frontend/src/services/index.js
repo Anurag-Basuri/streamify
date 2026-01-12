@@ -107,3 +107,14 @@ export {
     removeFromHistory,
     clearHistory,
 } from "./historyService";
+
+// ============================================================================
+// SUBSCRIPTION SERVICE
+// ============================================================================
+
+export {
+    toggleSubscription,
+    checkSubscription,
+    getChannelSubscribers,
+    getUserSubscriptions,
+} from "./subscriptionService";

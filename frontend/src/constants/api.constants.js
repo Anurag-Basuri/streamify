@@ -134,10 +134,13 @@ export const LIKES = {
 // ============================================================================
 
 export const SUBSCRIPTIONS = {
-    TOGGLE: (channelId) => `${BASE.SUBSCRIPTIONS}/c/${channelId}`,
-    CHECK: (channelId) => `${BASE.SUBSCRIPTIONS}/check/${channelId}`,
-    CHANNEL_SUBSCRIBERS: (channelId) => `${BASE.SUBSCRIPTIONS}/c/${channelId}`,
-    USER_SUBSCRIPTIONS: `${BASE.SUBSCRIPTIONS}/u`,
+    // POST /:channelId/toggle - Toggle subscription
+    TOGGLE: (channelId) => `${BASE.SUBSCRIPTIONS}/${channelId}/toggle`,
+    // GET /subscribed-channels - Get user's subscribed channels
+    USER_SUBSCRIPTIONS: `${BASE.SUBSCRIPTIONS}/subscribed-channels`,
+    // GET /:channelId/subscribers - Get channel's subscribers
+    CHANNEL_SUBSCRIBERS: (channelId) =>
+        `${BASE.SUBSCRIPTIONS}/${channelId}/subscribers`,
 };
 
 // ============================================================================
