@@ -5,11 +5,12 @@
 import { Link } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
 
-export const Logo = () => {
+// Logo without link - for use inside other Links
+export const LogoIcon = () => {
     const { isDark } = useTheme();
 
     return (
-        <Link to="/" className="flex items-center gap-2 group">
+        <div className="flex items-center gap-2 group">
             <svg
                 className="w-8 h-8 transition-transform group-hover:scale-110"
                 viewBox="0 0 24 24"
@@ -37,6 +38,15 @@ export const Logo = () => {
             <span className="hidden sm:inline font-bold text-xl text-[var(--text-primary)] transition-colors">
                 Streamify
             </span>
+        </div>
+    );
+};
+
+// Logo with link - for standalone use
+export const Logo = () => {
+    return (
+        <Link to="/" className="flex items-center">
+            <LogoIcon />
         </Link>
     );
 };

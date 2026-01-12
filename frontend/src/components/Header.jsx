@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
 import useAuth from "../hooks/useAuth.js";
 import useTheme from "../hooks/useTheme.js";
-import { Logo } from "./Logo.jsx";
+import { LogoIcon } from "./Logo.jsx";
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -353,7 +353,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
 
                     {/* Logo */}
                     <Link to="/" className="flex items-center">
-                        <Logo />
+                        <LogoIcon />
                     </Link>
                 </div>
 
