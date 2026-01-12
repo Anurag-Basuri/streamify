@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Header from "./components/Header.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
@@ -14,16 +14,62 @@ import { showInfo } from "./components/Common/ToastProvider";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell } from "lucide-react";
 
+// ============================================================================
+// LAYOUT CONSTANTS
+// ============================================================================
+
+const HEADER_HEIGHT = 64;
+const SIDEBAR_COLLAPSED_WIDTH = 72;
+const SIDEBAR_EXPANDED_WIDTH = 240;
+const MOBILE_SIDEBAR_WIDTH = 280;
+const MOBILE_BREAKPOINT = 768;
+const TABLET_BREAKPOINT = 1024;
+
 function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [headerHeight, setHeaderHeight] = useState(64);
+    const [isSidebarPinned, setIsSidebarPinned] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
-    // Handle notification toasts when new notifications arrive
+    // Breakpoint helpers
+    const isMobile = windowWidth < MOBILE_BREAKPOINT;
+    const isTablet =
+        windowWidth >= MOBILE_BREAKPOINT && windowWidth < TABLET_BREAKPOINT;
+    const isDesktop = windowWidth >= TABLET_BREAKPOINT;
+
+    // Calculate sidebar width based on state
+    const sidebarWidth = isMobile
+        ? MOBILE_SIDEBAR_WIDTH
+        : isSidebarOpen || isSidebarPinned
+        ? SIDEBAR_EXPANDED_WIDTH
+        : SIDEBAR_COLLAPSED_WIDTH;
+
+    // Handle resize with debounce
+    useEffect(() => {
+        let resizeTimer;
+        const handleResize = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                setWindowWidth(window.innerWidth);
+                // Reset sidebar on mobile
+                if (window.innerWidth < MOBILE_BREAKPOINT) {
+                    setIsSidebarOpen(false);
+                    setIsSidebarPinned(false);
+                }
+            }, 100);
+        };
+
+        window.addEventListener("resize", handleResize);
+        return () => {
+            window.removeEventListener("resize", handleResize);
+            clearTimeout(resizeTimer);
+        };
+    }, []);
+
+    // Handle notification toasts
     useEffect(() => {
         const handleNewNotification = (event) => {
             const notification = event.detail;
-            if (notification && notification.message) {
+            if (notification?.message) {
                 showInfo(notification.message, {
                     icon: (
                         <Bell
@@ -44,112 +90,126 @@ function App() {
             );
     }, []);
 
-    useEffect(() => {
-        const checkMobile = () => {
-            const mobile = window.innerWidth < 768;
-            setIsMobile(mobile);
-            if (!mobile) setIsSidebarOpen(false);
-        };
+    // Toggle sidebar (different behavior for mobile vs desktop)
+    const toggleSidebar = useCallback(() => {
+        if (isMobile) {
+            setIsSidebarOpen(!isSidebarOpen);
+        } else {
+            setIsSidebarPinned(!isSidebarPinned);
+        }
+    }, [isMobile, isSidebarOpen, isSidebarPinned]);
 
-        const header = document.querySelector("header");
-        if (header) setHeaderHeight(header.offsetHeight);
-
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
+    // Close mobile sidebar
+    const closeSidebar = useCallback(() => {
+        setIsSidebarOpen(false);
     }, []);
-
-    const sidebarWidth = isMobile ? 256 : isSidebarOpen ? 240 : 72;
 
     return (
         <ThemeProvider>
             <AuthProvider>
                 <NotificationProvider>
-                    {/* Root container with theme background */}
+                    {/* Root container */}
                     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
-                        {/* Header */}
+                        {/* Fixed Header */}
                         <Header
-                            toggleSidebar={() =>
-                                setIsSidebarOpen(!isSidebarOpen)
-                            }
-                            isSidebarOpen={isSidebarOpen}
-                            sidebarWidth={sidebarWidth}
+                            toggleSidebar={toggleSidebar}
+                            isSidebarOpen={isSidebarOpen || isSidebarPinned}
+                            sidebarWidth={isMobile ? 0 : sidebarWidth}
                             isMobile={isMobile}
                         />
 
-                        {/* Desktop Sidebar */}
+                        {/* Desktop/Tablet Sidebar - Fixed position */}
                         {!isMobile && (
-                            <div
-                                className="fixed top-0 z-30"
+                            <aside
+                                className="fixed left-0 z-30 transition-all duration-200 ease-in-out"
                                 style={{
-                                    top: headerHeight,
+                                    top: HEADER_HEIGHT,
                                     bottom: 0,
                                     width: sidebarWidth,
                                 }}
-                                onMouseEnter={() => setIsSidebarOpen(true)}
-                                onMouseLeave={() => setIsSidebarOpen(false)}
+                                onMouseEnter={() =>
+                                    !isSidebarPinned && setIsSidebarOpen(true)
+                                }
+                                onMouseLeave={() =>
+                                    !isSidebarPinned && setIsSidebarOpen(false)
+                                }
                             >
                                 <Sidebar
-                                    isOpen={isSidebarOpen}
-                                    toggleSidebar={setIsSidebarOpen}
-                                    isMobile={isMobile}
+                                    isOpen={isSidebarOpen || isSidebarPinned}
+                                    toggleSidebar={toggleSidebar}
+                                    isMobile={false}
+                                    isPinned={isSidebarPinned}
                                 />
-                            </div>
+                            </aside>
                         )}
 
-                        {/* Main Content */}
-                        <div
+                        {/* Main Content Area */}
+                        <main
                             className="relative transition-all duration-200 ease-in-out"
                             style={{
                                 marginLeft: isMobile ? 0 : sidebarWidth,
-                                paddingTop: headerHeight,
-                                minHeight: `calc(100vh - ${headerHeight}px)`,
+                                paddingTop: HEADER_HEIGHT,
                             }}
                         >
-                            <main className="p-4 sm:p-6 lg:p-8 mx-auto max-w-7xl">
-                                <AppRoutes />
-                            </main>
-                        </div>
+                            {/* Content Container with responsive padding */}
+                            <div className="min-h-[calc(100vh-64px)]">
+                                <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+                                    <div className="mx-auto max-w-[1800px]">
+                                        <AppRoutes />
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
 
-                        {/* Mobile Sidebar */}
-                        <AnimatePresence>
-                            {isMobile && (
-                                <motion.div
-                                    className="fixed top-0 left-0 right-0 bottom-0 z-50"
-                                    initial={{ x: "-100%" }}
-                                    animate={{ x: isSidebarOpen ? 0 : "-100%" }}
-                                    exit={{ x: "-100%" }}
-                                    transition={{
-                                        type: "tween",
-                                        duration: 0.2,
-                                    }}
-                                    style={{ top: headerHeight }}
-                                >
-                                    <Sidebar
-                                        isOpen={isSidebarOpen}
-                                        toggleSidebar={setIsSidebarOpen}
-                                        isMobile={isMobile}
-                                    />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Mobile Overlay */}
+                        {/* Mobile Sidebar Drawer */}
                         <AnimatePresence>
                             {isMobile && isSidebarOpen && (
-                                <motion.div
-                                    key="overlay"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-[var(--overlay)] backdrop-blur-sm z-40"
-                                    onClick={() => setIsSidebarOpen(false)}
-                                    style={{ top: headerHeight }}
-                                />
+                                <>
+                                    {/* Backdrop */}
+                                    <motion.div
+                                        key="mobile-backdrop"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                                        style={{ top: HEADER_HEIGHT }}
+                                        onClick={closeSidebar}
+                                        aria-label="Close sidebar"
+                                    />
+
+                                    {/* Sidebar Panel */}
+                                    <motion.aside
+                                        key="mobile-sidebar"
+                                        initial={{ x: "-100%" }}
+                                        animate={{ x: 0 }}
+                                        exit={{ x: "-100%" }}
+                                        transition={{
+                                            type: "spring",
+                                            damping: 25,
+                                            stiffness: 300,
+                                        }}
+                                        className="fixed left-0 z-50 bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)] shadow-2xl"
+                                        style={{
+                                            top: HEADER_HEIGHT,
+                                            bottom: 0,
+                                            width: MOBILE_SIDEBAR_WIDTH,
+                                        }}
+                                    >
+                                        <Sidebar
+                                            isOpen={true}
+                                            toggleSidebar={closeSidebar}
+                                            isMobile={true}
+                                        />
+                                    </motion.aside>
+                                </>
                             )}
                         </AnimatePresence>
 
-                        {/* Quick Actions FAB */}
-                        <QuickActions />
+                        {/* Quick Actions FAB - Hidden on very small screens */}
+                        <div className="hidden xs:block">
+                            <QuickActions />
+                        </div>
 
                         {/* Guest Signup Banner */}
                         <GuestSignupBanner />
