@@ -105,9 +105,13 @@ const VideoSkeleton = () => (
 
 const ErrorState = ({ error, onRetry, onGoBack }) => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <div className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--error-light)] flex items-center justify-center">
-                <FaExclamationTriangle className="w-8 h-8 text-[var(--error)]" />
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]"
+        >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                <FaExclamationTriangle className="w-8 h-8 text-red-500" />
             </div>
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
                 Failed to Load Video
@@ -116,19 +120,19 @@ const ErrorState = ({ error, onRetry, onGoBack }) => (
             <div className="flex gap-3 justify-center">
                 <button
                     onClick={onGoBack}
-                    className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                    className="px-4 py-2.5 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-full hover:bg-[var(--bg-tertiary)] transition-all flex items-center gap-2 font-medium"
                 >
                     <FaArrowLeft size={14} />
                     Go Back
                 </button>
                 <button
                     onClick={onRetry}
-                    className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:bg-[var(--brand-primary-hover)] transition-colors"
+                    className="px-4 py-2.5 bg-[var(--brand-primary)] text-white rounded-full hover:bg-[var(--brand-primary-hover)] transition-all font-medium"
                 >
                     Try Again
                 </button>
             </div>
-        </div>
+        </motion.div>
     </div>
 );
 
@@ -138,7 +142,12 @@ const ErrorState = ({ error, onRetry, onGoBack }) => (
 
 const NotFoundState = ({ onGoHome }) => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <div className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]">
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]"
+        >
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">
                 <FaEye className="w-8 h-8 text-[var(--text-tertiary)]" />
             </div>
@@ -150,12 +159,46 @@ const NotFoundState = ({ onGoHome }) => (
             </p>
             <button
                 onClick={onGoHome}
-                className="px-6 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:bg-[var(--brand-primary-hover)] transition-colors"
+                className="px-6 py-2.5 bg-[var(--brand-primary)] text-white rounded-full hover:bg-[var(--brand-primary-hover)] transition-all font-medium"
             >
                 Browse Videos
             </button>
-        </div>
+        </motion.div>
     </div>
+);
+
+// ============================================================================
+// ACTION BUTTON
+// ============================================================================
+
+const ActionButton = ({
+    icon: Icon,
+    label,
+    onClick,
+    active,
+    disabled,
+    loading,
+}) => (
+    <button
+        onClick={onClick}
+        disabled={disabled || loading}
+        className={`
+            flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm
+            transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+            ${
+                active
+                    ? "bg-[var(--brand-primary)] text-white"
+                    : "bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+            }
+        `}
+    >
+        {loading ? (
+            <FaSpinner className="animate-spin" size={16} />
+        ) : (
+            <Icon size={16} className={active ? "text-white" : ""} />
+        )}
+        <span className="hidden sm:inline">{label}</span>
+    </button>
 );
 
 // ============================================================================
@@ -172,45 +215,188 @@ const CommentItem = ({
     <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex gap-3"
+        exit={{ opacity: 0, y: -10 }}
+        layout
+        className="flex gap-3 group"
     >
-        <img
-            src={comment.owner?.avatar || "/default-avatar.png"}
-            alt={comment.owner?.userName || "User"}
-            className="w-9 h-9 rounded-full flex-shrink-0 object-cover border border-[var(--border-light)]"
-        />
-        <div className="flex-1 bg-[var(--bg-secondary)] p-4 rounded-xl">
-            <div className="flex justify-between items-start mb-2">
-                <div>
-                    <p className="font-medium text-sm text-[var(--text-primary)]">
+        <Link to={`/profile/${comment.owner?._id}`}>
+            <img
+                src={comment.owner?.avatar || "/default-avatar.png"}
+                alt={comment.owner?.userName || "User"}
+                className="w-10 h-10 rounded-full flex-shrink-0 object-cover border-2 border-transparent hover:border-[var(--brand-primary)] transition-colors"
+            />
+        </Link>
+        <div className="flex-1 bg-[var(--bg-secondary)] p-4 rounded-2xl hover:bg-[var(--bg-tertiary)] transition-colors">
+            <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0">
+                    <Link
+                        to={`/profile/${comment.owner?._id}`}
+                        className="font-semibold text-sm text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors"
+                    >
                         {comment.owner?.userName || "Anonymous"}
-                    </p>
-                    <p className="text-xs text-[var(--text-tertiary)]">
+                    </Link>
+                    <span className="text-xs text-[var(--text-tertiary)] ml-2">
                         <TimeAgo datetime={comment.createdAt} />
-                    </p>
+                    </span>
                 </div>
                 <button
                     onClick={() =>
                         isAuthenticated ? onLike(comment._id) : onLoginPrompt()
                     }
                     disabled={isLiking}
-                    className="flex items-center gap-1.5 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] text-sm transition-colors disabled:opacity-50"
+                    className={`
+                        flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium
+                        transition-all duration-200 disabled:opacity-50
+                        ${
+                            comment.isLiked
+                                ? "bg-red-500/10 text-red-500"
+                                : "text-[var(--text-tertiary)] hover:bg-[var(--bg-primary)] hover:text-[var(--brand-primary)]"
+                        }
+                    `}
                 >
                     {isLiking ? (
                         <FaSpinner className="animate-spin" size={12} />
                     ) : comment.isLiked ? (
-                        <FaHeart className="text-[var(--error)]" size={12} />
+                        <FaHeart size={12} />
                     ) : (
                         <FaRegHeart size={12} />
                     )}
                     <span>{comment.likesCount || 0}</span>
                 </button>
             </div>
-            <p className="text-[var(--text-secondary)] text-sm leading-relaxed whitespace-pre-wrap">
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed mt-2 whitespace-pre-wrap break-words">
                 {comment.content}
             </p>
         </div>
     </motion.div>
+);
+
+// ============================================================================
+// DESCRIPTION BOX
+// ============================================================================
+
+const DescriptionBox = ({ description, views, createdAt }) => {
+    const [expanded, setExpanded] = useState(false);
+    const isLong = description?.length > 200;
+
+    return (
+        <motion.div
+            layout
+            className="bg-[var(--bg-secondary)] p-4 rounded-2xl cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors"
+            onClick={() => isLong && setExpanded(!expanded)}
+        >
+            <div className="flex items-center gap-3 text-sm font-medium text-[var(--text-primary)] mb-2">
+                <span>{formatViews(views)} views</span>
+                <span className="text-[var(--text-tertiary)]">•</span>
+                <TimeAgo
+                    datetime={createdAt}
+                    className="text-[var(--text-tertiary)]"
+                />
+            </div>
+            <motion.div layout className="overflow-hidden">
+                <p
+                    className={`text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap ${
+                        !expanded && isLong ? "line-clamp-3" : ""
+                    }`}
+                >
+                    {description || "No description provided."}
+                </p>
+            </motion.div>
+            {isLong && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(!expanded);
+                    }}
+                    className="mt-2 text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--brand-primary)] flex items-center gap-1 transition-colors"
+                >
+                    {expanded ? (
+                        <>
+                            Show less <FaChevronUp size={12} />
+                        </>
+                    ) : (
+                        <>
+                            Show more <FaChevronDown size={12} />
+                        </>
+                    )}
+                </button>
+            )}
+        </motion.div>
+    );
+};
+
+// ============================================================================
+// PLAYLIST MODAL
+// ============================================================================
+
+const PlaylistModal = ({ isOpen, onClose, playlists, onAddToPlaylist }) => (
+    <AnimatePresence>
+        {isOpen && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-[var(--bg-elevated)] rounded-2xl p-6 w-full max-w-md border border-[var(--border-light)] shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                            Save to Playlist
+                        </h3>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-[var(--bg-secondary)] rounded-full transition-colors text-[var(--text-secondary)]"
+                        >
+                            <FaTimes size={18} />
+                        </button>
+                    </div>
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                        {playlists.length === 0 ? (
+                            <div className="text-center py-8">
+                                <FaPlus className="w-12 h-12 mx-auto mb-3 text-[var(--text-tertiary)]" />
+                                <p className="text-[var(--text-secondary)]">
+                                    No playlists yet
+                                </p>
+                                <p className="text-sm text-[var(--text-tertiary)]">
+                                    Create one to save videos
+                                </p>
+                            </div>
+                        ) : (
+                            playlists.map((playlist) => (
+                                <button
+                                    key={playlist._id}
+                                    onClick={() =>
+                                        onAddToPlaylist(playlist._id)
+                                    }
+                                    className="w-full p-3 text-left hover:bg-[var(--bg-secondary)] rounded-xl flex items-center gap-3 transition-colors group"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-[var(--brand-primary)]/10 flex items-center justify-center">
+                                        <FaPlus className="text-[var(--brand-primary)] group-hover:scale-110 transition-transform" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-[var(--text-primary)] truncate">
+                                            {playlist.name}
+                                        </p>
+                                        <p className="text-xs text-[var(--text-tertiary)]">
+                                            {playlist.videos?.length || 0}{" "}
+                                            videos
+                                        </p>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+    </AnimatePresence>
 );
 
 // ============================================================================
@@ -221,11 +407,12 @@ const VideoPlayer = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
     const playerRef = useRef(null);
+    const playerContainerRef = useRef(null);
 
     // Auth state
     const { isAuthenticated, user, authLoading } = useAuth();
 
-    // Video player hook - consolidates video, likes, comments management
+    // Video player hook
     const {
         video,
         videoLoading,
@@ -256,10 +443,19 @@ const VideoPlayer = () => {
     const [newComment, setNewComment] = useState("");
     const [commentSubmitting, setCommentSubmitting] = useState(false);
     const [commentLikeLoading, setCommentLikeLoading] = useState({});
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showPlaylists, setShowPlaylists] = useState(false);
     const [playlists, setPlaylists] = useState([]);
-    const [isTheaterMode, setIsTheaterMode] = useState(false);
+    const [theaterMode, setTheaterMode] = useState(false);
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [subscribing, setSubscribing] = useState(false);
+    const [played, setPlayed] = useState(0);
+    const [duration, setDuration] = useState(0);
+
+    // Memoized values
+    const isVideoInWatchLater = useMemo(
+        () => (video?._id ? isInWatchLater(video._id) : false),
+        [video?._id, isInWatchLater]
+    );
 
     // Fetch playlists
     const fetchPlaylists = useCallback(async () => {
@@ -272,7 +468,20 @@ const VideoPlayer = () => {
         }
     }, [isAuthenticated]);
 
-    // Sync watch later and playlists on mount
+    // Check subscription status
+    const checkSubscription = useCallback(async () => {
+        if (!isAuthenticated || !video?.owner?._id) return;
+        try {
+            const { data } = await api.get(
+                `/api/v1/subscriptions/check/${video.owner._id}`
+            );
+            setIsSubscribed(data.data?.isSubscribed || false);
+        } catch (err) {
+            console.error("Failed to check subscription:", err);
+        }
+    }, [isAuthenticated, video?.owner?._id]);
+
+    // Effects
     useEffect(() => {
         if (isAuthenticated) {
             fetchWatchLater().catch(console.error);
@@ -280,61 +489,37 @@ const VideoPlayer = () => {
         }
     }, [isAuthenticated, fetchWatchLater, fetchPlaylists]);
 
-    // Click outside handler for menu
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (isMenuOpen && !event.target.closest(".menu-container")) {
-                setIsMenuOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, [isMenuOpen]);
+        checkSubscription();
+    }, [checkSubscription]);
 
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (videoLoading || videoError) return;
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+                return;
 
-            // Spacebar and K: Play/Pause
-            if (
-                (e.key === " " || e.key.toLowerCase() === "k") &&
-                playerRef.current
-            ) {
-                e.preventDefault();
-                playerRef.current.getInternalPlayer().paused
-                    ? playerRef.current.getInternalPlayer().play()
-                    : playerRef.current.getInternalPlayer().pause();
-            }
-
-            // F: Toggle Fullscreen
-            if (e.key.toLowerCase() === "f") {
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                } else {
-                    playerRef.current.wrapper.requestFullscreen();
-                }
-            }
-
-            // T: Toggle Theater Mode
-            if (e.key.toLowerCase() === "t") {
-                setIsTheaterMode((prev) => !prev);
-            }
-
-            // Esc: Exit fullscreen or theater mode
-            if (e.key === "Escape") {
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                } else if (isTheaterMode) {
-                    setIsTheaterMode(false);
-                }
+            switch (e.key.toLowerCase()) {
+                case "t":
+                    setTheaterMode((prev) => !prev);
+                    break;
+                case "f":
+                    if (playerContainerRef.current) {
+                        if (document.fullscreenElement) {
+                            document.exitFullscreen();
+                        } else {
+                            playerContainerRef.current.requestFullscreen();
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
         };
 
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [videoLoading, videoError, isTheaterMode]);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     // Handlers
     const handleVideoLike = async () => {
@@ -347,6 +532,26 @@ const VideoPlayer = () => {
             await handleLike();
         } catch (err) {
             showError(err.message || "Like action failed");
+        }
+    };
+
+    const handleSubscribe = async () => {
+        if (!isAuthenticated) {
+            showInfo("Login to subscribe");
+            navigate("/auth");
+            return;
+        }
+        if (!video?.owner?._id || subscribing) return;
+
+        try {
+            setSubscribing(true);
+            await api.post(`/api/v1/subscriptions/toggle/${video.owner._id}`);
+            setIsSubscribed((prev) => !prev);
+            showSuccess(isSubscribed ? "Unsubscribed" : "Subscribed!");
+        } catch (err) {
+            showError(err.response?.data?.message || "Subscription failed");
+        } finally {
+            setSubscribing(false);
         }
     };
 
@@ -373,7 +578,6 @@ const VideoPlayer = () => {
 
     const handleCommentLikeClick = async (commentId) => {
         if (commentLikeLoading[commentId]) return;
-
         try {
             setCommentLikeLoading((prev) => ({ ...prev, [commentId]: true }));
             await handleCommentLike(commentId);
@@ -384,24 +588,25 @@ const VideoPlayer = () => {
         }
     };
 
-    const handleShare = useCallback(() => {
+    const handleShare = useCallback(async () => {
         const url = window.location.href;
-        if (navigator.share) {
-            navigator
-                .share({
+        try {
+            if (navigator.share) {
+                await navigator.share({
                     title: video?.title || "Check out this video",
-                    text: video?.description || "",
+                    text: video?.description?.slice(0, 100) || "",
                     url,
-                })
-                .catch(() => {
-                    navigator.clipboard.writeText(url);
-                    showSuccess("Link copied!");
                 });
-        } else {
-            navigator.clipboard.writeText(url);
-            showSuccess("Link copied to clipboard!");
+            } else {
+                await navigator.clipboard.writeText(url);
+                showSuccess("Link copied to clipboard!");
+            }
+        } catch (err) {
+            if (err.name !== "AbortError") {
+                await navigator.clipboard.writeText(url);
+                showSuccess("Link copied!");
+            }
         }
-        setIsMenuOpen(false);
     }, [video]);
 
     const handleWatchLater = async () => {
@@ -413,7 +618,7 @@ const VideoPlayer = () => {
         if (!video?._id) return;
 
         try {
-            if (isInWatchLater(video._id)) {
+            if (isVideoInWatchLater) {
                 await removeFromWatchLater(video._id);
                 showSuccess("Removed from Watch Later");
             } else {
@@ -467,13 +672,26 @@ const VideoPlayer = () => {
 
     return (
         <div
-            className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${
-                isTheaterMode ? "theater-mode" : ""
+            className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-all duration-300 ${
+                theaterMode ? "px-0" : ""
             }`}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {/* Video Player */}
-                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
+            <div
+                className={`mx-auto transition-all duration-300 ${
+                    theaterMode
+                        ? "max-w-full px-0"
+                        : "max-w-7xl px-4 sm:px-6 lg:px-8"
+                } py-4 sm:py-6`}
+            >
+                {/* Video Player Container */}
+                <div
+                    ref={playerContainerRef}
+                    className={`relative bg-black overflow-hidden shadow-2xl transition-all duration-300 ${
+                        theaterMode
+                            ? "rounded-none aspect-[21/9]"
+                            : "rounded-2xl aspect-video"
+                    }`}
+                >
                     <ReactPlayer
                         ref={playerRef}
                         key={videoID}
@@ -482,6 +700,8 @@ const VideoPlayer = () => {
                         width="100%"
                         height="100%"
                         onPlay={handleVideoPlay}
+                        onProgress={({ played }) => setPlayed(played)}
+                        onDuration={setDuration}
                         config={{
                             file: {
                                 attributes: { controlsList: "nodownload" },
@@ -490,329 +710,307 @@ const VideoPlayer = () => {
                         className="react-player"
                     />
 
-                    {/* Floating Controls */}
-                    <div className="absolute top-4 right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="relative menu-container">
-                            <button
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="p-3 rounded-full backdrop-blur-sm bg-black/50 text-white hover:bg-black/70 transition-colors"
-                                aria-label="Video options"
-                            >
-                                <FaEllipsisV />
-                            </button>
-
-                            <AnimatePresence>
-                                {isMenuOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className="absolute right-0 top-14 bg-[var(--bg-elevated)] rounded-xl shadow-xl py-2 w-48 z-50 border border-[var(--border-light)]"
-                                    >
-                                        <button
-                                            onClick={handleWatchLater}
-                                            disabled={watchLaterLoading}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 disabled:opacity-50 text-[var(--text-primary)]"
-                                        >
-                                            {watchLaterLoading ? (
-                                                <FaSpinner className="animate-spin text-[var(--warning)]" />
-                                            ) : isInWatchLater(video._id) ? (
-                                                <FaClock className="text-[var(--warning)]" />
-                                            ) : (
-                                                <FaRegClock className="text-[var(--warning)]" />
-                                            )}
-                                            {isInWatchLater(video._id)
-                                                ? "Remove from"
-                                                : "Watch Later"}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                if (!isAuthenticated) {
-                                                    handleLoginPrompt();
-                                                    return;
-                                                }
-                                                setShowPlaylists(true);
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
-                                        >
-                                            <FaPlus className="text-[var(--brand-primary)]" />
-                                            Add to Playlist
-                                        </button>
-                                        <a
-                                            href={video.videoFile?.url}
-                                            download
-                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
-                                            onClick={() => setIsMenuOpen(false)}
-                                        >
-                                            <FaDownload className="text-[var(--info)]" />
-                                            Download
-                                        </a>
-                                        <button
-                                            onClick={handleShare}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
-                                        >
-                                            <FaShare className="text-[var(--success)]" />
-                                            Share
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
+                    {/* Theater Mode Toggle */}
+                    <button
+                        onClick={() => setTheaterMode(!theaterMode)}
+                        className="absolute bottom-16 right-4 p-2 rounded-lg backdrop-blur-sm bg-black/50 text-white hover:bg-black/70 transition-all opacity-0 hover:opacity-100 focus:opacity-100"
+                        title={
+                            theaterMode
+                                ? "Exit theater mode (T)"
+                                : "Theater mode (T)"
+                        }
+                    >
+                        {theaterMode ? (
+                            <FaCompress size={16} />
+                        ) : (
+                            <FaExpand size={16} />
+                        )}
+                    </button>
                 </div>
 
-                {/* Video Metadata */}
-                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
+                {/* Action Bar - Always Visible */}
+                <div
+                    className={`mt-4 flex flex-wrap items-center gap-2 sm:gap-3 ${
+                        theaterMode ? "px-4 sm:px-6 lg:px-8" : ""
+                    }`}
+                >
+                    <ActionButton
+                        icon={likeState.isLiked ? FaHeart : FaRegHeart}
+                        label={formatViews(likeState.likesCount)}
+                        onClick={handleVideoLike}
+                        active={likeState.isLiked}
+                        loading={isLiking}
+                    />
+                    <ActionButton
+                        icon={FaShare}
+                        label="Share"
+                        onClick={handleShare}
+                    />
+                    <ActionButton
+                        icon={isVideoInWatchLater ? FaBookmark : FaRegBookmark}
+                        label={isVideoInWatchLater ? "Saved" : "Save"}
+                        onClick={handleWatchLater}
+                        active={isVideoInWatchLater}
+                        loading={watchLaterLoading}
+                    />
+                    <ActionButton
+                        icon={FaPlus}
+                        label="Playlist"
+                        onClick={() => {
+                            if (!isAuthenticated) {
+                                handleLoginPrompt();
+                                return;
+                            }
+                            setShowPlaylists(true);
+                        }}
+                    />
+                    <a
+                        href={video.videoFile?.url}
+                        download
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all"
+                    >
+                        <FaDownload size={16} />
+                        <span className="hidden sm:inline">Download</span>
+                    </a>
+                </div>
+
+                {/* Content Grid */}
+                <div
+                    className={`mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 ${
+                        theaterMode ? "px-4 sm:px-6 lg:px-8" : ""
+                    }`}
+                >
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-5">
+                        {/* Title */}
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[var(--text-primary)] leading-tight">
                             {video.title}
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-4 justify-between">
-                            <div className="flex items-center gap-3">
+                        {/* Channel Info & Subscribe */}
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <Link
+                                to={`/profile/${video.owner?._id}`}
+                                className="flex items-center gap-3 group"
+                            >
                                 <img
                                     src={
                                         video.owner?.avatar ||
                                         "/default-avatar.png"
                                     }
                                     alt={video.owner?.userName || "User"}
-                                    className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)] object-cover"
+                                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-transparent group-hover:border-[var(--brand-primary)] object-cover transition-colors"
                                 />
                                 <div>
-                                    <p className="font-medium text-[var(--text-primary)]">
+                                    <p className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
                                         {video.owner?.userName ||
                                             "Unknown Creator"}
                                     </p>
-                                    <p className="text-sm text-[var(--text-tertiary)] flex items-center gap-2">
-                                        <FaEye />
-                                        {formatViews(video.views)} views
+                                    <p className="text-sm text-[var(--text-tertiary)]">
+                                        {video.owner?.subscribersCount || 0}{" "}
+                                        subscribers
                                     </p>
                                 </div>
-                            </div>
+                            </Link>
 
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-[var(--text-tertiary)]">
-                                    <FaCalendarAlt />
-                                    <span className="text-sm">
-                                        <TimeAgo datetime={video.createdAt} />
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={handleVideoLike}
-                                    disabled={isLiking}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50"
-                                >
-                                    {isLiking ? (
-                                        <FaSpinner className="animate-spin" />
-                                    ) : likeState.isLiked ? (
-                                        <FaHeart className="text-[var(--error)]" />
-                                    ) : (
-                                        <FaRegHeart />
-                                    )}
-                                    <span className="font-medium">
-                                        {likeState.likesCount?.toLocaleString() ||
-                                            0}
-                                    </span>
-                                </button>
-                            </div>
+                            <button
+                                onClick={handleSubscribe}
+                                disabled={subscribing}
+                                className={`
+                                    flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm
+                                    transition-all duration-200 disabled:opacity-50
+                                    ${
+                                        isSubscribed
+                                            ? "bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                                            : "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)]"
+                                    }
+                                `}
+                            >
+                                {subscribing ? (
+                                    <FaSpinner
+                                        className="animate-spin"
+                                        size={16}
+                                    />
+                                ) : isSubscribed ? (
+                                    <>
+                                        <FaCheck size={14} />
+                                        Subscribed
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaUserPlus size={14} />
+                                        Subscribe
+                                    </>
+                                )}
+                            </button>
                         </div>
 
                         {/* Description */}
-                        {video.description && (
-                            <div className="bg-[var(--bg-secondary)] p-4 rounded-xl">
-                                <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
-                                    {video.description}
-                                </p>
-                            </div>
-                        )}
+                        <DescriptionBox
+                            description={video.description}
+                            views={video.views}
+                            createdAt={video.createdAt}
+                        />
 
                         {/* Tags */}
                         {video.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {video.tags.map((tag, index) => (
-                                    <span
+                                    <Link
                                         key={`${tag}-${index}`}
-                                        className="px-3 py-1.5 text-sm bg-[var(--brand-primary-light)] text-[var(--brand-primary)] rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-colors cursor-pointer"
+                                        to={`/search?q=${encodeURIComponent(
+                                            tag
+                                        )}`}
+                                        className="px-3 py-1.5 text-sm bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-all font-medium"
                                     >
                                         #{tag}
-                                    </span>
+                                    </Link>
                                 ))}
                             </div>
                         )}
                     </div>
 
                     {/* Comments Section */}
-                    <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-[var(--divider)] pt-6 lg:pt-0 lg:pl-8">
-                        <div className="sticky top-24">
-                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
-                                <FaComment className="text-[var(--brand-primary)]" />
-                                {comments.length} Comments
-                            </h3>
+                    <div className="lg:col-span-1">
+                        <div className="lg:sticky lg:top-20">
+                            <div className="bg-[var(--bg-secondary)] rounded-2xl p-4 sm:p-5">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
+                                    <FaComment className="text-[var(--brand-primary)]" />
+                                    {comments.length} Comments
+                                </h3>
 
-                            {/* Comment Input */}
-                            {isAuthenticated ? (
-                                <form
-                                    onSubmit={handleCommentSubmit}
-                                    className="mb-6"
-                                >
-                                    <div className="flex gap-3 items-start">
-                                        <img
-                                            src={
-                                                user?.avatar ||
-                                                "/default-avatar.png"
-                                            }
-                                            alt={user?.userName || "You"}
-                                            className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
-                                        />
-                                        <div className="flex-1 relative">
-                                            <input
-                                                value={newComment}
-                                                onChange={(e) =>
-                                                    setNewComment(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                placeholder="Add a comment..."
-                                                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-xl px-4 py-2.5 pr-20 focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] transition-all"
-                                                disabled={commentSubmitting}
-                                                maxLength={500}
-                                            />
-                                            <button
-                                                type="submit"
-                                                disabled={
-                                                    !newComment.trim() ||
-                                                    commentSubmitting
-                                                }
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--brand-primary)] px-3 py-1.5 rounded-lg text-sm text-white hover:bg-[var(--brand-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                            >
-                                                {commentSubmitting ? (
-                                                    <FaSpinner className="animate-spin" />
-                                                ) : (
-                                                    "Post"
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            ) : (
-                                <div className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-xl text-center">
-                                    <button
-                                        onClick={() => navigate("/auth")}
-                                        className="text-[var(--brand-primary)] hover:underline font-medium"
+                                {/* Comment Input */}
+                                {isAuthenticated ? (
+                                    <form
+                                        onSubmit={handleCommentSubmit}
+                                        className="mb-5"
                                     >
-                                        Login
-                                    </button>{" "}
-                                    <span className="text-[var(--text-secondary)]">
-                                        to comment
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Comments List */}
-                            {commentsLoading ? (
-                                <div className="flex justify-center py-8">
-                                    <FaSpinner className="animate-spin text-2xl text-[var(--brand-primary)]" />
-                                </div>
-                            ) : comments.length === 0 ? (
-                                <p className="text-[var(--text-tertiary)] text-center py-8">
-                                    No comments yet. Be the first to comment!
-                                </p>
-                            ) : (
-                                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
-                                    <AnimatePresence>
-                                        {comments.map((comment) => (
-                                            <CommentItem
-                                                key={comment._id}
-                                                comment={comment}
-                                                onLike={handleCommentLikeClick}
-                                                isLiking={
-                                                    commentLikeLoading[
-                                                        comment._id
-                                                    ]
+                                        <div className="flex gap-3">
+                                            <img
+                                                src={
+                                                    user?.avatar ||
+                                                    "/default-avatar.png"
                                                 }
-                                                isAuthenticated={
-                                                    isAuthenticated
-                                                }
-                                                onLoginPrompt={
-                                                    handleLoginPrompt
-                                                }
+                                                alt={user?.userName || "You"}
+                                                className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
                                             />
-                                        ))}
-                                    </AnimatePresence>
-
-                                    {/* Load More */}
-                                    {commentsPagination.hasMore && (
+                                            <div className="flex-1 space-y-2">
+                                                <textarea
+                                                    value={newComment}
+                                                    onChange={(e) =>
+                                                        setNewComment(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    placeholder="Add a comment..."
+                                                    rows={2}
+                                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-light)] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] transition-all resize-none text-sm"
+                                                    disabled={commentSubmitting}
+                                                    maxLength={500}
+                                                />
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs text-[var(--text-tertiary)]">
+                                                        {newComment.length}/500
+                                                    </span>
+                                                    <button
+                                                        type="submit"
+                                                        disabled={
+                                                            !newComment.trim() ||
+                                                            commentSubmitting
+                                                        }
+                                                        className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-full text-sm font-medium hover:bg-[var(--brand-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                                    >
+                                                        {commentSubmitting ? (
+                                                            <FaSpinner
+                                                                className="animate-spin"
+                                                                size={14}
+                                                            />
+                                                        ) : null}
+                                                        Post
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="mb-5 p-4 bg-[var(--bg-primary)] rounded-xl text-center">
                                         <button
-                                            onClick={loadMoreComments}
-                                            className="w-full py-2 text-sm text-[var(--brand-primary)] hover:underline"
+                                            onClick={() => navigate("/auth")}
+                                            className="text-[var(--brand-primary)] hover:underline font-semibold"
                                         >
-                                            Load more comments
-                                        </button>
+                                            Login
+                                        </button>{" "}
+                                        <span className="text-[var(--text-secondary)]">
+                                            to join the conversation
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Comments List */}
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin">
+                                    {commentsLoading ? (
+                                        <div className="flex justify-center py-8">
+                                            <FaSpinner className="animate-spin text-2xl text-[var(--brand-primary)]" />
+                                        </div>
+                                    ) : comments.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <FaComment className="w-12 h-12 mx-auto mb-3 text-[var(--text-tertiary)]" />
+                                            <p className="text-[var(--text-secondary)]">
+                                                No comments yet
+                                            </p>
+                                            <p className="text-sm text-[var(--text-tertiary)]">
+                                                Be the first to share your
+                                                thoughts!
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <AnimatePresence mode="popLayout">
+                                                {comments.map((comment) => (
+                                                    <CommentItem
+                                                        key={comment._id}
+                                                        comment={comment}
+                                                        onLike={
+                                                            handleCommentLikeClick
+                                                        }
+                                                        isLiking={
+                                                            commentLikeLoading[
+                                                                comment._id
+                                                            ]
+                                                        }
+                                                        isAuthenticated={
+                                                            isAuthenticated
+                                                        }
+                                                        onLoginPrompt={
+                                                            handleLoginPrompt
+                                                        }
+                                                    />
+                                                ))}
+                                            </AnimatePresence>
+
+                                            {commentsPagination?.hasMore && (
+                                                <button
+                                                    onClick={loadMoreComments}
+                                                    className="w-full py-3 text-sm font-medium text-[var(--brand-primary)] hover:bg-[var(--bg-primary)] rounded-xl transition-colors"
+                                                >
+                                                    Load more comments
+                                                </button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Playlist Modal */}
-                <AnimatePresence>
-                    {showPlaylists && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center"
-                            onClick={() => setShowPlaylists(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0.9 }}
-                                className="bg-[var(--bg-elevated)] rounded-2xl p-6 w-full max-w-md mx-4 border border-[var(--border-light)]"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold text-[var(--text-primary)]">
-                                        Add to Playlist
-                                    </h3>
-                                    <button
-                                        onClick={() => setShowPlaylists(false)}
-                                        className="p-2 hover:bg-[var(--bg-secondary)] rounded-full text-xl transition-colors text-[var(--text-secondary)]"
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                                <div className="space-y-2 max-h-96 overflow-y-auto">
-                                    {playlists.length === 0 ? (
-                                        <p className="text-[var(--text-tertiary)] text-center py-4">
-                                            No playlists found. Create one
-                                            first!
-                                        </p>
-                                    ) : (
-                                        playlists.map((playlist) => (
-                                            <button
-                                                key={playlist._id}
-                                                onClick={() =>
-                                                    handleAddToPlaylist(
-                                                        playlist._id
-                                                    )
-                                                }
-                                                className="w-full p-3 text-left hover:bg-[var(--bg-secondary)] rounded-xl flex items-center gap-3 transition-colors text-[var(--text-primary)]"
-                                            >
-                                                <FaPlus className="text-[var(--brand-primary)]" />
-                                                <span className="truncate">
-                                                    {playlist.name}
-                                                </span>
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                <PlaylistModal
+                    isOpen={showPlaylists}
+                    onClose={() => setShowPlaylists(false)}
+                    playlists={playlists}
+                    onAddToPlaylist={handleAddToPlaylist}
+                />
             </div>
         </div>
     );
