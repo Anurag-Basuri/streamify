@@ -2,17 +2,21 @@
  * Streamify Backend Server Entry Point
  * Handles server initialization, database connection, and graceful shutdown
  */
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { app } from "./app.js";
 import connectDB from "./database/index.js";
 import { verifyCloudinaryConnection } from "./utils/cloudinary.js";
 import { verifyEmailConnection } from "./utils/email.js";
+import { setSocketIO } from "./utils/notifications.js";
 
 // Configuration
 const PORT = process.env.PORT || 8000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
-// Server instance reference for graceful shutdown
+// Server instance references for graceful shutdown
 let server = null;
+let io = null;
 
 /**
  * Validates required environment variables
@@ -44,6 +48,13 @@ const validateEnvironment = () => {
  */
 const gracefulShutdown = async (signal) => {
     console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
+
+    // Close Socket.io connections
+    if (io) {
+        io.close(() => {
+            console.log("✅ Socket.io connections closed");
+        });
+    }
 
     // Stop accepting new connections
     if (server) {
@@ -91,11 +102,59 @@ const startServer = async () => {
             });
         }
 
-        // Step 5: Start HTTP server
-        server = app.listen(PORT, () => {
+        // Step 5: Start HTTP server with Socket.io
+        const httpServer = createServer(app);
+
+        // Configure Socket.io
+        const allowedOrigins = (
+            process.env.CORS_ORIGIN || "http://localhost:5173"
+        )
+            .split(",")
+            .map((origin) => origin.trim());
+
+        io = new Server(httpServer, {
+            cors: {
+                origin: allowedOrigins,
+                credentials: true,
+                methods: ["GET", "POST"],
+            },
+            pingTimeout: 60000,
+            pingInterval: 25000,
+        });
+
+        // Set Socket.io instance for notifications utility
+        setSocketIO(io);
+
+        // Socket.io connection handler
+        io.on("connection", (socket) => {
+            console.log(`🔌 Client connected: ${socket.id}`);
+
+            // Join user-specific room for notifications
+            socket.on("user:join", (userId) => {
+                if (userId) {
+                    socket.join(`user:${userId}`);
+                    console.log(`👤 User ${userId} joined notification room`);
+                }
+            });
+
+            // Leave user room
+            socket.on("user:leave", (userId) => {
+                if (userId) {
+                    socket.leave(`user:${userId}`);
+                    console.log(`👤 User ${userId} left notification room`);
+                }
+            });
+
+            socket.on("disconnect", (reason) => {
+                console.log(`🔌 Client disconnected: ${socket.id} - ${reason}`);
+            });
+        });
+
+        server = httpServer.listen(PORT, () => {
             console.log(`\n⚙️  Server is running at http://localhost:${PORT}`);
             console.log(`📊 Health check: http://localhost:${PORT}/health`);
-            console.log(`📚 API Base: http://localhost:${PORT}/api/v1\n`);
+            console.log(`📚 API Base: http://localhost:${PORT}/api/v1`);
+            console.log(`🔌 Socket.io ready for real-time notifications\n`);
         });
 
         // Handle server errors
