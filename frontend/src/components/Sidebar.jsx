@@ -33,7 +33,12 @@ const NAV_SECTIONS = {
     main: {
         items: [
             { to: "/", icon: Home, label: "Home" },
-            { to: "/tweet", icon: ThumbsUp, label: "Tweets" },
+            {
+                to: "/dashboard",
+                icon: Sparkles,
+                label: "Dashboard",
+                requiresAuth: true,
+            },
             { to: "/subscription", icon: Bell, label: "Subscriptions" },
         ],
     },
@@ -42,6 +47,7 @@ const NAV_SECTIONS = {
         requiresAuth: true,
         items: [
             { to: "/history", icon: History, label: "History" },
+            { to: "/liked", icon: ThumbsUp, label: "Liked Videos" },
             { to: "/playlist", icon: ListVideo, label: "Playlists" },
             { to: "/watchlater", icon: Clock, label: "Watch Later" },
             { to: "/uservideos", icon: Film, label: "Your Videos" },
@@ -51,14 +57,25 @@ const NAV_SECTIONS = {
     account: {
         title: "You",
         items: [
-            { to: "/profile", icon: User, label: "Profile" },
+            {
+                to: "/profile",
+                icon: User,
+                label: "Profile",
+                requiresAuth: true,
+            },
             {
                 to: "/create",
                 icon: PlusSquare,
                 label: "Create",
                 highlight: true,
+                requiresAuth: true,
             },
-            { to: "/settings", icon: Settings, label: "Settings" },
+            {
+                to: "/settings",
+                icon: Settings,
+                label: "Settings",
+                requiresAuth: true,
+            },
         ],
     },
 };

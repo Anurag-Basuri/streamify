@@ -4,7 +4,11 @@ import Sidebar from "./components/Sidebar.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
-import ToastProvider from "./components/Common/ToastProvider.jsx";
+import {
+    ToastProvider,
+    QuickActions,
+    GuestSignupBanner,
+} from "./components/Common";
 import { AnimatePresence, motion } from "framer-motion";
 
 function App() {
@@ -109,6 +113,12 @@ function App() {
                             />
                         )}
                     </AnimatePresence>
+
+                    {/* Quick Actions FAB */}
+                    <QuickActions />
+
+                    {/* Guest Signup Banner */}
+                    <GuestSignupBanner />
                 </div>
 
                 {/* Toast Notifications */}
