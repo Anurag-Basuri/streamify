@@ -132,10 +132,20 @@ const AppRoutes = () => {
             <Route path="/downloads" element={withProtection(Download)} />
 
             {/* Social */}
-            <Route path="/tweet" element={withProtection(Tweet)} />
+            <Route path="/community" element={<Tweet />} />
+            <Route
+                path="/subscriptions"
+                element={withProtection(Subscription)}
+            />
+
+            {/* Legacy redirects */}
+            <Route
+                path="/tweet"
+                element={<Navigate to="/community" replace />}
+            />
             <Route
                 path="/subscription"
-                element={withProtection(Subscription)}
+                element={<Navigate to="/subscriptions" replace />}
             />
 
             {/* ============ FALLBACK ============ */}

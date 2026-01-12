@@ -557,22 +557,34 @@ const Tweet = () => {
     const { isAuthenticated, user } = useAuth();
     const [tweets, setTweets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
 
     const fetchTweetsData = useCallback(async (silent = false) => {
         try {
-            if (!silent) setLoading(true);
-            else setRefreshing(true);
+            if (!silent) {
+                setLoading(true);
+                setError(null);
+            } else {
+                setRefreshing(true);
+            }
 
             const data = await getTweets({ page: 1, limit: 50 });
             const tweetList = Array.isArray(data)
                 ? data
                 : data.docs || data.tweets || [];
             setTweets(tweetList);
-        } catch (error) {
-            console.error("Failed to fetch tweets:", error);
-            showError("Failed to load posts");
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch tweets:", err);
+            const errorMessage =
+                err.message || "Failed to load posts. Please try again.";
+            if (!silent) {
+                setError(errorMessage);
+            } else {
+                showError(errorMessage);
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -740,6 +752,30 @@ const Tweet = () => {
                         Array.from({ length: 5 }).map((_, i) => (
                             <TweetSkeleton key={i} />
                         ))
+                    ) : error ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center py-16 bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-light)]"
+                        >
+                            <FiAlertCircle
+                                size={48}
+                                className="mx-auto text-[var(--error)] mb-4"
+                            />
+                            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                                Something went wrong
+                            </h3>
+                            <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto mb-4">
+                                {error}
+                            </p>
+                            <button
+                                onClick={() => fetchTweetsData(false)}
+                                className="inline-flex items-center gap-2 px-5 py-2 bg-[var(--brand-primary)] text-white rounded-full font-medium hover:bg-[var(--brand-primary-hover)] transition-colors"
+                            >
+                                <FiRefreshCw size={16} />
+                                Try Again
+                            </button>
+                        </motion.div>
                     ) : tweets.length === 0 ? (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

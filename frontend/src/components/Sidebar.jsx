@@ -20,6 +20,7 @@ import {
     ThumbsUp,
     ChevronRight,
     Sparkles,
+    MessageCircle,
 } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import useTheme from "../hooks/useTheme";
@@ -39,7 +40,8 @@ const NAV_SECTIONS = {
                 label: "Dashboard",
                 requiresAuth: true,
             },
-            { to: "/subscription", icon: Bell, label: "Subscriptions" },
+            { to: "/subscriptions", icon: Bell, label: "Subscriptions" },
+            { to: "/community", icon: MessageCircle, label: "Community" },
         ],
     },
     library: {
