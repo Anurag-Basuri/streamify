@@ -1,522 +1,783 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
-import { toast } from "react-hot-toast";
 import {
-    SparklesIcon,
-    PhotoIcon,
-    FaceSmileIcon,
-    HeartIcon,
-    ChatBubbleLeftIcon,
-    ShareIcon,
-} from "@heroicons/react/24/outline";
-import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
-import EmojiPicker from "emoji-picker-react";
-import TimeAgo from "timeago-react";
+    FiSend,
+    FiHeart,
+    FiMessageCircle,
+    FiShare2,
+    FiMoreHorizontal,
+    FiTrash2,
+    FiEdit3,
+    FiCopy,
+    FiRefreshCw,
+    FiSmile,
+    FiImage,
+    FiX,
+    FiCheck,
+    FiAlertCircle,
+} from "react-icons/fi";
+import { HiSparkles } from "react-icons/hi";
+import useAuth from "../../hooks/useAuth";
+import { PageTransition, EmptyState } from "../../components/Common";
+import {
+    showError,
+    showSuccess,
+    showInfo,
+} from "../../components/Common/ToastProvider";
+import {
+    getTweets,
+    createTweet,
+    deleteTweet,
+    updateTweet,
+} from "../../services";
+import { toggleTweetLike } from "../../services/likeService";
+import { formatRelativeTime } from "../../utils";
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MAX_TWEET_LENGTH = 280;
+
+// ============================================================================
+// TWEET COMPOSER
+// ============================================================================
+
+const TweetComposer = ({ user, onSubmit, isPosting }) => {
+    const [content, setContent] = useState("");
+    const textareaRef = useRef(null);
+
+    const remaining = MAX_TWEET_LENGTH - content.length;
+    const isOverLimit = remaining < 0;
+    const canSubmit = content.trim().length > 0 && !isOverLimit && !isPosting;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!canSubmit) return;
+
+        await onSubmit(content);
+        setContent("");
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+        }
+    };
+
+    const handleTextChange = (e) => {
+        setContent(e.target.value);
+        // Auto-resize textarea
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    };
+
+    const getProgressColor = () => {
+        if (remaining < 0) return "stroke-[var(--error)]";
+        if (remaining <= 20) return "stroke-yellow-500";
+        return "stroke-[var(--brand-primary)]";
+    };
+
+    const progressPercent = Math.min(
+        (content.length / MAX_TWEET_LENGTH) * 100,
+        100
+    );
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-light)] p-4 sm:p-5 shadow-lg"
+        >
+            <form onSubmit={handleSubmit}>
+                <div className="flex gap-3 sm:gap-4">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                        {user?.avatar ? (
+                            <img
+                                src={user.avatar}
+                                alt={user.userName}
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-[var(--brand-primary)]/20"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                                <span className="text-lg font-bold text-white">
+                                    {user?.userName?.charAt(0)?.toUpperCase() ||
+                                        "?"}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="flex-1 min-w-0">
+                        <textarea
+                            ref={textareaRef}
+                            value={content}
+                            onChange={handleTextChange}
+                            placeholder="What's happening?"
+                            rows={2}
+                            className="w-full bg-transparent text-[var(--text-primary)] placeholder-[var(--text-tertiary)] text-base sm:text-lg resize-none outline-none min-h-[60px] max-h-[300px]"
+                        />
+
+                        {/* Actions Row */}
+                        <div className="flex items-center justify-between pt-3 border-t border-[var(--divider)] mt-3">
+                            {/* Media buttons */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    className="p-2 rounded-full text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10 transition-colors"
+                                    title="Add image (coming soon)"
+                                >
+                                    <FiImage size={20} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="p-2 rounded-full text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10 transition-colors"
+                                    title="Add emoji (coming soon)"
+                                >
+                                    <FiSmile size={20} />
+                                </button>
+                            </div>
+
+                            {/* Submit area */}
+                            <div className="flex items-center gap-3">
+                                {/* Character count */}
+                                {content.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        {remaining <= 20 && (
+                                            <span
+                                                className={`text-sm font-medium ${
+                                                    isOverLimit
+                                                        ? "text-[var(--error)]"
+                                                        : "text-yellow-500"
+                                                }`}
+                                            >
+                                                {remaining}
+                                            </span>
+                                        )}
+                                        <svg className="w-6 h-6 -rotate-90">
+                                            <circle
+                                                className="stroke-[var(--bg-tertiary)]"
+                                                strokeWidth="2"
+                                                fill="transparent"
+                                                r="10"
+                                                cx="12"
+                                                cy="12"
+                                            />
+                                            <circle
+                                                className={`${getProgressColor()} transition-all`}
+                                                strokeWidth="2"
+                                                fill="transparent"
+                                                r="10"
+                                                cx="12"
+                                                cy="12"
+                                                strokeDasharray={`${
+                                                    (progressPercent / 100) *
+                                                    62.83
+                                                } 62.83`}
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                    </div>
+                                )}
+
+                                {/* Submit button */}
+                                <motion.button
+                                    type="submit"
+                                    disabled={!canSubmit}
+                                    whileTap={{ scale: 0.95 }}
+                                    className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold text-sm transition-all ${
+                                        canSubmit
+                                            ? "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] shadow-lg shadow-[var(--brand-primary)]/25"
+                                            : "bg-[var(--brand-primary)]/50 text-white/50 cursor-not-allowed"
+                                    }`}
+                                >
+                                    {isPosting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Posting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <HiSparkles size={16} />
+                                            Post
+                                        </>
+                                    )}
+                                </motion.button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </motion.div>
+    );
+};
+
+// ============================================================================
+// TWEET OPTIONS MENU
+// ============================================================================
+
+const TweetOptionsMenu = ({ tweet, isOwner, onEdit, onDelete, onClose }) => {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(tweet.content);
+        showSuccess("Copied to clipboard");
+        onClose();
+    };
+
+    const handleShare = () => {
+        const url = `${window.location.origin}/tweet/${tweet._id}`;
+        navigator.clipboard.writeText(url);
+        showSuccess("Link copied!");
+        onClose();
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute right-0 top-full mt-1 w-48 bg-[var(--bg-elevated)] rounded-xl shadow-xl border border-[var(--border-light)] overflow-hidden z-20"
+        >
+            <button
+                onClick={handleCopy}
+                className="w-full px-4 py-2.5 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-3 transition-colors"
+            >
+                <FiCopy size={16} />
+                Copy text
+            </button>
+            <button
+                onClick={handleShare}
+                className="w-full px-4 py-2.5 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-3 transition-colors"
+            >
+                <FiShare2 size={16} />
+                Share link
+            </button>
+            {isOwner && (
+                <>
+                    <div className="border-t border-[var(--divider)]" />
+                    <button
+                        onClick={onEdit}
+                        className="w-full px-4 py-2.5 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-3 transition-colors"
+                    >
+                        <FiEdit3 size={16} />
+                        Edit
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="w-full px-4 py-2.5 text-left text-sm text-[var(--error)] hover:bg-[var(--error)]/10 flex items-center gap-3 transition-colors"
+                    >
+                        <FiTrash2 size={16} />
+                        Delete
+                    </button>
+                </>
+            )}
+        </motion.div>
+    );
+};
+
+// ============================================================================
+// TWEET CARD
+// ============================================================================
+
+const TweetCard = ({
+    tweet,
+    currentUserId,
+    onLike,
+    onDelete,
+    onUpdate,
+    index = 0,
+}) => {
+    const navigate = useNavigate();
+    const [showMenu, setShowMenu] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(tweet.content);
+    const [isLiking, setIsLiking] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const menuRef = useRef(null);
+
+    const isOwner = currentUserId === tweet.owner?._id;
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleLike = async () => {
+        if (isLiking) return;
+        setIsLiking(true);
+        try {
+            await onLike(tweet._id);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
+    const handleEdit = () => {
+        setIsEditing(true);
+        setEditContent(tweet.content);
+        setShowMenu(false);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editContent.trim() || editContent === tweet.content) {
+            setIsEditing(false);
+            return;
+        }
+        try {
+            await onUpdate(tweet._id, editContent);
+            setIsEditing(false);
+        } catch (error) {
+            showError("Failed to update");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm("Delete this post? This cannot be undone.")) return;
+        setIsDeleting(true);
+        setShowMenu(false);
+        try {
+            await onDelete(tweet._id);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <motion.article
+            layout
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ delay: index * 0.03 }}
+            className={`bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-light)] p-4 sm:p-5 hover:border-[var(--brand-primary)]/30 transition-all ${
+                isDeleting ? "opacity-50" : ""
+            }`}
+        >
+            <div className="flex gap-3 sm:gap-4">
+                {/* Avatar */}
+                <Link
+                    to={`/channel/${tweet.owner?.userName}`}
+                    className="flex-shrink-0"
+                >
+                    {tweet.owner?.avatar ? (
+                        <img
+                            src={tweet.owner.avatar}
+                            alt={tweet.owner.userName}
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-transparent hover:ring-[var(--brand-primary)] transition-all"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                            <span className="text-lg font-bold text-white">
+                                {tweet.owner?.fullName
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || "?"}
+                            </span>
+                        </div>
+                    )}
+                </Link>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
+                                <Link
+                                    to={`/channel/${tweet.owner?.userName}`}
+                                    className="font-semibold text-[var(--text-primary)] hover:underline truncate"
+                                >
+                                    {tweet.owner?.fullName || "Anonymous"}
+                                </Link>
+                                <span className="text-sm text-[var(--text-tertiary)]">
+                                    @{tweet.owner?.userName || "unknown"}
+                                </span>
+                                <span className="text-[var(--text-tertiary)]">
+                                    ·
+                                </span>
+                                <span className="text-sm text-[var(--text-tertiary)]">
+                                    {formatRelativeTime(tweet.createdAt)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Options Menu */}
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                className="p-1.5 rounded-full text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                            >
+                                <FiMoreHorizontal size={18} />
+                            </button>
+                            <AnimatePresence>
+                                {showMenu && (
+                                    <TweetOptionsMenu
+                                        tweet={tweet}
+                                        isOwner={isOwner}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                        onClose={() => setShowMenu(false)}
+                                    />
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* Tweet Content */}
+                    {isEditing ? (
+                        <div className="mt-2">
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-3 rounded-xl border border-[var(--border-light)] focus:border-[var(--brand-primary)] outline-none resize-none min-h-[80px]"
+                                maxLength={MAX_TWEET_LENGTH}
+                            />
+                            <div className="flex items-center justify-end gap-2 mt-2">
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="px-4 py-1.5 rounded-full text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    className="px-4 py-1.5 rounded-full text-sm bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] transition-colors flex items-center gap-1"
+                                >
+                                    <FiCheck size={14} />
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="mt-2 text-[var(--text-primary)] text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
+                            {tweet.content}
+                        </p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-6 mt-4 text-[var(--text-tertiary)]">
+                        {/* Comment */}
+                        <button className="flex items-center gap-1.5 hover:text-[var(--brand-primary)] transition-colors group">
+                            <div className="p-1.5 rounded-full group-hover:bg-[var(--brand-primary)]/10 transition-colors">
+                                <FiMessageCircle size={18} />
+                            </div>
+                            <span className="text-sm">
+                                {tweet.commentsCount || 0}
+                            </span>
+                        </button>
+
+                        {/* Like */}
+                        <button
+                            onClick={handleLike}
+                            disabled={isLiking}
+                            className={`flex items-center gap-1.5 transition-colors group ${
+                                tweet.isLiked
+                                    ? "text-pink-500"
+                                    : "hover:text-pink-500"
+                            }`}
+                        >
+                            <motion.div
+                                whileTap={{ scale: 1.2 }}
+                                className={`p-1.5 rounded-full transition-colors ${
+                                    tweet.isLiked
+                                        ? "bg-pink-500/10"
+                                        : "group-hover:bg-pink-500/10"
+                                }`}
+                            >
+                                <FiHeart
+                                    size={18}
+                                    className={
+                                        tweet.isLiked ? "fill-current" : ""
+                                    }
+                                />
+                            </motion.div>
+                            <span className="text-sm">{tweet.likes || 0}</span>
+                        </button>
+
+                        {/* Share */}
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(
+                                    `${window.location.origin}/tweet/${tweet._id}`
+                                );
+                                showSuccess("Link copied!");
+                            }}
+                            className="flex items-center gap-1.5 hover:text-[var(--brand-primary)] transition-colors group"
+                        >
+                            <div className="p-1.5 rounded-full group-hover:bg-[var(--brand-primary)]/10 transition-colors">
+                                <FiShare2 size={18} />
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </motion.article>
+    );
+};
+
+// ============================================================================
+// TWEET SKELETON
+// ============================================================================
+
+const TweetSkeleton = () => (
+    <div className="bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-light)] p-4 sm:p-5">
+        <div className="flex gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 skeleton rounded-full" />
+            <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-2">
+                    <div className="h-4 skeleton rounded w-24" />
+                    <div className="h-3 skeleton rounded w-16" />
+                </div>
+                <div className="space-y-2">
+                    <div className="h-4 skeleton rounded w-full" />
+                    <div className="h-4 skeleton rounded w-3/4" />
+                </div>
+                <div className="flex gap-6 pt-2">
+                    <div className="h-6 w-12 skeleton rounded" />
+                    <div className="h-6 w-12 skeleton rounded" />
+                    <div className="h-6 w-8 skeleton rounded" />
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const Tweet = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useAuth();
     const [tweets, setTweets] = useState([]);
-    const [newTweet, setNewTweet] = useState("");
     const [loading, setLoading] = useState(true);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [comments, setComments] = useState({});
-    const [activeTweet, setActiveTweet] = useState(null);
-    const [newComment, setNewComment] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
-    const [initialLikesLoaded, setInitialLikesLoaded] = useState(false);
 
-    const tweetVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { type: "spring", stiffness: 120, damping: 20 },
-        },
-        exit: { opacity: 0, x: -50 },
-    };
-
-    const commentVariants = {
-        hidden: { opacity: 0, scale: 0.95 },
-        visible: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.9 },
-    };
-
-    const fetchTweets = useCallback(async () => {
+    const fetchTweetsData = useCallback(async (silent = false) => {
         try {
-            const { data } = await axios.get("/api/v1/tweets");
-            const tweetsData = data.data || [];
+            if (!silent) setLoading(true);
+            else setRefreshing(true);
 
-            // Fetch comment counts for each tweet
-            const tweetsWithCounts = await Promise.all(
-                tweetsData.map(async (tweet) => {
-                    try {
-                        const countRes = await axios.get(
-                            `/api/v1/comments/count/Tweet/${tweet._id}`
-                        );
-                        return {
-                            ...tweet,
-                            commentsCount: countRes.data.data.count || 0,
-                        };
-                    } catch (err) {
-                        console.error(
-                            "Failed to fetch comment count for tweet",
-                            tweet._id,
-                            err
-                        );
-                        return { ...tweet, commentsCount: 0 };
-                    }
-                })
-            );
-            setTweets(tweetsWithCounts);
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to fetch tweets"
-            );
+            const data = await getTweets({ page: 1, limit: 50 });
+            const tweetList = Array.isArray(data)
+                ? data
+                : data.docs || data.tweets || [];
+            setTweets(tweetList);
+        } catch (error) {
+            console.error("Failed to fetch tweets:", error);
+            showError("Failed to load posts");
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchTweets();
-    }, [fetchTweets]);
+        fetchTweetsData();
+    }, [fetchTweetsData]);
 
-    const fetchComments = useCallback(async (tweetId) => {
-        try {
-            const { data } = await axios.get(
-                `/api/v1/comments/Tweet/${tweetId}`
-            );
-            setComments((prev) => ({
-                ...prev,
-                [tweetId]: data.data.comments || [],
-            }));
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to fetch comments"
-            );
+    const handleCreateTweet = async (content) => {
+        if (!isAuthenticated) {
+            showInfo("Please login to post");
+            navigate("/auth");
+            return;
         }
-    }, []);
-
-    const handleTweetSubmit = async (e) => {
-        e.preventDefault();
-        if (!newTweet.trim()) return;
 
         setIsPosting(true);
         try {
-            const { data } = await axios.post("/api/v1/tweets/create", {
-                content: newTweet,
-            });
-            setTweets([
-                { ...data.data, isLiked: false, commentsCount: 0 },
-                ...tweets,
-            ]);
-            setNewTweet("");
-            toast.success("Spark ignited! 🔥");
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to post");
+            const newTweet = await createTweet(content);
+            // Add user info to the new tweet
+            const tweetWithUser = {
+                ...newTweet,
+                owner: {
+                    _id: user?._id,
+                    userName: user?.userName,
+                    fullName: user?.fullName,
+                    avatar: user?.avatar,
+                },
+                isLiked: false,
+                likes: 0,
+                commentsCount: 0,
+            };
+            setTweets((prev) => [tweetWithUser, ...prev]);
+            showSuccess("Posted! 🎉");
+        } catch (error) {
+            showError(error.message || "Failed to post");
         } finally {
             setIsPosting(false);
         }
     };
 
-    const toggleLike = async (tweetId) => {
+    const handleLike = async (tweetId) => {
+        if (!isAuthenticated) {
+            showInfo("Please login to like");
+            navigate("/auth");
+            return;
+        }
+
         try {
-            const { data } = await axios.post(`/api/v1/likes/tweet/${tweetId}`);
+            const result = await toggleTweetLike(tweetId);
             setTweets((prev) =>
                 prev.map((t) =>
                     t._id === tweetId
                         ? {
                               ...t,
-                              likes: data.data.likes,
-                              isLiked: data.data.state === 1,
+                              likes: result?.likes ?? t.likes,
+                              isLiked: result?.state === 1,
                           }
                         : t
                 )
             );
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Like action failed");
+        } catch (error) {
+            showError("Like action failed");
         }
     };
 
-    const getLikedTweets = useCallback(async () => {
+    const handleDelete = async (tweetId) => {
         try {
-            const { data } = await axios.get("/api/v1/likes/filter", {
-                params: { entityType: "Tweet" },
-            });
-            const likedTweets = data.data.map((like) => like.likedEntity);
+            await deleteTweet(tweetId);
+            setTweets((prev) => prev.filter((t) => t._id !== tweetId));
+            showSuccess("Post deleted");
+        } catch (error) {
+            showError("Failed to delete");
+        }
+    };
+
+    const handleUpdate = async (tweetId, content) => {
+        try {
+            await updateTweet(tweetId, content);
             setTweets((prev) =>
-                prev.map((tweet) => ({
-                    ...tweet,
-                    isLiked: likedTweets.includes(tweet._id),
-                }))
+                prev.map((t) => (t._id === tweetId ? { ...t, content } : t))
             );
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to fetch liked tweets"
-            );
-        }
-    }, []);
-
-    useEffect(() => {
-        if (tweets.length > 0 && !initialLikesLoaded) {
-            getLikedTweets();
-            setInitialLikesLoaded(true);
-        }
-    }, [tweets, getLikedTweets, initialLikesLoaded]);
-
-    const handleCommentSubmit = async (tweetId) => {
-        if (!newComment.trim()) return;
-
-        try {
-            const { data } = await axios.post(
-                `/api/v1/comments/Tweet/${tweetId}`,
-                { content: newComment }
-            );
-            setComments((prev) => ({
-                ...prev,
-                [tweetId]: [data.data, ...(prev[tweetId] || [])],
-            }));
-            // Update the tweet's commentsCount
-            setTweets((prevTweets) =>
-                prevTweets.map((t) =>
-                    t._id === tweetId
-                        ? { ...t, commentsCount: t.commentsCount + 1 }
-                        : t
-                )
-            );
-            setNewComment("");
-            toast.success("Comment added! 💬");
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Comment failed");
+            showSuccess("Post updated");
+        } catch (error) {
+            showError("Failed to update");
+            throw error;
         }
     };
 
-    const toggleCommentSection = (tweetId) => {
-        setActiveTweet((prev) => (prev === tweetId ? null : tweetId));
-        if (!comments[tweetId]) fetchComments(tweetId);
+    const handleRefresh = () => {
+        fetchTweetsData(true);
     };
-
-    const charCountColor = useMemo(() => {
-        const length = newTweet.length;
-        if (length > 250) return "text-red-400";
-        if (length > 200) return "text-yellow-400";
-        return "text-gray-400";
-    }, [newTweet.length]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-4 md:p-6">
-            <div className="max-w-2xl mx-auto space-y-6">
+        <PageTransition className="min-h-screen p-4 md:p-6 lg:p-8">
+            <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <motion.div
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-2xl shadow-2xl border border-white/10"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between mb-6"
                 >
-                    <div className="flex items-center gap-4">
-                        <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
-                            <SparklesIcon className="w-12 h-12 text-yellow-400" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                            <HiSparkles className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
-                                SparkHub
+                            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
+                                Community
                             </h1>
-                            <p className="text-gray-200 mt-1">
-                                Ignite conversations
+                            <p className="text-sm text-[var(--text-tertiary)]">
+                                Share your thoughts
                             </p>
                         </div>
                     </div>
+
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="p-2.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                        title="Refresh"
+                    >
+                        <FiRefreshCw
+                            size={20}
+                            className={refreshing ? "animate-spin" : ""}
+                        />
+                    </button>
                 </motion.div>
 
-                {/* Tweet Composition */}
-                <motion.form
-                    onSubmit={handleTweetSubmit}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="relative bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-700/50"
-                >
-                    <div className="flex gap-4">
-                        <div className="flex-shrink-0">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                                XY
-                            </div>
-                        </div>
-
-                        <div className="flex-1 space-y-3">
-                            <textarea
-                                value={newTweet}
-                                onChange={(e) => setNewTweet(e.target.value)}
-                                placeholder="What's sparking your mind today?"
-                                className="w-full bg-transparent resize-none focus:outline-none text-lg placeholder-gray-400 min-h-[100px] leading-relaxed"
-                                rows="3"
-                                maxLength={280}
-                            />
-
-                            <div className="flex justify-between items-center">
-                                <div className="flex gap-2 relative">
-                                    <button
-                                        type="button"
-                                        className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors"
-                                    >
-                                        <PhotoIcon className="w-6 h-6 text-blue-400 hover:text-blue-300" />
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setShowEmojiPicker(!showEmojiPicker)
-                                        }
-                                        className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-white/5 transition-colors"
-                                    >
-                                        <FaceSmileIcon className="w-6 h-6" />
-                                    </button>
-
-                                    {showEmojiPicker && (
-                                        <div className="absolute z-50 bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg p-2">
-                                            <EmojiPicker
-                                                onEmojiClick={(e) =>
-                                                    setNewTweet(
-                                                        (prev) => prev + e.emoji
-                                                    )
-                                                }
-                                                theme="dark"
-                                                width={300}
-                                                height={300}
-                                                searchDisabled
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className={`text-sm ${charCountColor}`}
-                                    >
-                                        {280 - newTweet.length}
-                                    </span>
-                                    <button
-                                        type="submit"
-                                        disabled={!newTweet.trim() || isPosting}
-                                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-5 py-2 rounded-full font-medium disabled:opacity-50 transition-all relative overflow-hidden"
-                                    >
-                                        {isPosting ? (
-                                            <motion.span
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                            >
-                                                Posting...
-                                            </motion.span>
-                                        ) : (
-                                            <motion.span
-                                                initial={{ opacity: 1 }}
-                                                animate={{ opacity: 1 }}
-                                            >
-                                                Spark
-                                            </motion.span>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                {/* Composer */}
+                {isAuthenticated ? (
+                    <div className="mb-6">
+                        <TweetComposer
+                            user={user}
+                            onSubmit={handleCreateTweet}
+                            isPosting={isPosting}
+                        />
                     </div>
-                </motion.form>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-light)] text-center"
+                    >
+                        <FiAlertCircle
+                            size={24}
+                            className="mx-auto text-[var(--text-tertiary)] mb-2"
+                        />
+                        <p className="text-[var(--text-secondary)] mb-3">
+                            Sign in to share your thoughts
+                        </p>
+                        <button
+                            onClick={() => navigate("/auth")}
+                            className="px-6 py-2 bg-[var(--brand-primary)] text-white rounded-full font-medium hover:bg-[var(--brand-primary-hover)] transition-colors"
+                        >
+                            Sign In
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* Tweets Feed */}
                 <div className="space-y-4">
                     {loading ? (
-                        [...Array(3)].map((_, i) => (
-                            <motion.div
-                                key={i}
-                                className="bg-gray-800/50 h-32 rounded-xl animate-pulse"
-                            />
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TweetSkeleton key={i} />
                         ))
+                    ) : tweets.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="py-12"
+                        >
+                            <EmptyState
+                                icon={HiSparkles}
+                                title="No posts yet"
+                                description="Be the first to share something with the community!"
+                                actionLabel={
+                                    isAuthenticated ? null : "Sign in to post"
+                                }
+                                action={
+                                    isAuthenticated
+                                        ? null
+                                        : () => navigate("/auth")
+                                }
+                            />
+                        </motion.div>
                     ) : (
                         <AnimatePresence mode="popLayout">
-                            {tweets.map((tweet) => (
-                                <motion.div
+                            {tweets.map((tweet, index) => (
+                                <TweetCard
                                     key={tweet._id}
-                                    variants={tweetVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="exit"
-                                    className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-700/50 hover:border-purple-500/30 transition-colors"
-                                >
-                                    <div className="flex gap-4">
-                                        {/* User Avatar */}
-                                        <div className="flex-shrink-0">
-                                            {tweet.owner?.avatar ? (
-                                                <img
-                                                    src={tweet.owner.avatar}
-                                                    alt="Avatar"
-                                                    className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/30"
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                    {tweet.owner
-                                                        ?.fullName?.[0] || "U"}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 space-y-3">
-                                            {/* Tweet Header */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold">
-                                                            {tweet.owner
-                                                                ?.fullName ||
-                                                                "Anonymous"}
-                                                        </span>
-                                                        <span className="text-sm text-gray-400">
-                                                            @
-                                                            {tweet.owner
-                                                                ?.userName ||
-                                                                "unknown"}
-                                                        </span>
-                                                    </div>
-                                                    <TimeAgo
-                                                        datetime={
-                                                            tweet.createdAt
-                                                        }
-                                                        className="text-xs text-gray-500"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={() =>
-                                                        navigator.clipboard.writeText(
-                                                            `${window.location.origin}/tweet/${tweet._id}`
-                                                        )
-                                                    }
-                                                    className="text-gray-400 hover:text-blue-400 p-1 rounded-full transition-colors"
-                                                >
-                                                    <ShareIcon className="w-5 h-5" />
-                                                </button>
-                                            </div>
-
-                                            {/* Tweet Content */}
-                                            <p className="text-gray-100 whitespace-pre-wrap">
-                                                {tweet.content}
-                                            </p>
-
-                                            {/* Tweet Actions */}
-                                            <div className="flex items-center gap-6 text-gray-400 pt-2">
-                                                <button
-                                                    onClick={() =>
-                                                        toggleCommentSection(
-                                                            tweet._id
-                                                        )
-                                                    }
-                                                    className="flex items-center gap-1 hover:text-blue-400 transition-colors"
-                                                >
-                                                    <ChatBubbleLeftIcon className="w-5 h-5" />
-                                                    <span className="text-sm">
-                                                        {tweet.commentsCount}
-                                                    </span>
-                                                </button>
-
-                                                <button
-                                                    onClick={() =>
-                                                        toggleLike(tweet._id)
-                                                    }
-                                                    className="flex items-center gap-1 hover:text-red-400 transition-colors"
-                                                >
-                                                    {tweet.isLiked ? (
-                                                        <HeartSolidIcon className="w-5 h-5 text-red-500" />
-                                                    ) : (
-                                                        <HeartIcon className="w-5 h-5" />
-                                                    )}
-                                                    <span className="text-sm">
-                                                        {tweet.likes || 0}
-                                                    </span>
-                                                </button>
-                                            </div>
-
-                                            {/* Comment Section */}
-                                            {activeTweet === tweet._id && (
-                                                <motion.div
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className="mt-4 space-y-4"
-                                                >
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            value={newComment}
-                                                            onChange={(e) =>
-                                                                setNewComment(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            placeholder="Add your spark..."
-                                                            className="flex-1 bg-gray-700/50 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                        />
-                                                        <button
-                                                            onClick={() =>
-                                                                handleCommentSubmit(
-                                                                    tweet._id
-                                                                )
-                                                            }
-                                                            className="bg-purple-500/50 hover:bg-purple-500/70 px-4 rounded-full text-sm transition-colors"
-                                                        >
-                                                            Post
-                                                        </button>
-                                                    </div>
-
-                                                    <AnimatePresence>
-                                                        {comments[
-                                                            tweet._id
-                                                        ]?.map((comment) => (
-                                                            <motion.div
-                                                                key={
-                                                                    comment._id
-                                                                }
-                                                                variants={
-                                                                    commentVariants
-                                                                }
-                                                                className="bg-gray-700/30 p-3 rounded-lg"
-                                                            >
-                                                                <div className="flex items-center gap-2 text-sm">
-                                                                    <span className="font-medium text-purple-400">
-                                                                        {
-                                                                            comment
-                                                                                .owner
-                                                                                .userName
-                                                                        }
-                                                                    </span>
-                                                                    <TimeAgo
-                                                                        datetime={
-                                                                            comment.createdAt
-                                                                        }
-                                                                        className="text-xs text-gray-400"
-                                                                    />
-                                                                </div>
-                                                                <p className="mt-1 text-gray-100">
-                                                                    {
-                                                                        comment.content
-                                                                    }
-                                                                </p>
-                                                                <button className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-red-400">
-                                                                    <HeartIcon className="w-4 h-4" />
-                                                                    <span>
-                                                                        {
-                                                                            comment.likes
-                                                                        }
-                                                                    </span>
-                                                                </button>
-                                                            </motion.div>
-                                                        ))}
-                                                    </AnimatePresence>
-                                                </motion.div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </motion.div>
+                                    tweet={tweet}
+                                    currentUserId={user?._id}
+                                    onLike={handleLike}
+                                    onDelete={handleDelete}
+                                    onUpdate={handleUpdate}
+                                    index={index}
+                                />
                             ))}
                         </AnimatePresence>
                     )}
                 </div>
             </div>
-        </div>
+        </PageTransition>
     );
 };
 
