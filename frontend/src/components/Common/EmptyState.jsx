@@ -30,6 +30,11 @@ const presets = {
         title: "No results found",
         description: "Try adjusting your search or filters",
     },
+    noSearchResults: {
+        icon: FiSearch,
+        title: "No results found",
+        description: "Try different keywords or filters",
+    },
     emptyPlaylist: {
         icon: FiList,
         title: "Playlist is empty",
@@ -50,6 +55,11 @@ const presets = {
         title: "No liked videos",
         description: "Videos you like will appear here",
     },
+    noLikedVideos: {
+        icon: FiHeart,
+        title: "No liked videos",
+        description: "Like videos to save them here",
+    },
     noSubscriptions: {
         icon: FiUsers,
         title: "No subscriptions",
@@ -64,6 +74,11 @@ const presets = {
         icon: FiInbox,
         title: "No notifications",
         description: "You're all caught up!",
+    },
+    noDownloads: {
+        icon: FiVideo,
+        title: "No downloads",
+        description: "Downloaded videos will appear here",
     },
 };
 
