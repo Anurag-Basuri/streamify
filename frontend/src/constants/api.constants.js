@@ -16,6 +16,7 @@ const BASE = {
     SUBSCRIPTIONS: "/api/v1/subscriptions",
     TWEETS: "/api/v1/tweets",
     DASHBOARD: "/api/v1/dashboard",
+    NOTIFICATIONS: "/api/v1/notifications",
     HEALTHCHECK: "/api/v1/healthcheck",
 };
 
@@ -161,6 +162,18 @@ export const DASHBOARD = {
 };
 
 // ============================================================================
+// NOTIFICATION ENDPOINTS
+// ============================================================================
+
+export const NOTIFICATIONS = {
+    LIST: BASE.NOTIFICATIONS,
+    MARK_READ: (id) => `${BASE.NOTIFICATIONS}/${id}/read`,
+    MARK_ALL_READ: `${BASE.NOTIFICATIONS}/read-all`,
+    DELETE: (id) => `${BASE.NOTIFICATIONS}/${id}`,
+    CLEAR_ALL: `${BASE.NOTIFICATIONS}/all`,
+};
+
+// ============================================================================
 // UTILITY ENDPOINTS
 // ============================================================================
 
@@ -182,6 +195,7 @@ export const ENDPOINTS = {
     SUBSCRIPTIONS,
     TWEETS,
     DASHBOARD,
+    NOTIFICATIONS,
     UTILITY,
 };
 

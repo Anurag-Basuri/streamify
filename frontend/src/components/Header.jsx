@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PropTypes from "prop-types";
 import useAuth from "../hooks/useAuth.js";
 import useTheme from "../hooks/useTheme.js";
+import { useNotifications } from "../context/NotificationContext";
 import { LogoIcon } from "./Logo.jsx";
 
 // ============================================================================
@@ -304,6 +305,7 @@ const AuthButtons = () => (
 const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const { pathname } = useLocation();
     const { isAuthenticated, user, logout } = useAuth();
+    const { unreadCount } = useNotifications();
     const navigate = useNavigate();
 
     const handleSearch = (query) => {
@@ -367,7 +369,8 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
                             <IconButton
                                 icon={Bell}
                                 label="Notifications"
-                                badge={3}
+                                badge={unreadCount}
+                                onClick={() => navigate("/notifications")}
                             />
                             <ProfileDropdown user={user} onLogout={logout} />
                         </>
