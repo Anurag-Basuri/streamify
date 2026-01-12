@@ -2,6 +2,7 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { Video } from "../models/video.model.js";
+import { Like } from "../models/like.model.js";
 import {
     uploadOnCloudinary,
     generateCloudinarySignedUrl,
@@ -99,10 +100,36 @@ const getVideoById = asynchandler(async (req, res) => {
         throw new APIerror(404, "Video not found");
     }
 
+    // Get like count for this video
+    const likesCount = await Like.countDocuments({
+        likedEntity: videoID,
+        entityType: "Video",
+    });
+
+    // Check if current user has liked (if authenticated)
+    let isLiked = false;
+    if (req.user?._id) {
+        const userLike = await Like.findOne({
+            likedBy: req.user._id,
+            likedEntity: videoID,
+            entityType: "Video",
+        });
+        isLiked = !!userLike;
+    }
+
+    // Convert to plain object and add computed fields
+    const videoData = video.toObject();
+    videoData.likesCount = likesCount;
+    videoData.isLiked = isLiked;
+
     return res
         .status(200)
         .json(
-            new APIresponse(200, video, "Video details fetched successfully")
+            new APIresponse(
+                200,
+                videoData,
+                "Video details fetched successfully"
+            )
         );
 });
 

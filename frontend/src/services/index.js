@@ -72,3 +72,38 @@ export {
 // ============================================================================
 
 export { uploadFile } from "./upload";
+
+// ============================================================================
+// LIKE SERVICE
+// ============================================================================
+
+export {
+    toggleVideoLike,
+    toggleCommentLike,
+    toggleTweetLike,
+    getLikedVideos,
+    getLikedEntities,
+} from "./likeService";
+
+// ============================================================================
+// COMMENT SERVICE
+// ============================================================================
+
+export {
+    getComments,
+    addComment,
+    updateComment,
+    deleteComment,
+    getCommentCount,
+} from "./commentService";
+
+// ============================================================================
+// HISTORY SERVICE
+// ============================================================================
+
+export {
+    getHistory,
+    addToHistory,
+    removeFromHistory,
+    clearHistory,
+} from "./historyService";

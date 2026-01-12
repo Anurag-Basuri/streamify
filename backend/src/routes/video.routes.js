@@ -27,15 +27,17 @@ const router = Router();
 // Get all videos with pagination
 router.get(
     "/",
+    verifyAccessToken, // Optional auth for personalized data
     query("page").isInt({ min: 1 }).optional(),
     query("limit").isInt({ min: 1, max: 50 }).optional(),
     validateResult,
     getAllVideos
 );
 
-// Get single video by ID
+// Get single video by ID (with optional auth for isLiked)
 router.get(
     "/:videoID",
+    verifyAccessToken, // Optional auth for isLiked
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     getVideoById
