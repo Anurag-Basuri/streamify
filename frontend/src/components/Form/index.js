@@ -3,21 +3,18 @@
  * Central export for all form-related components
  */
 
-// Main form components
+// Main form components from FormComponents.jsx
 export {
     InputField,
     PasswordField,
-    TextareaField,
-    SelectField,
-    CheckboxField,
     SubmitButton,
     AlertMessage,
     Divider,
     GoogleAuthButton,
 } from "./FormComponents";
 
-// Form fields (alternative implementations)
-export { Input, TextArea, Select, Checkbox } from "./FormFields";
+// Composite form fields
+export { FormFields } from "./FormFields";
 
 // Form utilities
 export { default as ActionButtons } from "./ActionButtons";
