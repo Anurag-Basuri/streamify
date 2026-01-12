@@ -1,7 +1,6 @@
-import { useEffect, useCallback, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import ReactPlayer from "react-player";
-import axios from "axios";
 import {
     FaSpinner,
     FaClock,
@@ -15,38 +14,236 @@ import {
     FaPlus,
     FaDownload,
     FaShare,
+    FaExclamationTriangle,
+    FaArrowLeft,
+    FaExpand,
+    FaCompress,
+    FaBookmark,
+    FaRegBookmark,
+    FaChevronDown,
+    FaChevronUp,
+    FaUserPlus,
+    FaCheck,
+    FaTimes,
 } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { motion, AnimatePresence } from "framer-motion";
+import TimeAgo from "timeago-react";
+
+// Hooks and services
 import useAuth from "../../hooks/useAuth";
 import useWatchLater from "../../hooks/useWatchLater";
-import useVideo from "../../hooks/useVideo";
-import Spinner from "../Spinner";
-import TimeAgo from "timeago-react";
-import { motion, AnimatePresence } from "framer-motion";
+import useVideoPlayer from "../../hooks/useVideoPlayer";
+import { api } from "../../services/api";
+import { showSuccess, showError, showInfo } from "../Common/ToastProvider";
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+const formatDuration = (seconds) => {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+const formatViews = (views) => {
+    if (!views) return "0";
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+    return views.toLocaleString();
+};
+
+// ============================================================================
+// LOADING SKELETON
+// ============================================================================
+
+const VideoSkeleton = () => (
+    <div className="min-h-screen bg-[var(--bg-primary)] animate-pulse">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="aspect-video bg-[var(--bg-tertiary)] rounded-2xl" />
+            <div className="mt-4 flex items-center justify-between">
+                <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div
+                            key={i}
+                            className="h-10 w-24 bg-[var(--bg-tertiary)] rounded-full"
+                        />
+                    ))}
+                </div>
+            </div>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="h-8 bg-[var(--bg-tertiary)] rounded w-3/4" />
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[var(--bg-tertiary)] rounded-full" />
+                        <div className="space-y-2 flex-1">
+                            <div className="h-4 bg-[var(--bg-tertiary)] rounded w-32" />
+                            <div className="h-3 bg-[var(--bg-tertiary)] rounded w-24" />
+                        </div>
+                        <div className="h-10 w-28 bg-[var(--bg-tertiary)] rounded-full" />
+                    </div>
+                    <div className="h-32 bg-[var(--bg-tertiary)] rounded-xl" />
+                </div>
+                <div className="lg:col-span-1 space-y-4">
+                    <div className="h-6 bg-[var(--bg-tertiary)] rounded w-32" />
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex gap-3">
+                            <div className="w-10 h-10 bg-[var(--bg-tertiary)] rounded-full" />
+                            <div className="flex-1 h-20 bg-[var(--bg-tertiary)] rounded-xl" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// ERROR STATE
+// ============================================================================
+
+const ErrorState = ({ error, onRetry, onGoBack }) => (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--error-light)] flex items-center justify-center">
+                <FaExclamationTriangle className="w-8 h-8 text-[var(--error)]" />
+            </div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                Failed to Load Video
+            </h2>
+            <p className="text-[var(--text-secondary)] mb-6">{error}</p>
+            <div className="flex gap-3 justify-center">
+                <button
+                    onClick={onGoBack}
+                    className="px-4 py-2 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
+                >
+                    <FaArrowLeft size={14} />
+                    Go Back
+                </button>
+                <button
+                    onClick={onRetry}
+                    className="px-4 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:bg-[var(--brand-primary-hover)] transition-colors"
+                >
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// NOT FOUND STATE
+// ============================================================================
+
+const NotFoundState = ({ onGoHome }) => (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="bg-[var(--bg-elevated)] p-8 rounded-2xl shadow-xl text-center max-w-md mx-4 border border-[var(--border-light)]">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">
+                <FaEye className="w-8 h-8 text-[var(--text-tertiary)]" />
+            </div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                Video Not Found
+            </h2>
+            <p className="text-[var(--text-secondary)] mb-6">
+                This video may have been removed or is no longer available.
+            </p>
+            <button
+                onClick={onGoHome}
+                className="px-6 py-2 bg-[var(--brand-primary)] text-white rounded-lg hover:bg-[var(--brand-primary-hover)] transition-colors"
+            >
+                Browse Videos
+            </button>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// COMMENT ITEM
+// ============================================================================
+
+const CommentItem = ({
+    comment,
+    onLike,
+    isLiking,
+    isAuthenticated,
+    onLoginPrompt,
+}) => (
+    <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex gap-3"
+    >
+        <img
+            src={comment.owner?.avatar || "/default-avatar.png"}
+            alt={comment.owner?.userName || "User"}
+            className="w-9 h-9 rounded-full flex-shrink-0 object-cover border border-[var(--border-light)]"
+        />
+        <div className="flex-1 bg-[var(--bg-secondary)] p-4 rounded-xl">
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <p className="font-medium text-sm text-[var(--text-primary)]">
+                        {comment.owner?.userName || "Anonymous"}
+                    </p>
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                        <TimeAgo datetime={comment.createdAt} />
+                    </p>
+                </div>
+                <button
+                    onClick={() =>
+                        isAuthenticated ? onLike(comment._id) : onLoginPrompt()
+                    }
+                    disabled={isLiking}
+                    className="flex items-center gap-1.5 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] text-sm transition-colors disabled:opacity-50"
+                >
+                    {isLiking ? (
+                        <FaSpinner className="animate-spin" size={12} />
+                    ) : comment.isLiked ? (
+                        <FaHeart className="text-[var(--error)]" size={12} />
+                    ) : (
+                        <FaRegHeart size={12} />
+                    )}
+                    <span>{comment.likesCount || 0}</span>
+                </button>
+            </div>
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed whitespace-pre-wrap">
+                {comment.content}
+            </p>
+        </div>
+    </motion.div>
+);
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 const VideoPlayer = () => {
     const { videoID } = useParams();
     const navigate = useNavigate();
-    const { isAuthenticated, user, authLoading } = useAuth();
     const playerRef = useRef(null);
 
-    // State management
-    const [isLiking, setIsLiking] = useState(false);
-    const [comments, setComments] = useState([]);
-    const [commentsLoading, setCommentsLoading] = useState(true);
-    const [newComment, setNewComment] = useState("");
-    const [commentLoading, setCommentLoading] = useState(false);
-    const [playTriggered, setPlayTriggered] = useState(false);
-    const [commentLikeLoading, setCommentLikeLoading] = useState({});
-    const [likeState, setLikeState] = useState({
-        isLiked: false,
-        likesCount: 0,
-    });
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showPlaylists, setShowPlaylists] = useState(false);
-    const [playlists, setPlaylists] = useState([]);
+    // Auth state
+    const { isAuthenticated, user, authLoading } = useAuth();
 
-    // Custom hooks
+    // Video player hook - consolidates video, likes, comments management
+    const {
+        video,
+        videoLoading,
+        videoError,
+        fetchVideo,
+        handleVideoPlay,
+        likeState,
+        isLiking,
+        handleLike,
+        comments,
+        commentsLoading,
+        commentsPagination,
+        loadMoreComments,
+        addComment,
+        handleCommentLike,
+    } = useVideoPlayer(videoID, isAuthenticated);
+
+    // Watch later
     const {
         isInWatchLater,
         addToWatchLater,
@@ -55,306 +252,33 @@ const VideoPlayer = () => {
         loading: watchLaterLoading,
     } = useWatchLater(isAuthenticated ? user : null);
 
-    const {
-        video,
-        loading: videoLoading,
-        error: videoError,
-        fetchVideo,
-        incrementViews,
-        addToHistory,
-    } = useVideo(isAuthenticated ? user : null, videoID);
-
-    // Update like state when video changes
-    useEffect(() => {
-        if (video) {
-            setLikeState({
-                isLiked: video.isLiked || false,
-                likesCount: video.likesCount || 0,
-            });
-        }
-    }, [video]);
-
-    // Fetch comments with like status
-    const fetchComments = useCallback(async () => {
-        if (!videoID) return;
-
-        setCommentsLoading(true);
-        try {
-            const config = isAuthenticated
-                ? {
-                      headers: {
-                          Authorization: `Bearer ${localStorage.getItem(
-                              "accessToken"
-                          )}`,
-                      },
-                  }
-                : {};
-
-            const { data } = await axios.get(
-                `/api/v1/comments/Video/${videoID}`,
-                config
-            );
-
-            setComments(data?.data?.comments || []);
-        } catch (err) {
-            console.error("Comment fetch error:", err);
-            toast.error("Failed to load comments");
-        } finally {
-            setCommentsLoading(false);
-        }
-    }, [videoID, isAuthenticated]);
+    // Local state
+    const [newComment, setNewComment] = useState("");
+    const [commentSubmitting, setCommentSubmitting] = useState(false);
+    const [commentLikeLoading, setCommentLikeLoading] = useState({});
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showPlaylists, setShowPlaylists] = useState(false);
+    const [playlists, setPlaylists] = useState([]);
+    const [isTheaterMode, setIsTheaterMode] = useState(false);
 
     // Fetch playlists
     const fetchPlaylists = useCallback(async () => {
         if (!isAuthenticated) return;
         try {
-            const { data } = await axios.get("/api/v1/playlists/", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem(
-                        "accessToken"
-                    )}`,
-                },
-            });
+            const { data } = await api.get("/api/v1/playlists/");
             setPlaylists(data.data.playlists || []);
         } catch (err) {
             console.error("Failed to fetch playlists:", err);
         }
     }, [isAuthenticated]);
 
-    // Initial data load
-    useEffect(() => {
-        if (!videoID) return;
-
-        const loadData = async () => {
-            try {
-                await Promise.all([
-                    fetchVideo(),
-                    fetchComments(),
-                    isAuthenticated ? fetchPlaylists() : Promise.resolve(),
-                ]);
-            } catch (err) {
-                console.error("Initial load error:", err);
-            }
-        };
-
-        loadData();
-    }, [videoID, fetchVideo, fetchComments, isAuthenticated, fetchPlaylists]);
-
-    // Watch later sync
+    // Sync watch later and playlists on mount
     useEffect(() => {
         if (isAuthenticated) {
-            const syncWatchLater = async () => {
-                try {
-                    await fetchWatchLater();
-                } catch (err) {
-                    console.error("Watch later sync error:", err);
-                }
-            };
-            syncWatchLater();
+            fetchWatchLater().catch(console.error);
+            fetchPlaylists();
         }
-    }, [isAuthenticated, fetchWatchLater]);
-
-    // Video play handler with debounce
-    const handlePlay = useCallback(async () => {
-        if (!isAuthenticated || playTriggered) return;
-
-        try {
-            setPlayTriggered(true);
-            await Promise.all([incrementViews(), addToHistory()]);
-        } catch (err) {
-            console.error("Play tracking error:", err);
-        }
-    }, [incrementViews, addToHistory, isAuthenticated, playTriggered]);
-
-    // Like handler
-    const handleVideoLike = async () => {
-        if (!isAuthenticated) {
-            navigate("/auth");
-            return toast.info("Login to like videos");
-        }
-
-        if (!video?._id || isLiking) return;
-
-        try {
-            setIsLiking(true);
-
-            // Optimistic update
-            const newLikeState = {
-                isLiked: !likeState.isLiked,
-                likesCount: likeState.isLiked
-                    ? Math.max(0, likeState.likesCount - 1)
-                    : likeState.likesCount + 1,
-            };
-            setLikeState(newLikeState);
-
-            const { data } = await axios.post(
-                `/api/v1/likes/toggle/video/${video._id}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-
-            // Update with server response
-            if (data?.data) {
-                setLikeState({
-                    isLiked: data.data.state === 1,
-                    likesCount: data.data.likes || 0,
-                });
-            }
-        } catch (err) {
-            // Revert optimistic update on error
-            setLikeState({
-                isLiked: likeState.isLiked,
-                likesCount: likeState.likesCount,
-            });
-            toast.error(err.response?.data?.message || "Like action failed");
-            console.error("Like error:", err);
-        } finally {
-            setIsLiking(false);
-        }
-    };
-
-    // Comment submission
-    const handleAddComment = async (e) => {
-        e.preventDefault();
-
-        if (!isAuthenticated) {
-            navigate("/auth");
-            return toast.info("Login to comment");
-        }
-
-        if (!newComment.trim()) return;
-
-        try {
-            setCommentLoading(true);
-            await axios.post(
-                `/api/v1/comments/Video/${videoID}`,
-                { content: newComment.trim() },
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            setNewComment("");
-            await fetchComments();
-            toast.success("Comment added successfully!");
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to add comment");
-            console.error("Comment error:", err);
-        } finally {
-            setCommentLoading(false);
-        }
-    };
-
-    // Comment like handler with individual loading states
-    const toggleCommentLike = async (commentId) => {
-        if (!isAuthenticated) {
-            navigate("/auth");
-            return toast.info("Login to like comments");
-        }
-
-        if (commentLikeLoading[commentId]) return;
-
-        try {
-            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: true }));
-
-            await axios.post(
-                `/api/v1/likes/toggle/comment/${commentId}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            await fetchComments();
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Comment like failed");
-            console.error("Comment like error:", err);
-        } finally {
-            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: false }));
-        }
-    };
-
-    // Share handler
-    const handleShare = useCallback(() => {
-        const url = window.location.href;
-        if (navigator.share) {
-            navigator
-                .share({
-                    title: video?.title || "Check out this video",
-                    text: video?.description || "",
-                    url: url,
-                })
-                .catch((err) => {
-                    console.error("Share failed:", err);
-                    // Fallback to clipboard
-                    navigator.clipboard.writeText(url);
-                    toast.success("Link copied to clipboard!");
-                });
-        } else {
-            navigator.clipboard.writeText(url);
-            toast.success("Link copied to clipboard!");
-        }
-        setIsMenuOpen(false);
-    }, [video]);
-
-    // Playlist handler
-    const handleAddToPlaylist = async (playlistId) => {
-        try {
-            await axios.post(
-                `/api/v1/playlists/${playlistId}/videos/${video._id}`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "accessToken"
-                        )}`,
-                    },
-                }
-            );
-            toast.success("Added to playlist!");
-            setShowPlaylists(false);
-        } catch (err) {
-            toast.error(
-                err.response?.data?.message || "Failed to add to playlist"
-            );
-            console.error("Playlist error:", err);
-        }
-    };
-
-    // Watch later handler
-    const handleWatchLater = async () => {
-        if (!isAuthenticated) {
-            navigate("/auth");
-            return toast.info("Login to use watch later");
-        }
-
-        if (!video?._id) return;
-
-        try {
-            if (isInWatchLater(video._id)) {
-                await removeFromWatchLater(video._id);
-                toast.success("Removed from Watch Later");
-            } else {
-                await addToWatchLater(video._id);
-                toast.success("Added to Watch Later");
-            }
-        } catch (err) {
-            toast.error("Watch later update failed");
-            console.error("Watch later error:", err);
-        }
-    };
+    }, [isAuthenticated, fetchWatchLater, fetchPlaylists]);
 
     // Click outside handler for menu
     useEffect(() => {
@@ -363,50 +287,191 @@ const VideoPlayer = () => {
                 setIsMenuOpen(false);
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, [isMenuOpen]);
 
-    // Loading states
-    if (authLoading || videoLoading) return <Spinner />;
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (videoLoading || videoError) return;
 
-    // Error states
-    if (videoError)
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                    <p className="text-red-500 text-2xl mb-4">Error</p>
-                    <p className="text-gray-300">{videoError}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
+            // Spacebar and K: Play/Pause
+            if (
+                (e.key === " " || e.key.toLowerCase() === "k") &&
+                playerRef.current
+            ) {
+                e.preventDefault();
+                playerRef.current.getInternalPlayer().paused
+                    ? playerRef.current.getInternalPlayer().play()
+                    : playerRef.current.getInternalPlayer().pause();
+            }
 
-    if (!video)
+            // F: Toggle Fullscreen
+            if (e.key.toLowerCase() === "f") {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    playerRef.current.wrapper.requestFullscreen();
+                }
+            }
+
+            // T: Toggle Theater Mode
+            if (e.key.toLowerCase() === "t") {
+                setIsTheaterMode((prev) => !prev);
+            }
+
+            // Esc: Exit fullscreen or theater mode
+            if (e.key === "Escape") {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else if (isTheaterMode) {
+                    setIsTheaterMode(false);
+                }
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [videoLoading, videoError, isTheaterMode]);
+
+    // Handlers
+    const handleVideoLike = async () => {
+        if (!isAuthenticated) {
+            showInfo("Login to like videos");
+            navigate("/auth");
+            return;
+        }
+        try {
+            await handleLike();
+        } catch (err) {
+            showError(err.message || "Like action failed");
+        }
+    };
+
+    const handleCommentSubmit = async (e) => {
+        e.preventDefault();
+        if (!isAuthenticated) {
+            showInfo("Login to comment");
+            navigate("/auth");
+            return;
+        }
+        if (!newComment.trim() || commentSubmitting) return;
+
+        try {
+            setCommentSubmitting(true);
+            await addComment(newComment);
+            setNewComment("");
+            showSuccess("Comment added!");
+        } catch (err) {
+            showError(err.message || "Failed to add comment");
+        } finally {
+            setCommentSubmitting(false);
+        }
+    };
+
+    const handleCommentLikeClick = async (commentId) => {
+        if (commentLikeLoading[commentId]) return;
+
+        try {
+            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: true }));
+            await handleCommentLike(commentId);
+        } catch (err) {
+            showError(err.message || "Failed to like comment");
+        } finally {
+            setCommentLikeLoading((prev) => ({ ...prev, [commentId]: false }));
+        }
+    };
+
+    const handleShare = useCallback(() => {
+        const url = window.location.href;
+        if (navigator.share) {
+            navigator
+                .share({
+                    title: video?.title || "Check out this video",
+                    text: video?.description || "",
+                    url,
+                })
+                .catch(() => {
+                    navigator.clipboard.writeText(url);
+                    showSuccess("Link copied!");
+                });
+        } else {
+            navigator.clipboard.writeText(url);
+            showSuccess("Link copied to clipboard!");
+        }
+        setIsMenuOpen(false);
+    }, [video]);
+
+    const handleWatchLater = async () => {
+        if (!isAuthenticated) {
+            showInfo("Login to use watch later");
+            navigate("/auth");
+            return;
+        }
+        if (!video?._id) return;
+
+        try {
+            if (isInWatchLater(video._id)) {
+                await removeFromWatchLater(video._id);
+                showSuccess("Removed from Watch Later");
+            } else {
+                await addToWatchLater(video._id);
+                showSuccess("Added to Watch Later");
+            }
+        } catch (err) {
+            showError("Watch later update failed");
+        }
+    };
+
+    const handleAddToPlaylist = async (playlistId) => {
+        try {
+            await api.post(
+                `/api/v1/playlists/${playlistId}/videos/${video._id}`
+            );
+            showSuccess("Added to playlist!");
+            setShowPlaylists(false);
+        } catch (err) {
+            showError(
+                err.response?.data?.message || "Failed to add to playlist"
+            );
+        }
+    };
+
+    const handleLoginPrompt = () => {
+        showInfo("Login to interact");
+        navigate("/auth");
+    };
+
+    // Loading state
+    if (authLoading || videoLoading) {
+        return <VideoSkeleton />;
+    }
+
+    // Error state
+    if (videoError) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                <div className="bg-gray-800 p-8 rounded-xl shadow-lg text-center">
-                    <p className="text-gray-400 text-2xl">Video not found</p>
-                    <button
-                        onClick={() => navigate("/")}
-                        className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                        Go Home
-                    </button>
-                </div>
-            </div>
+            <ErrorState
+                error={videoError}
+                onRetry={fetchVideo}
+                onGoBack={() => navigate(-1)}
+            />
         );
+    }
+
+    // Not found state
+    if (!video) {
+        return <NotFoundState onGoHome={() => navigate("/")} />;
+    }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div
+            className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${
+                isTheaterMode ? "theater-mode" : ""
+            }`}
+        >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {/* Video Player */}
                 <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
                     <ReactPlayer
@@ -416,12 +481,11 @@ const VideoPlayer = () => {
                         controls
                         width="100%"
                         height="100%"
-                        onPlay={handlePlay}
+                        onPlay={handleVideoPlay}
                         config={{
                             file: {
                                 attributes: { controlsList: "nodownload" },
                             },
-                            youtube: { playerVars: { modestbranding: 1 } },
                         }}
                         className="react-player"
                     />
@@ -431,7 +495,7 @@ const VideoPlayer = () => {
                         <div className="relative menu-container">
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="p-3 rounded-full backdrop-blur-sm bg-gray-900/50 text-gray-100 hover:bg-gray-800 transition-colors"
+                                className="p-3 rounded-full backdrop-blur-sm bg-black/50 text-white hover:bg-black/70 transition-colors"
                                 aria-label="Video options"
                             >
                                 <FaEllipsisV />
@@ -443,48 +507,52 @@ const VideoPlayer = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
-                                        className="absolute right-0 top-14 bg-gray-800 rounded-lg shadow-xl py-2 w-48 z-50"
+                                        className="absolute right-0 top-14 bg-[var(--bg-elevated)] rounded-xl shadow-xl py-2 w-48 z-50 border border-[var(--border-light)]"
                                     >
                                         <button
                                             onClick={handleWatchLater}
                                             disabled={watchLaterLoading}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 disabled:opacity-50 text-[var(--text-primary)]"
                                         >
                                             {watchLaterLoading ? (
-                                                <FaSpinner className="animate-spin text-yellow-400" />
+                                                <FaSpinner className="animate-spin text-[var(--warning)]" />
                                             ) : isInWatchLater(video._id) ? (
-                                                <FaClock className="text-yellow-400" />
+                                                <FaClock className="text-[var(--warning)]" />
                                             ) : (
-                                                <FaRegClock className="text-yellow-400" />
+                                                <FaRegClock className="text-[var(--warning)]" />
                                             )}
                                             {isInWatchLater(video._id)
-                                                ? "Remove Watch Later"
+                                                ? "Remove from"
                                                 : "Watch Later"}
                                         </button>
                                         <button
                                             onClick={() => {
+                                                if (!isAuthenticated) {
+                                                    handleLoginPrompt();
+                                                    return;
+                                                }
                                                 setShowPlaylists(true);
                                                 setIsMenuOpen(false);
                                             }}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
                                         >
-                                            <FaPlus className="text-purple-400" />
+                                            <FaPlus className="text-[var(--brand-primary)]" />
                                             Add to Playlist
                                         </button>
                                         <a
                                             href={video.videoFile?.url}
                                             download
-                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
                                             onClick={() => setIsMenuOpen(false)}
                                         >
-                                            <FaDownload className="text-blue-400" />
+                                            <FaDownload className="text-[var(--info)]" />
                                             Download
                                         </a>
                                         <button
                                             onClick={handleShare}
-                                            className="w-full px-4 py-2.5 text-left hover:bg-gray-700 flex items-center gap-2"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-3 text-[var(--text-primary)]"
                                         >
-                                            <FaShare className="text-green-400" />
+                                            <FaShare className="text-[var(--success)]" />
                                             Share
                                         </button>
                                     </motion.div>
@@ -495,9 +563,9 @@ const VideoPlayer = () => {
                 </div>
 
                 {/* Video Metadata */}
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <h1 className="text-3xl font-bold text-gray-100">
+                        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
                             {video.title}
                         </h1>
 
@@ -509,24 +577,22 @@ const VideoPlayer = () => {
                                         "/default-avatar.png"
                                     }
                                     alt={video.owner?.userName || "User"}
-                                    className="w-12 h-12 rounded-full border-2 border-purple-500 object-cover"
+                                    className="w-12 h-12 rounded-full border-2 border-[var(--brand-primary)] object-cover"
                                 />
                                 <div>
-                                    <p className="font-medium">
+                                    <p className="font-medium text-[var(--text-primary)]">
                                         {video.owner?.userName ||
                                             "Unknown Creator"}
                                     </p>
-                                    <p className="text-sm text-gray-400 flex items-center gap-2">
-                                        <FaEye className="text-gray-400" />
-                                        {video.views?.toLocaleString() ||
-                                            0}{" "}
-                                        views
+                                    <p className="text-sm text-[var(--text-tertiary)] flex items-center gap-2">
+                                        <FaEye />
+                                        {formatViews(video.views)} views
                                     </p>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-gray-400">
+                                <div className="flex items-center gap-2 text-[var(--text-tertiary)]">
                                     <FaCalendarAlt />
                                     <span className="text-sm">
                                         <TimeAgo datetime={video.createdAt} />
@@ -535,14 +601,14 @@ const VideoPlayer = () => {
                                 <button
                                     onClick={handleVideoLike}
                                     disabled={isLiking}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50"
                                 >
                                     {isLiking ? (
                                         <FaSpinner className="animate-spin" />
                                     ) : likeState.isLiked ? (
-                                        <FaHeart className="text-red-500" />
+                                        <FaHeart className="text-[var(--error)]" />
                                     ) : (
-                                        <FaRegHeart className="text-gray-100" />
+                                        <FaRegHeart />
                                     )}
                                     <span className="font-medium">
                                         {likeState.likesCount?.toLocaleString() ||
@@ -552,78 +618,22 @@ const VideoPlayer = () => {
                             </div>
                         </div>
 
-                        {/* Playlist Modal */}
-                        <AnimatePresence>
-                            {showPlaylists && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center"
-                                    onClick={() => setShowPlaylists(false)}
-                                >
-                                    <motion.div
-                                        initial={{ scale: 0.9 }}
-                                        animate={{ scale: 1 }}
-                                        exit={{ scale: 0.9 }}
-                                        className="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-xl font-bold">
-                                                Add to Playlist
-                                            </h3>
-                                            <button
-                                                onClick={() =>
-                                                    setShowPlaylists(false)
-                                                }
-                                                className="p-2 hover:bg-gray-700 rounded-full text-xl transition-colors"
-                                            >
-                                                &times;
-                                            </button>
-                                        </div>
-                                        <div className="space-y-3 max-h-96 overflow-y-auto">
-                                            {playlists.length === 0 ? (
-                                                <p className="text-gray-400 text-center py-4">
-                                                    No playlists found
-                                                </p>
-                                            ) : (
-                                                playlists.map((playlist) => (
-                                                    <button
-                                                        key={playlist._id}
-                                                        onClick={() =>
-                                                            handleAddToPlaylist(
-                                                                playlist._id
-                                                            )
-                                                        }
-                                                        className="w-full p-3 text-left hover:bg-gray-700 rounded-lg flex items-center gap-3 transition-colors"
-                                                    >
-                                                        <span className="truncate text-purple-400">
-                                                            {playlist.name}
-                                                        </span>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
+                        {/* Description */}
                         {video.description && (
-                            <div className="bg-gray-800 p-4 rounded-lg">
-                                <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">
+                            <div className="bg-[var(--bg-secondary)] p-4 rounded-xl">
+                                <p className="text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
                                     {video.description}
                                 </p>
                             </div>
                         )}
 
+                        {/* Tags */}
                         {video.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {video.tags.map((tag, index) => (
                                     <span
                                         key={`${tag}-${index}`}
-                                        className="px-3 py-1.5 text-sm bg-purple-900/30 text-purple-300 rounded-full hover:bg-purple-900/50 transition-colors cursor-pointer"
+                                        className="px-3 py-1.5 text-sm bg-[var(--brand-primary-light)] text-[var(--brand-primary)] rounded-full hover:bg-[var(--brand-primary)] hover:text-white transition-colors cursor-pointer"
                                     >
                                         #{tag}
                                     </span>
@@ -633,18 +643,18 @@ const VideoPlayer = () => {
                     </div>
 
                     {/* Comments Section */}
-                    <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-gray-700 pt-8 lg:pt-0 lg:pl-8">
-                        <div className="sticky top-8">
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <FaComment className="text-purple-500" />
+                    <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-[var(--divider)] pt-6 lg:pt-0 lg:pl-8">
+                        <div className="sticky top-24">
+                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
+                                <FaComment className="text-[var(--brand-primary)]" />
                                 {comments.length} Comments
                             </h3>
 
                             {/* Comment Input */}
                             {isAuthenticated ? (
                                 <form
-                                    onSubmit={handleAddComment}
-                                    className="mb-8"
+                                    onSubmit={handleCommentSubmit}
+                                    className="mb-6"
                                 >
                                     <div className="flex gap-3 items-start">
                                         <img
@@ -652,7 +662,7 @@ const VideoPlayer = () => {
                                                 user?.avatar ||
                                                 "/default-avatar.png"
                                             }
-                                            alt={user?.userName || "User"}
+                                            alt={user?.userName || "You"}
                                             className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                                         />
                                         <div className="flex-1 relative">
@@ -664,122 +674,145 @@ const VideoPlayer = () => {
                                                     )
                                                 }
                                                 placeholder="Add a comment..."
-                                                className="w-full bg-gray-800 rounded-lg px-4 py-2.5 pr-20 focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500 transition-colors"
-                                                disabled={commentLoading}
+                                                className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-xl px-4 py-2.5 pr-20 focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] transition-all"
+                                                disabled={commentSubmitting}
                                                 maxLength={500}
                                             />
                                             <button
                                                 type="submit"
                                                 disabled={
                                                     !newComment.trim() ||
-                                                    commentLoading
+                                                    commentSubmitting
                                                 }
-                                                className="absolute right-2 top-2 bg-purple-600 px-3 py-1 rounded-md text-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--brand-primary)] px-3 py-1.5 rounded-lg text-sm text-white hover:bg-[var(--brand-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                {commentLoading
-                                                    ? "Posting..."
-                                                    : "Post"}
+                                                {commentSubmitting ? (
+                                                    <FaSpinner className="animate-spin" />
+                                                ) : (
+                                                    "Post"
+                                                )}
                                             </button>
                                         </div>
                                     </div>
                                 </form>
                             ) : (
-                                <div className="mb-8 p-4 bg-gray-800 rounded-lg text-center">
+                                <div className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-xl text-center">
                                     <button
                                         onClick={() => navigate("/auth")}
-                                        className="text-purple-400 hover:underline transition-colors"
+                                        className="text-[var(--brand-primary)] hover:underline font-medium"
                                     >
                                         Login
                                     </button>{" "}
-                                    to comment
+                                    <span className="text-[var(--text-secondary)]">
+                                        to comment
+                                    </span>
                                 </div>
                             )}
 
                             {/* Comments List */}
                             {commentsLoading ? (
                                 <div className="flex justify-center py-8">
-                                    <FaSpinner className="animate-spin text-2xl text-purple-500" />
+                                    <FaSpinner className="animate-spin text-2xl text-[var(--brand-primary)]" />
                                 </div>
                             ) : comments.length === 0 ? (
-                                <p className="text-gray-400 text-center py-8">
+                                <p className="text-[var(--text-tertiary)] text-center py-8">
                                     No comments yet. Be the first to comment!
                                 </p>
                             ) : (
-                                <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 comment-scrollbar">
-                                    {comments.map((comment) => (
-                                        <motion.div
-                                            key={comment._id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="flex gap-3"
-                                        >
-                                            <img
-                                                src={
-                                                    comment.owner?.avatar ||
-                                                    "/default-avatar.png"
+                                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
+                                    <AnimatePresence>
+                                        {comments.map((comment) => (
+                                            <CommentItem
+                                                key={comment._id}
+                                                comment={comment}
+                                                onLike={handleCommentLikeClick}
+                                                isLiking={
+                                                    commentLikeLoading[
+                                                        comment._id
+                                                    ]
                                                 }
-                                                alt={
-                                                    comment.owner?.userName ||
-                                                    "User"
+                                                isAuthenticated={
+                                                    isAuthenticated
                                                 }
-                                                className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
+                                                onLoginPrompt={
+                                                    handleLoginPrompt
+                                                }
                                             />
-                                            <div className="flex-1 bg-gray-800 p-4 rounded-lg">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <p className="font-medium text-sm">
-                                                            {comment.owner
-                                                                ?.userName ||
-                                                                "Anonymous User"}
-                                                        </p>
-                                                        <p className="text-xs text-gray-400">
-                                                            <TimeAgo
-                                                                datetime={
-                                                                    comment.createdAt
-                                                                }
-                                                            />
-                                                        </p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() =>
-                                                            toggleCommentLike(
-                                                                comment._id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            commentLikeLoading[
-                                                                comment._id
-                                                            ]
-                                                        }
-                                                        className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 text-sm transition-colors disabled:opacity-50"
-                                                    >
-                                                        {commentLikeLoading[
-                                                            comment._id
-                                                        ] ? (
-                                                            <FaSpinner className="animate-spin" />
-                                                        ) : comment.isLiked ? (
-                                                            <FaHeart className="text-red-500" />
-                                                        ) : (
-                                                            <FaRegHeart />
-                                                        )}
-                                                        <span>
-                                                            {comment.likesCount ||
-                                                                0}
-                                                        </span>
-                                                    </button>
-                                                </div>
-                                                <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                                                    {comment.content}
-                                                </p>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                        ))}
+                                    </AnimatePresence>
+
+                                    {/* Load More */}
+                                    {commentsPagination.hasMore && (
+                                        <button
+                                            onClick={loadMoreComments}
+                                            className="w-full py-2 text-sm text-[var(--brand-primary)] hover:underline"
+                                        >
+                                            Load more comments
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
+
+                {/* Playlist Modal */}
+                <AnimatePresence>
+                    {showPlaylists && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center"
+                            onClick={() => setShowPlaylists(false)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0.9 }}
+                                className="bg-[var(--bg-elevated)] rounded-2xl p-6 w-full max-w-md mx-4 border border-[var(--border-light)]"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                                        Add to Playlist
+                                    </h3>
+                                    <button
+                                        onClick={() => setShowPlaylists(false)}
+                                        className="p-2 hover:bg-[var(--bg-secondary)] rounded-full text-xl transition-colors text-[var(--text-secondary)]"
+                                    >
+                                        &times;
+                                    </button>
+                                </div>
+                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                    {playlists.length === 0 ? (
+                                        <p className="text-[var(--text-tertiary)] text-center py-4">
+                                            No playlists found. Create one
+                                            first!
+                                        </p>
+                                    ) : (
+                                        playlists.map((playlist) => (
+                                            <button
+                                                key={playlist._id}
+                                                onClick={() =>
+                                                    handleAddToPlaylist(
+                                                        playlist._id
+                                                    )
+                                                }
+                                                className="w-full p-3 text-left hover:bg-[var(--bg-secondary)] rounded-xl flex items-center gap-3 transition-colors text-[var(--text-primary)]"
+                                            >
+                                                <FaPlus className="text-[var(--brand-primary)]" />
+                                                <span className="truncate">
+                                                    {playlist.name}
+                                                </span>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

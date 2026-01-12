@@ -1,11 +1,3 @@
-/**
- * Hooks Index
- * Central export for all custom hooks
- *
- * Usage:
- * import { useAuth, useDebounce, useLocalStorage } from '@/hooks';
- */
-
 // ============================================================================
 // AUTHENTICATION
 // ============================================================================
