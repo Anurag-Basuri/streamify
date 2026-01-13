@@ -220,6 +220,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                 const cleanData = {
                     name: playlistData.name.trim(),
                     description: playlistData.description?.trim() || "",
+                    isPublic: playlistData.isPublic === true,
                 };
                 const { data } = await axios.post(url, cleanData, { headers });
                 await fetchUserPlaylists(); // <--- refetch after create
@@ -288,6 +289,10 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
                     name: updateData.name?.trim(),
                     description: updateData.description?.trim(),
                 };
+                // Only include isPublic if it was explicitly set
+                if (typeof updateData.isPublic === "boolean") {
+                    cleanData.isPublic = updateData.isPublic;
+                }
 
                 await axios.put(
                     `/api/v1/playlists/update/${playlistId}`,
@@ -500,6 +505,72 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
         [playlist, playlists]
     );
 
+    // Reorder videos in a playlist (for drag & drop)
+    const reorderVideos = useCallback(
+        async (playlistId, videoIds) => {
+            if (!isAuthenticated || !playlistId) {
+                const errorMsg = "Authentication required to reorder playlist";
+                setError(errorMsg);
+                return false;
+            }
+
+            if (!Array.isArray(videoIds) || videoIds.length === 0) {
+                const errorMsg = "Invalid video order";
+                setError(errorMsg);
+                return false;
+            }
+
+            // Store original state for rollback
+            const originalPlaylist = playlist;
+            const originalPlaylists = [...playlists];
+
+            try {
+                setLoading(true);
+                clearError();
+
+                // Optimistic update
+                if (playlist && playlist._id === playlistId) {
+                    const reorderedVideos = videoIds
+                        .map((id) =>
+                            playlist.videos.find(
+                                (v) =>
+                                    (typeof v === "string" ? v : v._id) === id
+                            )
+                        )
+                        .filter(Boolean);
+                    setPlaylist({ ...playlist, videos: reorderedVideos });
+                }
+
+                const headers = getAuthHeaders();
+                await axios.put(
+                    `/api/v1/playlists/${playlistId}/reorder`,
+                    { videoIds },
+                    { headers }
+                );
+                await fetchPlaylist(playlistId);
+                toast.success("Playlist reordered");
+                return true;
+            } catch (err) {
+                // Rollback optimistic update
+                setPlaylist(originalPlaylist);
+                setPlaylists(originalPlaylists);
+                handleError(err, "reorder playlist");
+                return false;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [
+            isAuthenticated,
+            playlist,
+            playlists,
+            getAuthHeaders,
+            handleError,
+            clearError,
+            fetchPlaylist,
+        ]
+    );
+
     // Load initial playlist if ID was provided
     useEffect(() => {
         if (initialPlaylistId && isAuthenticated) {
@@ -523,6 +594,7 @@ const usePlaylist = (initialPlaylistId = null, user = null) => {
         addVideo,
         removeVideo,
         isVideoInPlaylist,
+        reorderVideos,
 
         // Error handling
         clearError,

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { isToday, isYesterday, subDays, format } from 'date-fns';
+import { useState, useEffect, useCallback } from "react";
+import { isToday, isYesterday, subDays, format } from "date-fns";
 
 const useHistory = (user) => {
     const [history, setHistory] = useState([]);
@@ -19,7 +19,9 @@ const useHistory = (user) => {
         try {
             const response = await fetch("/api/v1/history", {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                    Authorization: `Bearer ${localStorage.getItem(
+                        "accessToken"
+                    )}`,
                 },
             });
             const data = await response.json();
@@ -34,24 +36,55 @@ const useHistory = (user) => {
         }
     }, [user]);
 
-    // Add a video to history
-    const addToHistory = async (videoId) => {
+    // Add a video to history (or update playback position)
+    const addToHistory = async (videoId, timestamp = 0, duration = 0) => {
         if (!user?.token) return;
         try {
             const response = await fetch(`/api/v1/history/add/${videoId}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${user.token}`,
+                    "Content-Type": "application/json",
                 },
+                body: JSON.stringify({ timestamp, duration }),
             });
             const data = await response.json();
             if (!response.ok)
                 throw new Error(data.message || "Failed to add to history");
-            // Refetch to ensure correct order and no duplicates
-            await fetchHistory();
+            return data.data;
         } catch (err) {
             setError(err.message);
         }
+    };
+
+    // Save playback position (throttled version for video player)
+    const savePlaybackPosition = async (videoId, timestamp, duration) => {
+        if (!user?.token || !videoId) return;
+        try {
+            await fetch(`/api/v1/history/add/${videoId}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${user.token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ timestamp, duration }),
+            });
+        } catch (err) {
+            console.warn("Failed to save playback position:", err.message);
+        }
+    };
+
+    // Get resume timestamp for a video
+    const getResumeTimestamp = (videoId) => {
+        const item = history.find(
+            (h) => h._id === videoId || h.video?._id === videoId
+        );
+        return item
+            ? {
+                  timestamp: item.playbackTimestamp || 0,
+                  progress: item.progress || 0,
+              }
+            : null;
     };
 
     // Remove a video from history
@@ -138,6 +171,8 @@ const useHistory = (user) => {
         groupHistoryByDate,
         addToHistory,
         fetchHistory,
+        savePlaybackPosition,
+        getResumeTimestamp,
     };
 };
 
