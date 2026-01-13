@@ -22,6 +22,7 @@ import subscriptionRouter from "./routes/subscription.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import historyRouter from "./routes/history.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
+import activityRouter from "./routes/activity.routes.js";
 
 // Import utilities
 import { getConnectionStatus } from "./database/index.js";
@@ -177,6 +178,7 @@ app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/history", historyRouter);
 app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/activity", activityRouter);
 
 // ===========================================
 // HEALTH & STATUS ENDPOINTS
