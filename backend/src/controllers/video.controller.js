@@ -270,21 +270,98 @@ const togglePublishStatus = asynchandler(async (req, res) => {
         );
 });
 
-// Get all videos
+// Get all videos with advanced search & filters
 const getAllVideos = asynchandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const sortField = req.query.sort || "-createdAt";
+    const sortBy = req.query.sort || "newest"; // newest, oldest, views, popular
+    const search = req.query.search || "";
+    const duration = req.query.duration || ""; // short (<5m), medium (5-20m), long (>20m)
+    const uploadDate = req.query.date || ""; // today, week, month, year
+    const tags = req.query.tags ? req.query.tags.split(",") : [];
+
+    // Build match conditions
+    const matchConditions = {
+        isPublished: true,
+        isDeleted: false,
+    };
+
+    // Search filter (title, description, tags)
+    if (search.trim()) {
+        matchConditions.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+            { tags: { $regex: search, $options: "i" } },
+        ];
+    }
+
+    // Tags filter
+    if (tags.length > 0) {
+        matchConditions.tags = { $in: tags };
+    }
+
+    // Duration filter (in seconds)
+    if (duration === "short") {
+        matchConditions.duration = { $lt: 300 }; // < 5 minutes
+    } else if (duration === "medium") {
+        matchConditions.duration = { $gte: 300, $lte: 1200 }; // 5-20 minutes
+    } else if (duration === "long") {
+        matchConditions.duration = { $gt: 1200 }; // > 20 minutes
+    }
+
+    // Upload date filter
+    if (uploadDate) {
+        const now = new Date();
+        let dateThreshold;
+        switch (uploadDate) {
+            case "today":
+                dateThreshold = new Date(now.setHours(0, 0, 0, 0));
+                break;
+            case "week":
+                dateThreshold = new Date(
+                    now.getTime() - 7 * 24 * 60 * 60 * 1000
+                );
+                break;
+            case "month":
+                dateThreshold = new Date(
+                    now.getTime() - 30 * 24 * 60 * 60 * 1000
+                );
+                break;
+            case "year":
+                dateThreshold = new Date(
+                    now.getTime() - 365 * 24 * 60 * 60 * 1000
+                );
+                break;
+            default:
+                dateThreshold = null;
+        }
+        if (dateThreshold) {
+            matchConditions.createdAt = { $gte: dateThreshold };
+        }
+    }
+
+    // Sort options
+    let sortStage;
+    switch (sortBy) {
+        case "oldest":
+            sortStage = { createdAt: 1 };
+            break;
+        case "views":
+            sortStage = { views: -1, createdAt: -1 };
+            break;
+        case "popular":
+            // Sort by a combination of views and recency
+            sortStage = { views: -1, createdAt: -1 };
+            break;
+        case "newest":
+        default:
+            sortStage = { createdAt: -1 };
+            break;
+    }
 
     // Create the aggregate pipeline
     const aggregatePipeline = [
-        // Match only published and non-deleted videos
-        {
-            $match: {
-                isPublished: true,
-                isDeleted: false,
-            },
-        },
+        { $match: matchConditions },
         // Lookup to get owner information
         {
             $lookup: {
@@ -294,9 +371,27 @@ const getAllVideos = asynchandler(async (req, res) => {
                 as: "owner",
             },
         },
-        // Unwind the owner array to get a single document
+        { $unwind: "$owner" },
+        // Lookup to get likes count
         {
-            $unwind: "$owner",
+            $lookup: {
+                from: "likes",
+                let: { videoId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$likedEntity", "$$videoId"] },
+                                    { $eq: ["$entityType", "Video"] },
+                                ],
+                            },
+                        },
+                    },
+                    { $count: "count" },
+                ],
+                as: "likesData",
+            },
         },
         // Project only the fields we need
         {
@@ -313,23 +408,17 @@ const getAllVideos = asynchandler(async (req, res) => {
                 "owner._id": 1,
                 "owner.userName": 1,
                 "owner.avatar": 1,
+                likesCount: {
+                    $ifNull: [{ $arrayElemAt: ["$likesData.count", 0] }, 0],
+                },
             },
         },
-        // Sort the results
-        {
-            $sort: sortField.startsWith("-")
-                ? { [sortField.substring(1)]: -1 }
-                : { [sortField]: 1 },
-        },
+        { $sort: sortStage },
     ];
 
     const videoAggregate = Video.aggregate(aggregatePipeline);
 
-    const options = {
-        page,
-        limit,
-    };
-
+    const options = { page, limit };
     const videos = await Video.aggregatePaginate(videoAggregate, options);
 
     res.status(200).json(
@@ -343,6 +432,7 @@ const getAllVideos = asynchandler(async (req, res) => {
                 hasPrevPage: videos.hasPrevPage,
                 page: videos.page,
                 limit: videos.limit,
+                filters: { search, duration, uploadDate, tags, sortBy },
             },
             "Videos fetched successfully"
         )
@@ -424,6 +514,99 @@ const generateDownloadUrl = asynchandler(async (req, res) => {
         );
 });
 
+// Get recommended videos (based on current video's tags or trending)
+const getRecommendedVideos = asynchandler(async (req, res) => {
+    const { videoId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+
+    let matchingTags = [];
+    let excludeId = null;
+
+    // If videoId provided, get recommendations based on that video's tags
+    if (videoId && mongoose.isValidObjectId(videoId)) {
+        const currentVideo = await Video.findById(videoId).select("tags owner");
+        if (currentVideo) {
+            matchingTags = currentVideo.tags || [];
+            excludeId = currentVideo._id;
+        }
+    }
+
+    // Build aggregation pipeline
+    const pipeline = [
+        {
+            $match: {
+                isPublished: true,
+                isDeleted: false,
+                ...(excludeId && { _id: { $ne: excludeId } }),
+            },
+        },
+    ];
+
+    // If we have tags, add scoring based on tag matches
+    if (matchingTags.length > 0) {
+        pipeline.push({
+            $addFields: {
+                tagScore: {
+                    $size: {
+                        $setIntersection: [
+                            { $ifNull: ["$tags", []] },
+                            matchingTags,
+                        ],
+                    },
+                },
+            },
+        });
+        // Sort by tag relevance first, then by views
+        pipeline.push({ $sort: { tagScore: -1, views: -1, createdAt: -1 } });
+    } else {
+        // No context - just sort by trending (views + recency)
+        pipeline.push({ $sort: { views: -1, createdAt: -1 } });
+    }
+
+    pipeline.push(
+        { $limit: limit },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+            },
+        },
+        { $unwind: "$owner" },
+        {
+            $project: {
+                title: 1,
+                description: 1,
+                thumbnail: 1,
+                duration: 1,
+                views: 1,
+                createdAt: 1,
+                tags: 1,
+                "owner._id": 1,
+                "owner.userName": 1,
+                "owner.avatar": 1,
+                ...(matchingTags.length > 0 && { tagScore: 1 }),
+            },
+        }
+    );
+
+    const videos = await Video.aggregate(pipeline);
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                {
+                    videos,
+                    basedOn: matchingTags.length > 0 ? "tags" : "trending",
+                },
+                "Recommendations fetched"
+            )
+        );
+});
+
 export {
     createVideo,
     getVideoById,
@@ -434,4 +617,5 @@ export {
     getUserVideos,
     generateDownloadUrl,
     getAllVideos,
+    getRecommendedVideos,
 };

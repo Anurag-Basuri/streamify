@@ -15,6 +15,7 @@ import {
     getUserVideos,
     getAllVideos,
     generateDownloadUrl,
+    getRecommendedVideos,
 } from "../controllers/video.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -32,6 +33,13 @@ router.get(
     query("limit").isInt({ min: 1, max: 50 }).optional(),
     validateResult,
     getAllVideos
+);
+
+// Get recommended videos (based on current video's tags or trending)
+router.get(
+    "/recommendations/:videoId?",
+    verifyAccessToken,
+    getRecommendedVideos
 );
 
 // Get single video by ID (with optional auth for isLiked)
