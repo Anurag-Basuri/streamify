@@ -11,6 +11,9 @@ import {
     getEntityComments,
     updateComment,
     countComments,
+    getCommentReplies,
+    togglePinComment,
+    toggleHeartComment,
 } from "../controllers/comment.controller.js";
 
 const router = Router();
@@ -25,6 +28,9 @@ router.get("/", (req, res) => {
 
 // Count comments for an entity (public)
 router.get("/count/:entityType/:entityId", verifyAccessToken, countComments);
+
+// Get replies for a comment (public; optional auth for isLiked)
+router.get("/replies/:commentId", verifyAccessToken, getCommentReplies);
 
 // Get comments for an entity (public; optional auth for isLiked)
 router.get("/:entityType/:entityId", verifyAccessToken, getEntityComments);
@@ -57,5 +63,11 @@ router.put(
 
 // Delete a comment (auth required)
 router.delete("/:commentId", requireAuth, deleteComment);
+
+// Toggle pin on a comment (auth required - content owner only)
+router.post("/:commentId/pin", requireAuth, togglePinComment);
+
+// Toggle heart on a comment (auth required - content owner only)
+router.post("/:commentId/heart", requireAuth, toggleHeartComment);
 
 export default router;

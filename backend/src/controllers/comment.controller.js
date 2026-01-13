@@ -8,7 +8,7 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { notifyNewComment } from "../utils/notifications.js";
 
-// Get all comments for an entity (Video or Tweet)
+// Get all top-level comments for an entity (Video or Tweet)
 const getEntityComments = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
     const { page = 1, limit = 10 } = req.query;
@@ -23,19 +23,20 @@ const getEntityComments = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid Entity ID");
     }
 
-    const match = { entity: entityId, entityType };
+    // Only fetch top-level comments (no parentId)
+    const match = {
+        entity: new mongoose.Types.ObjectId(entityId),
+        entityType,
+        parentId: null,
+    };
     const viewerId = req.user?._id
         ? new mongoose.Types.ObjectId(req.user._id)
         : null;
 
     const comments = await Comment.aggregate([
-        {
-            $match: {
-                entity: new mongoose.Types.ObjectId(entityId),
-                entityType,
-            },
-        },
-        { $sort: { createdAt: -1 } },
+        { $match: match },
+        // Sort pinned first, then by date
+        { $sort: { isPinned: -1, createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: +limit },
         {
@@ -61,9 +62,7 @@ const getEntityComments = asynchandler(async (req, res) => {
                         $match: {
                             $expr: {
                                 $and: [
-                                    {
-                                        $eq: ["$likedEntity", "$$commentId"],
-                                    },
+                                    { $eq: ["$likedEntity", "$$commentId"] },
                                     { $eq: ["$entityType", "Comment"] },
                                 ],
                             },
@@ -78,6 +77,9 @@ const getEntityComments = asynchandler(async (req, res) => {
             $project: {
                 content: 1,
                 createdAt: 1,
+                isPinned: 1,
+                replyCount: 1,
+                heartsCount: { $size: { $ifNull: ["$hearts", []] } },
                 owner: {
                     _id: "$ownerDetails._id",
                     userName: "$ownerDetails.userName",
@@ -109,10 +111,10 @@ const getEntityComments = asynchandler(async (req, res) => {
     );
 });
 
-// Add a comment to an entity (Video or Tweet)
+// Add a comment to an entity (or reply to a comment)
 const addComment = asynchandler(async (req, res) => {
     const { entityId, entityType } = req.params;
-    const { content } = req.body;
+    const { content, parentId } = req.body;
 
     // Validate entity type
     if (!["Video", "Tweet"].includes(entityType)) {
@@ -126,6 +128,22 @@ const addComment = asynchandler(async (req, res) => {
 
     if (!content || content.trim().length < 1) {
         throw new APIerror(400, "Comment content is required");
+    }
+
+    // Validate parentId if provided (for replies)
+    let parentComment = null;
+    if (parentId) {
+        if (!mongoose.isValidObjectId(parentId)) {
+            throw new APIerror(400, "Invalid parent comment ID");
+        }
+        parentComment = await Comment.findById(parentId);
+        if (!parentComment) {
+            throw new APIerror(404, "Parent comment not found");
+        }
+        // Ensure reply is to same entity
+        if (parentComment.entity.toString() !== entityId) {
+            throw new APIerror(400, "Reply must be to the same entity");
+        }
     }
 
     // Get the content owner for notification
@@ -154,7 +172,13 @@ const addComment = asynchandler(async (req, res) => {
         owner: req.user._id,
         entity: entityId,
         entityType,
+        parentId: parentId || null,
     });
+
+    // Increment parent's reply count if this is a reply
+    if (parentComment) {
+        await Comment.findByIdAndUpdate(parentId, { $inc: { replyCount: 1 } });
+    }
 
     await comment.populate("owner", "_id userName avatar");
 
@@ -166,12 +190,19 @@ const addComment = asynchandler(async (req, res) => {
             content: contentDoc,
             contentType: entityType,
             comment,
+            isReply: !!parentId,
         }).catch((err) => console.error("Notification error:", err.message));
     }
 
     return res
         .status(201)
-        .json(new APIresponse(201, comment, "Comment added successfully"));
+        .json(
+            new APIresponse(
+                201,
+                comment,
+                parentId ? "Reply added" : "Comment added"
+            )
+        );
 });
 
 // Update a comment
@@ -322,6 +353,206 @@ const countComments = asynchandler(async (req, res) => {
         );
 });
 
+// Get replies for a comment
+const getCommentReplies = asynchandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { page = 1, limit = 5 } = req.query;
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new APIerror(400, "Invalid Comment ID");
+    }
+
+    const parentComment = await Comment.findById(commentId);
+    if (!parentComment) {
+        throw new APIerror(404, "Comment not found");
+    }
+
+    const viewerId = req.user?._id
+        ? new mongoose.Types.ObjectId(req.user._id)
+        : null;
+
+    const replies = await Comment.aggregate([
+        { $match: { parentId: new mongoose.Types.ObjectId(commentId) } },
+        { $sort: { createdAt: 1 } }, // Oldest first for replies
+        { $skip: (page - 1) * limit },
+        { $limit: +limit },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+            },
+        },
+        {
+            $unwind: {
+                path: "$ownerDetails",
+                preserveNullAndEmptyArrays: true,
+            },
+        },
+        {
+            $lookup: {
+                from: "likes",
+                let: { commentId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$likedEntity", "$$commentId"] },
+                                    { $eq: ["$entityType", "Comment"] },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: "likes",
+            },
+        },
+        {
+            $project: {
+                content: 1,
+                createdAt: 1,
+                heartsCount: { $size: { $ifNull: ["$hearts", []] } },
+                owner: {
+                    _id: "$ownerDetails._id",
+                    userName: "$ownerDetails.userName",
+                    avatar: "$ownerDetails.avatar",
+                },
+                likesCount: { $size: "$likes" },
+                isLiked: viewerId
+                    ? { $in: [viewerId, "$likes.likedBy"] }
+                    : false,
+            },
+        },
+    ]);
+
+    const totalReplies = await Comment.countDocuments({ parentId: commentId });
+
+    return res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                replies,
+                pagination: {
+                    currentPage: +page,
+                    totalPages: Math.ceil(totalReplies / limit),
+                    totalReplies,
+                },
+            },
+            "Replies fetched"
+        )
+    );
+});
+
+// Toggle pin on a comment (only content owner can pin)
+const togglePinComment = asynchandler(async (req, res) => {
+    const { commentId } = req.params;
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new APIerror(400, "Invalid Comment ID");
+    }
+
+    const comment = await Comment.findById(commentId).populate("entity");
+    if (!comment) {
+        throw new APIerror(404, "Comment not found");
+    }
+
+    // Get the entity owner
+    let entityOwner = null;
+    if (comment.entityType === "Video") {
+        const video = await Video.findById(comment.entity);
+        entityOwner = video?.owner;
+    } else if (comment.entityType === "Tweet") {
+        const tweet = await Tweet.findById(comment.entity);
+        entityOwner = tweet?.owner;
+    }
+
+    // Only entity owner can pin
+    if (!entityOwner || entityOwner.toString() !== req.user._id.toString()) {
+        throw new APIerror(403, "Only content owner can pin comments");
+    }
+
+    // If pinning a new comment, unpin any previously pinned comment
+    if (!comment.isPinned) {
+        await Comment.updateMany(
+            {
+                entity: comment.entity,
+                entityType: comment.entityType,
+                isPinned: true,
+            },
+            { isPinned: false }
+        );
+    }
+
+    comment.isPinned = !comment.isPinned;
+    await comment.save();
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { isPinned: comment.isPinned },
+                comment.isPinned ? "Comment pinned" : "Comment unpinned"
+            )
+        );
+});
+
+// Toggle heart on a comment (only content owner can heart)
+const toggleHeartComment = asynchandler(async (req, res) => {
+    const { commentId } = req.params;
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new APIerror(400, "Invalid Comment ID");
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+        throw new APIerror(404, "Comment not found");
+    }
+
+    // Get the entity owner
+    let entityOwner = null;
+    if (comment.entityType === "Video") {
+        const video = await Video.findById(comment.entity);
+        entityOwner = video?.owner;
+    } else if (comment.entityType === "Tweet") {
+        const tweet = await Tweet.findById(comment.entity);
+        entityOwner = tweet?.owner;
+    }
+
+    // Only entity owner can heart
+    if (!entityOwner || entityOwner.toString() !== req.user._id.toString()) {
+        throw new APIerror(403, "Only content owner can heart comments");
+    }
+
+    const userId = req.user._id;
+    const hearted = comment.hearts.some(
+        (id) => id.toString() === userId.toString()
+    );
+
+    if (hearted) {
+        comment.hearts = comment.hearts.filter(
+            (id) => id.toString() !== userId.toString()
+        );
+    } else {
+        comment.hearts.push(userId);
+    }
+    await comment.save();
+
+    return res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                isHearted: !hearted,
+                heartsCount: comment.hearts.length,
+            },
+            hearted ? "Heart removed" : "Comment hearted"
+        )
+    );
+});
+
 export {
     getEntityComments,
     addComment,
@@ -329,4 +560,7 @@ export {
     deleteComment,
     toggleCommentLike,
     countComments,
+    getCommentReplies,
+    togglePinComment,
+    toggleHeartComment,
 };
