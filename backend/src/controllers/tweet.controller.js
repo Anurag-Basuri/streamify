@@ -167,7 +167,7 @@ const get_latest_tweets = asynchandler(async (req, res) => {
                         $match: {
                             $expr: {
                                 $and: [
-                                    { $eq: ["$entityId", "$$tweetId"] },
+                                    { $eq: ["$entity", "$$tweetId"] },
                                     { $eq: ["$entityType", "Tweet"] },
                                 ],
                             },

@@ -484,7 +484,7 @@ const getUserVideos = asynchandler(async (req, res) => {
         title: { $regex: search, $options: "i" },
     })
         .sort(sortOptions[sort] || sortOptions.newest)
-        .populate("owner", "username");
+        .populate("owner", "userName fullName avatar");
 
     res.status(200).json(new APIresponse(200, { videos }, "Videos fetched"));
 });
@@ -593,18 +593,16 @@ const getRecommendedVideos = asynchandler(async (req, res) => {
 
     const videos = await Video.aggregate(pipeline);
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                {
-                    videos,
-                    basedOn: matchingTags.length > 0 ? "tags" : "trending",
-                },
-                "Recommendations fetched"
-            )
-        );
+    return res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                videos,
+                basedOn: matchingTags.length > 0 ? "tags" : "trending",
+            },
+            "Recommendations fetched"
+        )
+    );
 });
 
 export {
