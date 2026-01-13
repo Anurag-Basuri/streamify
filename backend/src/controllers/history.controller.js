@@ -8,10 +8,12 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 
 /**
- * Add video to history
+ * Add video to history (or update playback position)
+ * Supports resume playback by storing timestamp
  */
 const addVideoToHistory = asynchandler(async (req, res) => {
     const { videoId } = req.params;
+    const { timestamp = 0, duration = 0 } = req.body;
     const userId = req.user._id;
 
     // Validate videoId
@@ -20,10 +22,15 @@ const addVideoToHistory = asynchandler(async (req, res) => {
     }
 
     // Check if the video exists
-    const video = await Video.findById(videoId).select("title thumbnail");
+    const video = await Video.findById(videoId).select(
+        "title thumbnail duration"
+    );
     if (!video) {
         throw new APIerror(404, "Video not found");
     }
+
+    // Use video's actual duration if not provided
+    const videoDuration = duration || video.duration || 0;
 
     // Find or create history for the user
     let history = await History.findOne({ user: userId });
@@ -31,16 +38,29 @@ const addVideoToHistory = asynchandler(async (req, res) => {
         history = new History({ user: userId, videos: [] });
     }
 
-    // Remove the video if it already exists in history (to move it to top)
-    history.videos = history.videos.filter(
-        (item) => item.video.toString() !== videoId
+    // Check if video already exists in history
+    const existingIndex = history.videos.findIndex(
+        (item) => item.video.toString() === videoId
     );
 
-    // Add the video to the beginning with current timestamp
-    history.videos.unshift({
-        video: videoId,
-        watchedAt: new Date(),
-    });
+    if (existingIndex !== -1) {
+        // Update existing entry with new timestamp
+        history.videos[existingIndex].watchedAt = new Date();
+        history.videos[existingIndex].playbackTimestamp = timestamp;
+        history.videos[existingIndex].videoDuration = videoDuration;
+
+        // Move to top of history
+        const [updated] = history.videos.splice(existingIndex, 1);
+        history.videos.unshift(updated);
+    } else {
+        // Add new entry to the beginning
+        history.videos.unshift({
+            video: videoId,
+            watchedAt: new Date(),
+            playbackTimestamp: timestamp,
+            videoDuration: videoDuration,
+        });
+    }
 
     // Limit history to last 200 videos
     if (history.videos.length > 200) {
@@ -58,11 +78,20 @@ const addVideoToHistory = asynchandler(async (req, res) => {
         metadata: {
             title: video.title,
             thumbnail: video.thumbnail,
+            timestamp,
         },
     }).catch(() => {});
 
     res.status(200).json(
-        new APIresponse(200, { added: true }, "Video added to history")
+        new APIresponse(
+            200,
+            {
+                added: true,
+                playbackTimestamp: timestamp,
+                videoDuration: videoDuration,
+            },
+            "Video added to history"
+        )
     );
 });
 
@@ -97,10 +126,19 @@ const getUserHistory = asynchandler(async (req, res) => {
         );
     }
 
-    // Get all video IDs from history
+    // Get all video IDs from history with their metadata
     const videoIds = history.videos.map((item) => item.video);
-    const watchedAtMap = new Map(
-        history.videos.map((item) => [item.video.toString(), item.watchedAt])
+
+    // Create a map with all history metadata (watchedAt, playbackTimestamp, videoDuration)
+    const historyMetaMap = new Map(
+        history.videos.map((item) => [
+            item.video.toString(),
+            {
+                watchedAt: item.watchedAt,
+                playbackTimestamp: item.playbackTimestamp || 0,
+                videoDuration: item.videoDuration || 0,
+            },
+        ])
     );
 
     // Build query for videos
@@ -143,15 +181,30 @@ const getUserHistory = asynchandler(async (req, res) => {
         .populate("owner", "userName avatar fullName")
         .lean();
 
-    // Sort videos to match history order and add watchedAt
+    // Sort videos to match history order and add history metadata
     const videoMap = new Map(videos.map((v) => [v._id.toString(), v]));
     const orderedVideos = paginatedVideoIds
         .map((id) => {
             const video = videoMap.get(id.toString());
-            if (video) {
+            const historyMeta = historyMetaMap.get(id.toString());
+            if (video && historyMeta) {
+                const progress =
+                    historyMeta.videoDuration > 0
+                        ? Math.min(
+                              100,
+                              Math.round(
+                                  (historyMeta.playbackTimestamp /
+                                      historyMeta.videoDuration) *
+                                      100
+                              )
+                          )
+                        : 0;
                 return {
                     ...video,
-                    watchedAt: watchedAtMap.get(id.toString()),
+                    watchedAt: historyMeta.watchedAt,
+                    playbackTimestamp: historyMeta.playbackTimestamp,
+                    videoDuration: historyMeta.videoDuration,
+                    progress, // Percentage watched (0-100)
                 };
             }
             return null;
