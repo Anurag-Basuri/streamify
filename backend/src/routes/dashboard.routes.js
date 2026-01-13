@@ -1,18 +1,20 @@
 import express from "express";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
-import { getDashboard } from "../controllers/dashboard.controller.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
+import {
+    getDashboard,
+    getChannelAnalytics,
+} from "../controllers/dashboard.controller.js";
 
 const router = express.Router();
 
-// Protect the route with authentication middleware
-router.use(verifyAccessToken);
+// All dashboard routes require authentication
+router.use(requireAuth);
 
-// Route to get dashboard data
+// Get comprehensive dashboard data
 router.get("/", getDashboard);
 
-// Handle invalid routes under /dashboard
-router.use((req, res) => {
-    res.status(404).json({ success: false, message: "Route not found" });
-});
+// Get detailed channel analytics
+// Query params: days (default 30)
+router.get("/analytics", getChannelAnalytics);
 
 export default router;
