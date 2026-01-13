@@ -165,8 +165,8 @@ export const TWEETS = {
 // ============================================================================
 
 export const DASHBOARD = {
-    STATS: `${BASE.DASHBOARD}/stats`,
-    VIDEOS: `${BASE.DASHBOARD}/videos`,
+    STATS: `${BASE.DASHBOARD}`,
+    ANALYTICS: `${BASE.DASHBOARD}/analytics`,
 };
 
 // ============================================================================

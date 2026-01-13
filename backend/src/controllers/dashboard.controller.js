@@ -7,10 +7,36 @@ import { Video } from "../models/video.model.js";
 import { WatchLater } from "../models/watchlater.model.js";
 import { Subscription } from "../models/subscription.model.js";
 import { History } from "../models/history.model.js";
-import { Activity } from "../models/activity.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
+
+// Helper to safely count documents
+const safeCount = async (model, query) => {
+    try {
+        return await model.countDocuments(query);
+    } catch {
+        return 0;
+    }
+};
+
+// Helper to safely find documents
+const safeFind = async (query) => {
+    try {
+        return await query;
+    } catch {
+        return [];
+    }
+};
+
+// Helper to safely find one
+const safeFindOne = async (query) => {
+    try {
+        return await query;
+    } catch {
+        return null;
+    }
+};
 
 /**
  * Get comprehensive dashboard data
@@ -32,135 +58,90 @@ const getDashboard = asynchandler(async (req, res) => {
     try {
         // Calculate date ranges
         const now = new Date();
-        const today = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-        );
-        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-        // Fetch all data in parallel for performance
+        // Fetch basic counts in parallel (these are simple and safe)
         const [
-            // Content counts
             videoCount,
             tweetCount,
             commentCount,
-
-            // Engagement counts
-            totalVideoLikes,
-            totalTweetLikes,
+            totalVideoLikesGiven,
+            totalTweetLikesGiven,
             subscriberCount,
             subscriptionCount,
-
-            // User's videos with view stats
-            userVideos,
-
-            // Watch later count
-            watchLaterData,
-
-            // History count
-            historyData,
-
-            // Recent activity
-            recentActivity,
-
-            // This week's activity count
-            weekActivityCount,
-
-            // Likes received on user's content
-            likesOnUserVideos,
-            likesOnUserTweets,
-
-            // Comments on user's videos
-            commentsOnUserVideos,
         ] = await Promise.all([
-            // Content counts
-            Video.countDocuments({ owner: userId }),
-            Tweet.countDocuments({ owner: userId }),
-            Comment.countDocuments({ owner: userId }),
+            safeCount(Video, { owner: userId }),
+            safeCount(Tweet, { owner: userId }),
+            safeCount(Comment, { owner: userId }),
+            safeCount(Like, { likedBy: userId, entityType: "Video" }),
+            safeCount(Like, { likedBy: userId, entityType: "Tweet" }),
+            safeCount(Subscription, { channel: userId }),
+            safeCount(Subscription, { subscriber: userId }),
+        ]);
 
-            // Likes given by user
-            Like.countDocuments({ likedBy: userId, entityType: "Video" }),
-            Like.countDocuments({ likedBy: userId, entityType: "Tweet" }),
-
-            // Subscribers (people subscribed to this user)
-            Subscription.countDocuments({ channel: userId }),
-
-            // Subscriptions (channels this user follows)
-            Subscription.countDocuments({ subscriber: userId }),
-
-            // User's videos
+        // Fetch user's videos
+        const userVideos = await safeFind(
             Video.find({ owner: userId })
                 .select("title thumbnail views duration createdAt")
                 .sort({ createdAt: -1 })
                 .limit(10)
-                .lean(),
+                .lean()
+        );
 
-            // Watch later
-            WatchLater.findOne({ owner: userId }).select("videos"),
-
-            // History
-            History.findOne({ user: userId }).select("videos"),
-
-            // Recent activity
-            Activity.find({ user: userId })
-                .sort({ createdAt: -1 })
-                .limit(10)
-                .lean(),
-
-            // This week's activity
-            Activity.countDocuments({
-                user: userId,
-                createdAt: { $gte: weekAgo },
-            }),
-
-            // Likes received on user's videos
-            (async () => {
-                const videoIds = await Video.find({ owner: userId }).select(
-                    "_id"
-                );
-                return Like.countDocuments({
-                    likedEntity: { $in: videoIds.map((v) => v._id) },
-                    entityType: "Video",
-                });
-            })(),
-
-            // Likes received on user's tweets
-            (async () => {
-                const tweetIds = await Tweet.find({ owner: userId }).select(
-                    "_id"
-                );
-                return Like.countDocuments({
-                    likedEntity: { $in: tweetIds.map((t) => t._id) },
-                    entityType: "Tweet",
-                });
-            })(),
-
-            // Comments on user's videos
-            (async () => {
-                const videoIds = await Video.find({ owner: userId }).select(
-                    "_id"
-                );
-                return Comment.countDocuments({
-                    entityId: { $in: videoIds.map((v) => v._id) },
-                    entityType: "Video",
-                });
-            })(),
-        ]);
-
-        // Calculate total views across all videos
+        // Calculate total views
         const totalViews = userVideos.reduce(
             (sum, v) => sum + (v.views || 0),
             0
         );
+
+        // Get watch later count
+        const watchLaterData = await safeFindOne(
+            WatchLater.findOne({ owner: userId }).select("videos")
+        );
+        const watchLaterCount = watchLaterData?.videos?.length || 0;
+
+        // Get history count
+        const historyData = await safeFindOne(
+            History.findOne({ user: userId }).select("videos")
+        );
+        const historyCount = historyData?.videos?.length || 0;
+
+        // Get likes received on user's content
+        let likesOnUserVideos = 0;
+        let likesOnUserTweets = 0;
+        let commentsOnUserVideos = 0;
+
+        if (userVideos.length > 0) {
+            const videoIds = userVideos.map((v) => v._id);
+            likesOnUserVideos = await safeCount(Like, {
+                likedEntity: { $in: videoIds },
+                entityType: "Video",
+            });
+            // Note: Comment model uses 'entity' not 'entityId'
+            commentsOnUserVideos = await safeCount(Comment, {
+                entity: { $in: videoIds },
+                entityType: "Video",
+            });
+        }
+
+        // Get likes on tweets
+        const userTweets = await safeFind(
+            Tweet.find({ owner: userId }).select("_id").lean()
+        );
+        if (userTweets.length > 0) {
+            const tweetIds = userTweets.map((t) => t._id);
+            likesOnUserTweets = await safeCount(Like, {
+                likedEntity: { $in: tweetIds },
+                entityType: "Tweet",
+            });
+        }
 
         // Calculate engagement rate
         const totalEngagement =
             likesOnUserVideos + likesOnUserTweets + commentsOnUserVideos;
         const engagementRate =
             totalViews > 0
-                ? ((totalEngagement / totalViews) * 100).toFixed(2)
+                ? parseFloat(((totalEngagement / totalViews) * 100).toFixed(2))
                 : 0;
 
         // Top performing videos (by views)
@@ -168,19 +149,47 @@ const getDashboard = asynchandler(async (req, res) => {
             .sort((a, b) => (b.views || 0) - (a.views || 0))
             .slice(0, 5);
 
+        // Try to get recent activity (Activity model may not exist yet)
+        let recentActivity = [];
+        let weekActivityCount = 0;
+        try {
+            // Dynamic import to check if Activity model exists
+            const { Activity } = await import("../models/activity.model.js");
+            if (Activity) {
+                recentActivity = await Activity.find({ user: userId })
+                    .sort({ createdAt: -1 })
+                    .limit(10)
+                    .lean()
+                    .catch(() => []);
+
+                weekActivityCount = await Activity.countDocuments({
+                    user: userId,
+                    createdAt: { $gte: weekAgo },
+                }).catch(() => 0);
+            }
+        } catch {
+            // Activity model doesn't exist yet, use empty data
+            recentActivity = [];
+            weekActivityCount = 0;
+        }
+
         // Format recent activity with readable messages
         const formattedActivity = recentActivity.map((act) => ({
             _id: act._id,
             type: act.type,
             message: getActivityMessage(act),
             time: act.createdAt,
-            metadata: act.metadata,
+            metadata: act.metadata || {},
         }));
 
         // Build dashboard response
         const dashboardData = {
             user: {
-                ...user.toObject(),
+                _id: user._id,
+                userName: user.userName,
+                fullName: user.fullName,
+                email: user.email,
+                avatar: user.avatar,
                 memberSince: user.createdAt,
             },
 
@@ -192,7 +201,7 @@ const getDashboard = asynchandler(async (req, res) => {
                 subscriptionCount,
                 totalLikesReceived: likesOnUserVideos + likesOnUserTweets,
                 totalCommentsReceived: commentsOnUserVideos,
-                engagementRate: parseFloat(engagementRate),
+                engagementRate,
             },
 
             // Content stats
@@ -200,13 +209,13 @@ const getDashboard = asynchandler(async (req, res) => {
                 videos: videoCount,
                 tweets: tweetCount,
                 comments: commentCount,
-                watchLater: watchLaterData?.videos?.length || 0,
-                historyCount: historyData?.videos?.length || 0,
+                watchLater: watchLaterCount,
+                historyCount,
             },
 
             // Engagement stats
             engagement: {
-                likesGiven: totalVideoLikes + totalTweetLikes,
+                likesGiven: totalVideoLikesGiven + totalTweetLikesGiven,
                 likesReceived: likesOnUserVideos + likesOnUserTweets,
                 commentsReceived: commentsOnUserVideos,
                 weeklyActivity: weekActivityCount,
@@ -220,9 +229,9 @@ const getDashboard = asynchandler(async (req, res) => {
 
             // Quick access counts
             quickStats: {
-                unreadNotifications: 0, // Can be enhanced later
-                pendingWatchLater: watchLaterData?.videos?.length || 0,
-                historyItems: historyData?.videos?.length || 0,
+                unreadNotifications: 0,
+                pendingWatchLater: watchLaterCount,
+                historyItems: historyCount,
             },
         };
 
@@ -252,43 +261,45 @@ const getChannelAnalytics = asynchandler(async (req, res) => {
     startDate.setDate(startDate.getDate() - parseInt(days));
 
     // Get user's videos
-    const userVideos = await Video.find({ owner: userId }).select(
-        "_id views createdAt"
-    );
+    const userVideos = await Video.find({ owner: userId })
+        .select("_id views createdAt")
+        .lean();
     const videoIds = userVideos.map((v) => v._id);
 
-    // Views over time (aggregated by day)
-    const viewsByDay = await Video.aggregate([
-        { $match: { owner: new mongoose.Types.ObjectId(userId) } },
-        {
-            $group: {
-                _id: null,
-                totalViews: { $sum: "$views" },
-                avgViews: { $avg: "$views" },
-                maxViews: { $max: "$views" },
-            },
-        },
-    ]);
+    // View stats
+    const totalViews = userVideos.reduce((sum, v) => sum + (v.views || 0), 0);
+    const avgViews =
+        userVideos.length > 0 ? Math.round(totalViews / userVideos.length) : 0;
+    const maxViews =
+        userVideos.length > 0
+            ? Math.max(...userVideos.map((v) => v.views || 0))
+            : 0;
 
     // Likes trend
-    const likesTrend = await Like.aggregate([
-        {
-            $match: {
-                likedEntity: { $in: videoIds },
-                entityType: "Video",
-                createdAt: { $gte: startDate },
-            },
-        },
-        {
-            $group: {
-                _id: {
-                    $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+    let likesTrend = [];
+    if (videoIds.length > 0) {
+        likesTrend = await Like.aggregate([
+            {
+                $match: {
+                    likedEntity: { $in: videoIds },
+                    entityType: "Video",
+                    createdAt: { $gte: startDate },
                 },
-                count: { $sum: 1 },
             },
-        },
-        { $sort: { _id: 1 } },
-    ]);
+            {
+                $group: {
+                    _id: {
+                        $dateToString: {
+                            format: "%Y-%m-%d",
+                            date: "$createdAt",
+                        },
+                    },
+                    count: { $sum: 1 },
+                },
+            },
+            { $sort: { _id: 1 } },
+        ]).catch(() => []);
+    }
 
     // Subscriber growth
     const subscriberGrowth = await Subscription.aggregate([
@@ -307,35 +318,39 @@ const getChannelAnalytics = asynchandler(async (req, res) => {
             },
         },
         { $sort: { _id: 1 } },
-    ]);
+    ]).catch(() => []);
 
-    // Activity breakdown
-    const activityBreakdown = await Activity.aggregate([
-        {
-            $match: {
-                user: new mongoose.Types.ObjectId(userId),
-                createdAt: { $gte: startDate },
-            },
-        },
-        {
-            $group: {
-                _id: "$type",
-                count: { $sum: 1 },
-            },
-        },
-        { $sort: { count: -1 } },
-    ]);
+    // Activity breakdown (if Activity model exists)
+    let activityBreakdown = [];
+    try {
+        const { Activity } = await import("../models/activity.model.js");
+        if (Activity) {
+            activityBreakdown = await Activity.aggregate([
+                {
+                    $match: {
+                        user: new mongoose.Types.ObjectId(userId),
+                        createdAt: { $gte: startDate },
+                    },
+                },
+                {
+                    $group: {
+                        _id: "$type",
+                        count: { $sum: 1 },
+                    },
+                },
+                { $sort: { count: -1 } },
+            ]).catch(() => []);
+        }
+    } catch {
+        activityBreakdown = [];
+    }
 
     return res.status(200).json(
         new APIresponse(
             200,
             {
                 period: `Last ${days} days`,
-                viewStats: viewsByDay[0] || {
-                    totalViews: 0,
-                    avgViews: 0,
-                    maxViews: 0,
-                },
+                viewStats: { totalViews, avgViews, maxViews },
                 likesTrend,
                 subscriberGrowth,
                 activityBreakdown,
@@ -349,6 +364,8 @@ const getChannelAnalytics = asynchandler(async (req, res) => {
  * Helper function to generate activity messages
  */
 function getActivityMessage(activity) {
+    if (!activity || !activity.type) return "Unknown activity";
+
     const messages = {
         video_watch: `Watched "${activity.metadata?.title || "a video"}"`,
         video_upload: `Uploaded "${activity.metadata?.title || "a video"}"`,
