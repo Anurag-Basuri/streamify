@@ -1,5 +1,8 @@
 import express from "express";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import {
+    verifyAccessToken,
+    requireAuth,
+} from "../middlewares/auth.middleware.js";
 import {
     createTweet,
     deleteTweet,
@@ -11,11 +14,11 @@ import { validateResult } from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
-// Get the latest tweets
-router.get("/", get_latest_tweets);
+// Get the latest tweets (public, verifyAccessToken is lenient - sets req.user if token exists)
+router.get("/", verifyAccessToken, get_latest_tweets);
 
-// Apply authentication middleware to all routes
-router.use(verifyAccessToken);
+// Protected routes below - requireAuth is strict, requires valid token
+router.use(requireAuth);
 
 // Create a new tweet
 router.post("/create", validateResult, createTweet);

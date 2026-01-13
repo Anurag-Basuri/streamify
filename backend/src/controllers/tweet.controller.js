@@ -6,7 +6,6 @@ import { Tweet } from "../models/tweet.model.js";
 
 const createTweet = asynchandler(async (req, res) => {
     const { content } = req.body;
-    
 
     if (!content || content.trim().length < 1) {
         throw new APIerror(400, "Tweet content is required");
@@ -87,9 +86,13 @@ const deleteTweet = asynchandler(async (req, res) => {
 });
 
 const get_latest_tweets = asynchandler(async (req, res) => {
+    // Get current user ID if authenticated (may be undefined for guests)
+    const currentUserId = req.user?._id;
+
     const tweets = await Tweet.aggregate([
         { $sort: { createdAt: -1 } },
         { $limit: 50 },
+        // Lookup owner details
         {
             $lookup: {
                 from: "users",
@@ -99,13 +102,96 @@ const get_latest_tweets = asynchandler(async (req, res) => {
             },
         },
         { $unwind: "$owner" },
+        // Lookup likes count
+        {
+            $lookup: {
+                from: "likes",
+                let: { tweetId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$likedEntity", "$$tweetId"] },
+                                    { $eq: ["$entityType", "Tweet"] },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: "likesData",
+            },
+        },
+        // Lookup if current user has liked (only if user is authenticated)
+        ...(currentUserId
+            ? [
+                  {
+                      $lookup: {
+                          from: "likes",
+                          let: { tweetId: "$_id" },
+                          pipeline: [
+                              {
+                                  $match: {
+                                      $expr: {
+                                          $and: [
+                                              {
+                                                  $eq: [
+                                                      "$likedEntity",
+                                                      "$$tweetId",
+                                                  ],
+                                              },
+                                              { $eq: ["$entityType", "Tweet"] },
+                                              {
+                                                  $eq: [
+                                                      "$likedBy",
+                                                      currentUserId,
+                                                  ],
+                                              },
+                                          ],
+                                      },
+                                  },
+                              },
+                          ],
+                          as: "userLike",
+                      },
+                  },
+              ]
+            : []),
+        // Lookup comments count
+        {
+            $lookup: {
+                from: "comments",
+                let: { tweetId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$entityId", "$$tweetId"] },
+                                    { $eq: ["$entityType", "Tweet"] },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: "commentsData",
+            },
+        },
+        // Project final shape
         {
             $project: {
                 content: 1,
                 createdAt: 1,
+                updatedAt: 1,
+                "owner._id": 1,
                 "owner.userName": 1,
                 "owner.avatar": 1,
                 "owner.fullName": 1,
+                likes: { $size: "$likesData" },
+                isLiked: currentUserId
+                    ? { $gt: [{ $size: "$userLike" }, 0] }
+                    : false,
+                commentsCount: { $size: "$commentsData" },
             },
         },
     ]);
