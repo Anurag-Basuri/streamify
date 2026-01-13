@@ -29,11 +29,14 @@ const createPlaylist = asynchandler(async (req, res) => {
         videos.push(videoId);
     }
 
+    const { isPublic } = req.body;
+
     const playlist = await Playlist.create({
         owner: req.user._id,
         name: name.trim(),
         description: description?.trim() || "",
         videos,
+        isPublic: isPublic === true,
     });
 
     return res
@@ -58,7 +61,7 @@ const getUserPlaylists = asynchandler(async (req, res) => {
         );
 });
 
-// Get a playlist by ID
+// Get a playlist by ID (public playlists visible to all, private only to owner)
 const getPlaylistById = asynchandler(async (req, res) => {
     const { playlistId } = req.params;
 
@@ -67,16 +70,29 @@ const getPlaylistById = asynchandler(async (req, res) => {
     }
 
     const playlist = await Playlist.findById(playlistId)
-        .populate("videos", "title description thumbnail")
-        .populate("owner", "userName email");
+        .populate("videos", "title description thumbnail duration views")
+        .populate("owner", "userName email avatar");
 
     if (!playlist) {
         throw new APIerror(404, "Playlist not found");
     }
 
+    // Check access: public playlists visible to all, private only to owner
+    const isOwner =
+        req.user && playlist.owner._id.toString() === req.user._id.toString();
+    if (!playlist.isPublic && !isOwner) {
+        throw new APIerror(403, "This playlist is private");
+    }
+
     return res
         .status(200)
-        .json(new APIresponse(200, playlist, "Playlist fetched successfully"));
+        .json(
+            new APIresponse(
+                200,
+                { ...playlist.toObject(), isOwner },
+                "Playlist fetched successfully"
+            )
+        );
 });
 
 // Add a video to a playlist
@@ -184,9 +200,15 @@ const updatePlaylist = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid playlist ID");
     }
 
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description.trim();
+    if (req.body.isPublic !== undefined)
+        updateData.isPublic = req.body.isPublic === true;
+
     const playlist = await Playlist.findOneAndUpdate(
         { _id: playlistId, owner: req.user._id },
-        { name: name?.trim(), description: description?.trim() },
+        updateData,
         { new: true, runValidators: true }
     );
 
@@ -202,6 +224,48 @@ const updatePlaylist = asynchandler(async (req, res) => {
         .json(new APIresponse(200, playlist, "Playlist updated successfully"));
 });
 
+// Reorder videos in a playlist
+const reorderPlaylistVideos = asynchandler(async (req, res) => {
+    const { playlistId } = req.params;
+    const { videoIds } = req.body;
+
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new APIerror(400, "Invalid playlist ID");
+    }
+
+    if (!Array.isArray(videoIds)) {
+        throw new APIerror(400, "videoIds must be an array");
+    }
+
+    const playlist = await Playlist.findOne({
+        _id: playlistId,
+        owner: req.user._id,
+    });
+    if (!playlist) {
+        throw new APIerror(
+            404,
+            "Playlist not found or you don't own this playlist"
+        );
+    }
+
+    // Validate all video IDs exist in the playlist
+    const currentVideoIds = playlist.videos.map((v) => v.toString());
+    const validVideoIds = videoIds.filter((id) => currentVideoIds.includes(id));
+
+    if (validVideoIds.length !== currentVideoIds.length) {
+        throw new APIerror(400, "Invalid video IDs or missing videos");
+    }
+
+    playlist.videos = validVideoIds;
+    await playlist.save();
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(200, playlist, "Playlist reordered successfully")
+        );
+});
+
 export {
     createPlaylist,
     getUserPlaylists,
@@ -210,4 +274,5 @@ export {
     removeVideoFromPlaylist,
     deletePlaylist,
     updatePlaylist,
+    reorderPlaylistVideos,
 };

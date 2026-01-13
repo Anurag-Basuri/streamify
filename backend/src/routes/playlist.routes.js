@@ -8,6 +8,7 @@ import {
     removeVideoFromPlaylist,
     deletePlaylist,
     updatePlaylist,
+    reorderPlaylistVideos,
 } from "../controllers/playlist.controller.js";
 
 const router = express.Router();
@@ -34,7 +35,10 @@ router.delete("/remove/:playlistId/videos/:videoId", removeVideoFromPlaylist);
 // Delete a playlist
 router.delete("/delete/:playlistId", deletePlaylist);
 
-// Update a playlist's name or description
+// Update a playlist's name, description, or visibility
 router.put("/update/:playlistId", updatePlaylist);
+
+// Reorder videos in a playlist
+router.put("/:playlistId/reorder", reorderPlaylistVideos);
 
 export default router;

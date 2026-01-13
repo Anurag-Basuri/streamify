@@ -25,6 +25,11 @@ const playlistSchema = new Schema(
                 ref: "Video", // Reference to videos in the playlist
             },
         ],
+        // Public playlists can be viewed by anyone
+        isPublic: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true, // Automatically adds `createdAt` and `updatedAt`
