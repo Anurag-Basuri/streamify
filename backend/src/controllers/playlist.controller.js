@@ -9,10 +9,13 @@ import { asynchandler } from "../utils/asynchandler.js";
 const createPlaylist = asynchandler(async (req, res) => {
     const { name, description } = req.body;
     const { videoId } = req.params;
-    
+
     if (!name || name.trim().length < 1) {
         throw new APIerror(400, "Name is required");
     }
+
+    // Prepare videos array
+    const videos = [];
 
     if (videoId) {
         if (!mongoose.isValidObjectId(videoId)) {
@@ -23,13 +26,14 @@ const createPlaylist = asynchandler(async (req, res) => {
         if (!video) {
             throw new APIerror(404, "Video not found");
         }
+        videos.push(videoId);
     }
 
     const playlist = await Playlist.create({
         owner: req.user._id,
         name: name.trim(),
         description: description?.trim() || "",
-        videos: [videoId],
+        videos,
     });
 
     return res
