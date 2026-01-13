@@ -36,4 +36,7 @@ const playlistSchema = new Schema(
     }
 );
 
+playlistSchema.index({ owner: 1, createdAt: -1 });
+playlistSchema.index({ isPublic: 1, createdAt: -1 });
+
 export const Playlist = mongoose.model("Playlist", playlistSchema);

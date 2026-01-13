@@ -10,9 +10,9 @@ const populateAndMapVideos = async (watchLater) => {
     await watchLater.populate({
         path: "videos.video",
         select: "title thumbnail duration views owner createdAt isPublished description",
-        populate: { path: "owner", select: "username avatar" },
+        populate: { path: "owner", select: "userName fullName avatar" },
     });
-    return watchLater.videos.map(v => ({
+    return watchLater.videos.map((v) => ({
         _id: v._id,
         video: v.video,
         addedAt: v.addedAt,
@@ -219,7 +219,7 @@ const getWatchLaterVideos = asynchandler(async (req, res) => {
                             $options: "i",
                         },
                     },
-                    { "ownerData.username": { $regex: search, $options: "i" } },
+                    { "ownerData.userName": { $regex: search, $options: "i" } },
                 ],
             },
         });
@@ -271,7 +271,8 @@ const getWatchLaterVideos = asynchandler(async (req, res) => {
                 isPublished: "$videoData.isPublished",
                 owner: {
                     _id: "$ownerData._id",
-                    username: "$ownerData.username",
+                    userName: "$ownerData.userName",
+                    fullName: "$ownerData.fullName",
                     avatar: "$ownerData.avatar",
                 },
             },
@@ -459,7 +460,7 @@ const updateVideoReminder = asynchandler(async (req, res) => {
     await watchLater.populate({
         path: "videos.video",
         select: "title thumbnail duration views owner createdAt isPublished description",
-        populate: { path: "owner", select: "username avatar" },
+        populate: { path: "owner", select: "userName fullName avatar" },
     });
     const updatedEntry = watchLater.videos[videoIndex];
 
