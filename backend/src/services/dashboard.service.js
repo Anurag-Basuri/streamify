@@ -10,6 +10,11 @@ import { History } from "../models/history.model.js";
 import { Activity } from "../models/activity.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { TtlCache } from "../utils/ttlCache.js";
+import {
+    getRedis,
+    initRedis,
+    isRedisEnabled,
+} from "../infrastructure/redis.js";
 
 const dashboardCache = new TtlCache({
     ttlMs: process.env.NODE_ENV === "production" ? 30_000 : 5_000,
@@ -263,8 +268,19 @@ async function aggregateTweetStats(userId) {
 
 export async function getDashboardData(userId) {
     const cacheKey = `dashboard:${userId}`;
-    const cached = dashboardCache.get(cacheKey);
-    if (cached) return cached;
+    if (isRedisEnabled()) {
+        try {
+            await initRedis();
+            const redis = getRedis();
+            const cached = redis ? await redis.get(cacheKey) : null;
+            if (cached) return JSON.parse(cached);
+        } catch {
+            // Fall back to memory cache
+        }
+    } else {
+        const cached = dashboardCache.get(cacheKey);
+        if (cached) return cached;
+    }
 
     if (!mongoose.isValidObjectId(userId)) {
         throw new APIerror(400, "Invalid user ID");
@@ -371,6 +387,22 @@ export async function getDashboardData(userId) {
         },
     };
 
-    dashboardCache.set(cacheKey, result);
+    if (isRedisEnabled()) {
+        try {
+            const redis = getRedis();
+            if (redis) {
+                await redis.set(
+                    cacheKey,
+                    JSON.stringify(result),
+                    "PX",
+                    process.env.NODE_ENV === "production" ? 30_000 : 5_000
+                );
+            }
+        } catch {
+            // ignore cache write failures
+        }
+    } else {
+        dashboardCache.set(cacheKey, result);
+    }
     return result;
 }
