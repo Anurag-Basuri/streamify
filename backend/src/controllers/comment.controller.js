@@ -68,9 +68,23 @@ const getEntityComments = asynchandler(async (req, res) => {
                             },
                         },
                     },
-                    { $project: { likedBy: 1 } },
+                    {
+                        $group: {
+                            _id: null,
+                            count: { $sum: 1 },
+                            likedByViewer: {
+                                $max: {
+                                    $cond: [
+                                        { $eq: ["$likedBy", viewerId] },
+                                        1,
+                                        0,
+                                    ],
+                                },
+                            },
+                        },
+                    },
                 ],
-                as: "likes",
+                as: "likesAgg",
             },
         },
         {
@@ -85,9 +99,26 @@ const getEntityComments = asynchandler(async (req, res) => {
                     userName: "$ownerDetails.userName",
                     avatar: "$ownerDetails.avatar",
                 },
-                likesCount: { $size: "$likes" },
+                likesCount: {
+                    $ifNull: [{ $arrayElemAt: ["$likesAgg.count", 0] }, 0],
+                },
                 isLiked: viewerId
-                    ? { $in: [viewerId, "$likes.likedBy"] }
+                    ? {
+                          $gt: [
+                              {
+                                  $ifNull: [
+                                      {
+                                          $arrayElemAt: [
+                                              "$likesAgg.likedByViewer",
+                                              0,
+                                          ],
+                                      },
+                                      0,
+                                  ],
+                              },
+                              0,
+                          ],
+                      }
                     : false,
             },
         },
@@ -405,8 +436,23 @@ const getCommentReplies = asynchandler(async (req, res) => {
                             },
                         },
                     },
+                    {
+                        $group: {
+                            _id: null,
+                            count: { $sum: 1 },
+                            likedByViewer: {
+                                $max: {
+                                    $cond: [
+                                        { $eq: ["$likedBy", viewerId] },
+                                        1,
+                                        0,
+                                    ],
+                                },
+                            },
+                        },
+                    },
                 ],
-                as: "likes",
+                as: "likesAgg",
             },
         },
         {
@@ -419,9 +465,26 @@ const getCommentReplies = asynchandler(async (req, res) => {
                     userName: "$ownerDetails.userName",
                     avatar: "$ownerDetails.avatar",
                 },
-                likesCount: { $size: "$likes" },
+                likesCount: {
+                    $ifNull: [{ $arrayElemAt: ["$likesAgg.count", 0] }, 0],
+                },
                 isLiked: viewerId
-                    ? { $in: [viewerId, "$likes.likedBy"] }
+                    ? {
+                          $gt: [
+                              {
+                                  $ifNull: [
+                                      {
+                                          $arrayElemAt: [
+                                              "$likesAgg.likedByViewer",
+                                              0,
+                                          ],
+                                      },
+                                      0,
+                                  ],
+                              },
+                              0,
+                          ],
+                      }
                     : false,
             },
         },

@@ -9,6 +9,12 @@ import { Subscription } from "../models/subscription.model.js";
 import { History } from "../models/history.model.js";
 import { Activity } from "../models/activity.model.js";
 import { APIerror } from "../utils/APIerror.js";
+import { TtlCache } from "../utils/ttlCache.js";
+
+const dashboardCache = new TtlCache({
+    ttlMs: process.env.NODE_ENV === "production" ? 30_000 : 5_000,
+    maxEntries: 1000,
+});
 
 function objectId(id) {
     return new mongoose.Types.ObjectId(id);
@@ -256,6 +262,10 @@ async function aggregateTweetStats(userId) {
 }
 
 export async function getDashboardData(userId) {
+    const cacheKey = `dashboard:${userId}`;
+    const cached = dashboardCache.get(cacheKey);
+    if (cached) return cached;
+
     if (!mongoose.isValidObjectId(userId)) {
         throw new APIerror(400, "Invalid user ID");
     }
@@ -321,7 +331,7 @@ export async function getDashboardData(userId) {
               )
             : 0;
 
-    return {
+    const result = {
         user: {
             _id: user._id,
             userName: user.userName,
@@ -360,4 +370,7 @@ export async function getDashboardData(userId) {
             historyItems: historyCount,
         },
     };
+
+    dashboardCache.set(cacheKey, result);
+    return result;
 }

@@ -9,6 +9,7 @@ import session from "express-session";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+import { requestIdMiddleware } from "./middlewares/requestId.middleware.js";
 
 // Import route files
 import userRouter from "./routes/user.routes.js";
@@ -66,6 +67,9 @@ const authLimiter = rateLimit({
 });
 
 app.use(limiter);
+
+// Attach request id for tracing (also returned as X-Request-Id)
+app.use(requestIdMiddleware);
 
 // Security Headers
 app.use(
@@ -150,7 +154,7 @@ if (process.env.NODE_ENV !== "production") {
                       ? "\x1b[33m"
                       : "\x1b[32m";
             console.log(
-                `${color}${req.method}\x1b[0m ${req.originalUrl} - ${status} (${duration}ms)`
+                `${color}${req.method}\x1b[0m ${req.originalUrl} - ${status} (${duration}ms) [${req.id}]`
             );
         });
         next();
@@ -229,7 +233,7 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
     // Log error (with stack in development)
-    console.error(`❌ Error: ${err.message}`);
+    console.error(`❌ Error [${req.id}]: ${err.message}`);
     if (process.env.NODE_ENV !== "production") {
         console.error(err.stack);
     }
@@ -244,6 +248,7 @@ app.use((err, req, res, next) => {
         statusCode,
         message,
         errors: err.errors || [],
+        requestId: req.id,
     };
 
     // Add stack trace in development
