@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyAccessToken } from "../middlewares/auth.middleware.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
     addVideoToWatchLater,
     removeVideoFromWatchLater,
@@ -11,7 +11,8 @@ import {
 
 const router = express.Router();
 
-router.use(verifyAccessToken);
+// Watch later is always user-specific
+router.use(requireAuth);
 
 router.get("/", getWatchLaterVideos);
 router.post("/:videoId", addVideoToWatchLater);

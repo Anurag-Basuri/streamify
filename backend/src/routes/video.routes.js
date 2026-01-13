@@ -42,6 +42,15 @@ router.get(
     getRecommendedVideos
 );
 
+// Get user's videos
+router.get(
+    "/user/:userID",
+    requireAuth,
+    param("userID").isMongoId().withMessage("Invalid user ID"),
+    validateResult,
+    getUserVideos
+);
+
 // Get single video by ID (with optional auth for isLiked)
 router.get(
     "/:videoID",
@@ -131,15 +140,6 @@ router.patch(
     param("videoID").isMongoId().withMessage("Invalid video ID"),
     validateResult,
     togglePublishStatus
-);
-
-// Get user's videos
-router.get(
-    "/user/:userID",
-    requireAuth,
-    param("userID").isMongoId().withMessage("Invalid user ID"),
-    validateResult,
-    getUserVideos
 );
 
 // Generate download URL

@@ -24,13 +24,14 @@ router.get("/stats", getHistoryStats);
 // Add video to history
 router.post("/add/:videoId", addVideoToHistory);
 
-// Remove specific video from history
-router.delete("/:videoId", removeVideoFromHistory);
-
 // Remove multiple videos from history
 router.delete("/batch", removeMultipleFromHistory);
 
-// Clear all history
+// Clear all history (support both DELETE / and DELETE /clear)
+router.delete("/clear", clearUserHistory);
 router.delete("/", clearUserHistory);
+
+// Remove specific video from history
+router.delete("/:videoId", removeVideoFromHistory);
 
 export default router;
