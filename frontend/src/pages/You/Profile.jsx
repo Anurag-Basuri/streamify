@@ -1,375 +1,478 @@
+/**
+ * Profile Page
+ * User's own profile with stats, avatar/cover upload, and content overview
+ */
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { updateAvatar, updateCoverImage } from "../../services/authService.js";
+import { useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    FiCamera,
+    FiEdit3,
+    FiUsers,
+    FiVideo,
+    FiHeart,
+    FiMessageCircle,
+    FiCalendar,
+    FiMail,
+    FiSettings,
+    FiLogOut,
+    FiCheck,
+    FiX,
+    FiUpload,
+} from "react-icons/fi";
+import { HiSparkles } from "react-icons/hi";
 import useAuth from "../../hooks/useAuth.js";
-import axios from "axios";
-import PropTypes from "prop-types";
-import { Fragment } from "react";
-import { LoadingSpinner } from "../../components/Common/LoadingSpinner.jsx";
+import { updateAvatar, updateCoverImage } from "../../services/authService.js";
+import { api } from "../../services/api.js";
+import { PageTransition } from "../../components/Common";
+import {
+    showError,
+    showSuccess,
+} from "../../components/Common/ToastProvider.jsx";
+import { formatRelativeTime } from "../../utils";
 
-const useAxios = () => {
-    const instance = axios.create();
+// ============================================================================
+// STAT CARD COMPONENT
+// ============================================================================
 
-    instance.interceptors.request.use((config) => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    });
+const StatItem = ({ icon: Icon, label, value, color }) => (
+    <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-secondary)]/50">
+        <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}
+        >
+            <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div>
+            <p className="text-xl font-bold text-[var(--text-primary)]">
+                {typeof value === "number"
+                    ? value.toLocaleString()
+                    : value || "0"}
+            </p>
+            <p className="text-xs text-[var(--text-tertiary)]">{label}</p>
+        </div>
+    </div>
+);
 
-    instance.interceptors.response.use(
-        (response) => response,
-        async (error) => {
-            if (error.response?.status === 401) {
-                console.error("Unauthorized access. Redirecting to login...");
-                localStorage.removeItem("accessToken");
-                window.location.href = "/auth";
-            }
-            return Promise.reject(error);
-        }
-    );
+// ============================================================================
+// IMAGE UPLOAD OVERLAY
+// ============================================================================
 
-    return instance;
-};
+const ImageUploadOverlay = ({ onSelect, loading, label }) => (
+    <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+        <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => e.target.files?.[0] && onSelect(e.target.files[0])}
+            className="hidden"
+            disabled={loading}
+        />
+        <div className="flex flex-col items-center gap-2 text-white">
+            <FiCamera size={24} />
+            <span className="text-sm font-medium">{label}</span>
+        </div>
+    </label>
+);
+
+// ============================================================================
+// SKELETON LOADER
+// ============================================================================
+
+const ProfileSkeleton = () => (
+    <div className="space-y-6">
+        {/* Cover skeleton */}
+        <div className="h-48 sm:h-64 skeleton rounded-2xl" />
+
+        {/* Profile info skeleton */}
+        <div className="flex flex-col sm:flex-row gap-6 -mt-16 px-6">
+            <div className="w-32 h-32 skeleton rounded-full border-4 border-[var(--bg-primary)]" />
+            <div className="flex-1 space-y-3 pt-4">
+                <div className="h-8 w-48 skeleton rounded" />
+                <div className="h-4 w-32 skeleton rounded" />
+            </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-20 skeleton rounded-xl" />
+            ))}
+        </div>
+    </div>
+);
+
+// ============================================================================
+// MAIN PROFILE COMPONENT
+// ============================================================================
 
 const Profile = () => {
-    const { user, logout, isLoading, updateUser } = useAuth();
     const navigate = useNavigate();
-    const axios = useAxios();
+    const { user, isAuthenticated, isLoading, logout, updateUser } = useAuth();
 
-    const [files, setFiles] = useState({
-        avatar: null,
-        cover: null,
-    });
-
-    const [uploadState, setUploadState] = useState({
-        loading: false,
-        error: null,
-    });
-
-    const [dashboard, setDashboard] = useState({
-        data: null,
-        loading: true,
-        error: null,
-    });
-
-    // Handle file upload for avatar and cover images
-    const handleFileUpload = useCallback(
-        async (type) => {
-            if (!files[type] || user?.isGoogleUser) return;
-
-            setUploadState({ loading: true, error: null });
-            try {
-                console.log(`Uploading ${type}...`);
-                const response =
-                    type === "avatar"
-                        ? await updateAvatar(files[type])
-                        : await updateCoverImage(files[type]);
-
-                console.log(`${type} uploaded successfully:`, response.data);
-                updateUser({ [type]: response.data[type] });
-                setFiles((prev) => ({ ...prev, [type]: null }));
-            } catch (error) {
-                console.error(`Failed to upload ${type}:`, error);
-                setUploadState((prev) => ({
-                    ...prev,
-                    error: error.message || "Failed to update image",
-                }));
-            } finally {
-                setUploadState((prev) => ({ ...prev, loading: false }));
-            }
-        },
-        [files, updateUser, user]
-    );
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [uploadingCover, setUploadingCover] = useState(false);
+    const [pendingAvatar, setPendingAvatar] = useState(null);
+    const [pendingCover, setPendingCover] = useState(null);
 
     // Fetch dashboard data
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                console.log("Fetching dashboard data...");
-                const { data } = await axios.get("/api/v1/dashboard");
-                console.log("Dashboard data fetched successfully:", data);
-                setDashboard({
-                    data: data.data,
-                    loading: false,
-                    error: null,
-                });
-            } catch (error) {
-                console.error("Error fetching dashboard:", error);
-                setDashboard({
-                    data: null,
-                    loading: false,
-                    error:
-                        error.response?.data?.message ||
-                        "Failed to load dashboard",
-                });
-            }
-        };
-
-        // Fetch data only once
-        if (dashboard.loading) {
-            fetchDashboard();
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await api.get("/api/v1/dashboard");
+            setDashboardData(response.data?.data || null);
+        } catch (error) {
+            console.error("Failed to fetch profile data:", error);
+        } finally {
+            setLoading(false);
         }
-    }, [axios, dashboard.loading]);
+    }, []);
 
-    // Redirect to auth if user is not logged in
     useEffect(() => {
-        if (!isLoading && !user) {
-            console.warn("User not logged in. Redirecting to login...");
+        if (!isLoading && !isAuthenticated) {
             navigate("/auth");
+            return;
         }
-    }, [user, isLoading, navigate]);
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [isAuthenticated, isLoading, navigate, fetchData]);
 
-    // Render loading spinner if data is still loading
-    if (!user || dashboard.loading) {
-        console.log("Loading user or dashboard data...");
-        return <LoadingSpinner />;
-    }
+    // Handle avatar upload
+    const handleAvatarUpload = async () => {
+        if (!pendingAvatar) return;
 
-    // Render error message if dashboard fetch fails
-    if (dashboard.error) {
-        console.error("Dashboard fetch error:", dashboard.error);
+        setUploadingAvatar(true);
+        try {
+            const response = await updateAvatar(pendingAvatar);
+            updateUser({ avatar: response.data?.avatar || response.avatar });
+            setPendingAvatar(null);
+            showSuccess("Avatar updated!");
+        } catch (error) {
+            showError(error.message || "Failed to update avatar");
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
+    // Handle cover upload
+    const handleCoverUpload = async () => {
+        if (!pendingCover) return;
+
+        setUploadingCover(true);
+        try {
+            const response = await updateCoverImage(pendingCover);
+            updateUser({
+                coverImage: response.data?.coverImage || response.coverImage,
+            });
+            setPendingCover(null);
+            showSuccess("Cover image updated!");
+        } catch (error) {
+            showError(error.message || "Failed to update cover image");
+        } finally {
+            setUploadingCover(false);
+        }
+    };
+
+    // Handle logout
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate("/");
+        } catch (error) {
+            showError("Failed to logout");
+        }
+    };
+
+    if (isLoading || loading) {
         return (
-            <div className="text-center py-8">
-                <p className="text-red-500">{dashboard.error}</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md"
-                >
-                    Retry
-                </button>
-            </div>
+            <PageTransition className="min-h-screen">
+                <ProfileSkeleton />
+            </PageTransition>
         );
     }
 
-    // Render error message if user data is incomplete
-    if (!user.name) {
-        console.warn("User data is incomplete.");
-        return (
-            <div className="text-center py-8">
-                <p className="text-red-500">
-                    User data is incomplete. Please try again later.
-                </p>
-            </div>
-        );
+    if (!user) {
+        return null;
     }
+
+    const stats = dashboardData?.stats || {};
+    const content = dashboardData?.content || {};
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden"
-        >
-            {/* Cover Image Upload */}
-            <ImageUpload
-                type="cover"
-                image={user?.coverImage}
-                file={files.cover}
-                setFiles={setFiles}
-                handleUpload={handleFileUpload}
-                uploadState={uploadState}
-                isGoogleUser={user?.isGoogleUser}
-            />
+        <PageTransition className="min-h-screen">
+            <div className="max-w-4xl mx-auto">
+                {/* Cover Image */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="relative h-48 sm:h-64 rounded-2xl overflow-hidden bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+                >
+                    {(pendingCover || user.coverImage) && (
+                        <img
+                            src={
+                                pendingCover
+                                    ? URL.createObjectURL(pendingCover)
+                                    : user.coverImage
+                            }
+                            alt="Cover"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
 
-            <div className="p-8">
-                {/* User Header */}
-                <UserHeader
-                    user={user}
-                    files={files}
-                    setFiles={setFiles}
-                    uploadState={uploadState}
-                    handleFileUpload={handleFileUpload}
-                />
+                    {!user.isGoogleUser && (
+                        <ImageUploadOverlay
+                            onSelect={setPendingCover}
+                            loading={uploadingCover}
+                            label="Change cover"
+                        />
+                    )}
 
-                {/* Error Message */}
-                {uploadState.error && (
-                    <div className="text-red-500 text-sm mb-4">
-                        Error: {uploadState.error}
-                    </div>
-                )}
+                    {/* Pending cover actions */}
+                    <AnimatePresence>
+                        {pendingCover && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                className="absolute bottom-4 right-4 flex gap-2"
+                            >
+                                <button
+                                    onClick={() => setPendingCover(null)}
+                                    disabled={uploadingCover}
+                                    className="p-2 rounded-full bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                                >
+                                    <FiX size={20} />
+                                </button>
+                                <button
+                                    onClick={handleCoverUpload}
+                                    disabled={uploadingCover}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] transition-colors"
+                                >
+                                    {uploadingCover ? (
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            <FiCheck size={18} />
+                                            Save
+                                        </>
+                                    )}
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
 
-                {/* User Stats */}
-                <UserStats stats={dashboard.data?.stats} />
-
-                {/* User Content */}
-                <UserContent content={dashboard.data} />
-
-                {/* Logout Button */}
-                <div className="mt-8 flex gap-4">
-                    <button
-                        onClick={logout}
-                        className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                {/* Profile Header */}
+                <div className="relative px-4 sm:px-6 pb-6">
+                    {/* Avatar */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="relative -mt-16 sm:-mt-20 mb-4"
                     >
-                        Logout
-                    </button>
+                        <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-[var(--bg-primary)] overflow-hidden bg-[var(--bg-elevated)]">
+                            <img
+                                src={
+                                    pendingAvatar
+                                        ? URL.createObjectURL(pendingAvatar)
+                                        : user.avatar
+                                }
+                                alt={user.fullName}
+                                className="w-full h-full object-cover"
+                            />
+
+                            {!user.isGoogleUser && (
+                                <ImageUploadOverlay
+                                    onSelect={setPendingAvatar}
+                                    loading={uploadingAvatar}
+                                    label="Change"
+                                />
+                            )}
+                        </div>
+
+                        {/* Pending avatar actions */}
+                        <AnimatePresence>
+                            {pendingAvatar && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    className="absolute -bottom-2 left-0 flex gap-2"
+                                >
+                                    <button
+                                        onClick={() => setPendingAvatar(null)}
+                                        disabled={uploadingAvatar}
+                                        className="p-1.5 rounded-full bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-lg"
+                                    >
+                                        <FiX size={16} />
+                                    </button>
+                                    <button
+                                        onClick={handleAvatarUpload}
+                                        disabled={uploadingAvatar}
+                                        className="p-1.5 rounded-full bg-[var(--brand-primary)] text-white shadow-lg"
+                                    >
+                                        {uploadingAvatar ? (
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <FiCheck size={16} />
+                                        )}
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+
+                    {/* User Info */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-4"
+                    >
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+                                {user.fullName}
+                            </h1>
+                            <p className="text-[var(--text-tertiary)]">
+                                @{user.userName}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-secondary)]">
+                            <span className="flex items-center gap-1.5">
+                                <FiMail
+                                    size={14}
+                                    className="text-[var(--text-tertiary)]"
+                                />
+                                {user.email}
+                            </span>
+                            {user.createdAt && (
+                                <span className="flex items-center gap-1.5">
+                                    <FiCalendar
+                                        size={14}
+                                        className="text-[var(--text-tertiary)]"
+                                    />
+                                    Joined{" "}
+                                    {new Date(
+                                        user.createdAt
+                                    ).toLocaleDateString("en-US", {
+                                        month: "long",
+                                        year: "numeric",
+                                    })}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-3">
+                            <Link
+                                to="/settings"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                            >
+                                <FiSettings size={18} />
+                                Settings
+                            </Link>
+                            <Link
+                                to={`/channel/${user.userName}`}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] transition-colors"
+                            >
+                                <HiSparkles size={18} />
+                                View Channel
+                            </Link>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--error)]/30 text-[var(--error)] hover:bg-[var(--error)]/10 transition-colors"
+                            >
+                                <FiLogOut size={18} />
+                                Logout
+                            </button>
+                        </div>
+                    </motion.div>
                 </div>
+
+                {/* Stats Grid */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="px-4 sm:px-6 mb-6"
+                >
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                        Your Stats
+                    </h2>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <StatItem
+                            icon={FiUsers}
+                            label="Subscribers"
+                            value={stats.subscriberCount}
+                            color="bg-gradient-to-br from-pink-500 to-rose-600"
+                        />
+                        <StatItem
+                            icon={FiVideo}
+                            label="Videos"
+                            value={content.videos}
+                            color="bg-gradient-to-br from-blue-500 to-cyan-600"
+                        />
+                        <StatItem
+                            icon={FiHeart}
+                            label="Likes Received"
+                            value={stats.totalLikesReceived}
+                            color="bg-gradient-to-br from-red-500 to-orange-600"
+                        />
+                        <StatItem
+                            icon={FiMessageCircle}
+                            label="Comments"
+                            value={stats.totalCommentsReceived}
+                            color="bg-gradient-to-br from-purple-500 to-indigo-600"
+                        />
+                    </div>
+                </motion.div>
+
+                {/* Quick Links */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="px-4 sm:px-6 pb-8"
+                >
+                    <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+                        Quick Access
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <Link
+                            to="/uservideos"
+                            className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-light)] hover:border-[var(--brand-primary)]/50 transition-colors"
+                        >
+                            <FiVideo className="w-5 h-5 text-[var(--brand-primary)]" />
+                            <span className="font-medium text-[var(--text-primary)]">
+                                Your Videos
+                            </span>
+                        </Link>
+                        <Link
+                            to="/create"
+                            className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-light)] hover:border-[var(--brand-primary)]/50 transition-colors"
+                        >
+                            <FiUpload className="w-5 h-5 text-[var(--brand-primary)]" />
+                            <span className="font-medium text-[var(--text-primary)]">
+                                Upload
+                            </span>
+                        </Link>
+                        <Link
+                            to="/dashboard"
+                            className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-light)] hover:border-[var(--brand-primary)]/50 transition-colors"
+                        >
+                            <HiSparkles className="w-5 h-5 text-[var(--brand-primary)]" />
+                            <span className="font-medium text-[var(--text-primary)]">
+                                Dashboard
+                            </span>
+                        </Link>
+                    </div>
+                </motion.div>
             </div>
-        </motion.div>
+        </PageTransition>
     );
 };
 
 export default Profile;
-
-// UserHeader Component
-export const UserHeader = ({
-    user,
-    files,
-    setFiles,
-    uploadState,
-    handleFileUpload,
-}) => (
-    <div className="flex items-center gap-8 mb-8">
-        <div className="relative">
-            <img
-                src={
-                    files.avatar
-                        ? URL.createObjectURL(files.avatar)
-                        : user.avatar
-                }
-                alt="Profile"
-                className="w-32 h-32 rounded-full object-cover"
-            />
-            {!user.isGoogleUser && (
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                        setFiles((prev) => ({
-                            ...prev,
-                            avatar: e.target.files[0],
-                        }))
-                    }
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-            )}
-        </div>
-        <div>
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <p className="text-gray-600">{user.email}</p>
-            {files.avatar && (
-                <button
-                    onClick={() => handleFileUpload("avatar")}
-                    disabled={uploadState.loading}
-                    className="mt-2 px-4 py-1 bg-blue-500 text-white rounded-md"
-                >
-                    {uploadState.loading ? "Uploading..." : "Update Avatar"}
-                </button>
-            )}
-        </div>
-    </div>
-);
-
-UserHeader.propTypes = {
-    user: PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        email: PropTypes.string.isRequired,
-        avatar: PropTypes.string.isRequired,
-        isGoogleUser: PropTypes.bool,
-    }).isRequired,
-    files: PropTypes.shape({
-        avatar: PropTypes.object,
-    }).isRequired,
-    setFiles: PropTypes.func.isRequired,
-    uploadState: PropTypes.shape({
-        loading: PropTypes.bool.isRequired,
-        error: PropTypes.string,
-    }).isRequired,
-    handleFileUpload: PropTypes.func.isRequired,
-};
-
-// UserStats Component
-export const UserStats = ({ stats }) => {
-    if (!stats) return null;
-    return (
-        <div className="grid grid-cols-3 gap-4 mb-8">
-            {Object.entries(stats).map(([key, value]) => (
-                <div
-                    key={key}
-                    className="text-center p-4 bg-gray-50 rounded-lg"
-                >
-                    <h3 className="font-semibold capitalize">{key}</h3>
-                    <p className="text-xl">{value}</p>
-                </div>
-            ))}
-        </div>
-    );
-};
-
-UserStats.propTypes = {
-    stats: PropTypes.object,
-};
-
-// UserContent Component
-export const UserContent = ({ content }) => {
-    if (!content) return null;
-    return (
-        <div className="space-y-6">
-            <p className="text-gray-600">User content will be displayed here</p>
-        </div>
-    );
-};
-
-UserContent.propTypes = {
-    content: PropTypes.object,
-};
-
-// ImageUpload Component
-export const ImageUpload = ({
-    type,
-    image,
-    file,
-    setFiles,
-    handleUpload,
-    uploadState,
-    isGoogleUser,
-}) => (
-    <div className="relative h-64 bg-gray-100">
-        <img
-            src={file ? URL.createObjectURL(file) : image}
-            alt={type}
-            className="w-full h-full object-cover"
-        />
-        {!isGoogleUser && (
-            <Fragment>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                        setFiles((prev) => ({
-                            ...prev,
-                            [type]: e.target.files[0],
-                        }))
-                    }
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                {file && (
-                    <button
-                        onClick={() => handleUpload(type)}
-                        disabled={uploadState.loading}
-                        className="absolute bottom-4 right-4 px-4 py-2 bg-blue-500 text-white rounded-md"
-                    >
-                        {uploadState.loading
-                            ? "Uploading..."
-                            : `Update ${type}`}
-                    </button>
-                )}
-            </Fragment>
-        )}
-    </div>
-);
-
-ImageUpload.propTypes = {
-    type: PropTypes.string.isRequired,
-    image: PropTypes.string,
-    file: PropTypes.object,
-    setFiles: PropTypes.func.isRequired,
-    handleUpload: PropTypes.func.isRequired,
-    uploadState: PropTypes.shape({
-        loading: PropTypes.bool.isRequired,
-        error: PropTypes.string,
-    }).isRequired,
-    isGoogleUser: PropTypes.bool,
-};

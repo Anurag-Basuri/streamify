@@ -428,7 +428,7 @@ const getUserProfile = asynchandler(async (req, res, next) => {
             },
             {
                 $lookup: {
-                    from: "subscription",
+                    from: "subscriptions",
                     localField: "_id",
                     foreignField: "channel",
                     as: "subscribers",
@@ -436,7 +436,7 @@ const getUserProfile = asynchandler(async (req, res, next) => {
             },
             {
                 $lookup: {
-                    from: "subscription",
+                    from: "subscriptions",
                     localField: "_id",
                     foreignField: "subscriber",
                     as: "subscribed",
