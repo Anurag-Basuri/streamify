@@ -1,12 +1,7 @@
 import mongoose from "mongoose";
-import { User } from "../models/user.model.js";
-import { Like } from "../models/like.model.js";
-import { Tweet } from "../models/tweet.model.js";
-import { Comment } from "../models/comment.model.js";
 import { Video } from "../models/video.model.js";
-import { WatchLater } from "../models/watchlater.model.js";
+import { Like } from "../models/like.model.js";
 import { Subscription } from "../models/subscription.model.js";
-import { History } from "../models/history.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";

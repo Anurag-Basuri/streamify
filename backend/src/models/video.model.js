@@ -101,6 +101,14 @@ videoSchema.virtual("ownerProfile", {
 
 videoSchema.index({ createdAt: -1 });
 videoSchema.index({ views: -1 });
+// Owner queries (getUserVideos, dashboard)
+videoSchema.index({ owner: 1, createdAt: -1 });
+videoSchema.index({ owner: 1, isDeleted: 1 });
+// Search and filter queries (getAllVideos)
+videoSchema.index({ isPublished: 1, isDeleted: 1, createdAt: -1 });
+videoSchema.index({ tags: 1 });
+// Text search index
+videoSchema.index({ title: "text", description: "text", tags: "text" });
 videoSchema.plugin(mongooseAggregatePaginate);
 
 export const Video = mongoose.model("Video", videoSchema);

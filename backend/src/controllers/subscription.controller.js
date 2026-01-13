@@ -28,7 +28,7 @@ const toggleSubscription = asynchandler(async (req, res) => {
 
     if (subscribed) {
         // If subscription exists, remove it
-        await subscribed.remove();
+        await Subscription.deleteOne({ _id: subscribed._id });
         return res
             .status(200)
             .json(new APIresponse(200, null, "Channel unsubscribed"));
