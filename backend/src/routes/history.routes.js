@@ -1,27 +1,36 @@
-import express from 'express';
-import { verifyAccessToken } from '../middlewares/auth.middleware.js';
+import express from "express";
+import { requireAuth } from "../middlewares/auth.middleware.js";
 import {
     addVideoToHistory,
     getUserHistory,
     removeVideoFromHistory,
+    removeMultipleFromHistory,
     clearUserHistory,
-} from '../controllers/history.controller.js';
+    getHistoryStats,
+} from "../controllers/history.controller.js";
 
 const router = express.Router();
 
-router.use(verifyAccessToken);
+// All history routes require authentication
+router.use(requireAuth);
 
-// Get user's history
+// Get user's history (with pagination and search)
+// Query params: page, limit, search
 router.get("/", getUserHistory);
+
+// Get history statistics
+router.get("/stats", getHistoryStats);
 
 // Add video to history
 router.post("/add/:videoId", addVideoToHistory);
 
-// Remove video from history
+// Remove specific video from history
 router.delete("/:videoId", removeVideoFromHistory);
 
-// Clear all history
-router.delete("/clear", clearUserHistory);
+// Remove multiple videos from history
+router.delete("/batch", removeMultipleFromHistory);
 
-// Export the router
+// Clear all history
+router.delete("/", clearUserHistory);
+
 export default router;
