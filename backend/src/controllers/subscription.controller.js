@@ -54,7 +54,7 @@ const toggleSubscription = asynchandler(async (req, res) => {
 // Get Subscribed Channels (Channels the user is subscribed to)
 const getSubscribedChannel = asynchandler(async (req, res) => {
     const subscriptions = await Subscription.find({ subscriber: req.user._id })
-        .populate("channel", "name avatar") // Customize fields to populate
+        .populate("channel", "userName fullName avatar")
         .sort({ createdAt: -1 });
 
     return res
@@ -73,7 +73,7 @@ const getUserSubscribed = asynchandler(async (req, res) => {
     }
 
     const subscriptions = await Subscription.find({ channel: channelId })
-        .populate("subscriber", "name avatar") // Customize fields to populate
+        .populate("subscriber", "userName fullName avatar")
         .sort({ createdAt: -1 });
 
     return res
@@ -81,4 +81,38 @@ const getUserSubscribed = asynchandler(async (req, res) => {
         .json(new APIresponse(200, subscriptions, "Subscribers fetched"));
 });
 
-export { toggleSubscription, getSubscribedChannel, getUserSubscribed };
+// Check if current user is subscribed to a channel
+const checkSubscription = asynchandler(async (req, res) => {
+    const { channelId } = req.params;
+
+    if (!mongoose.isValidObjectId(channelId)) {
+        throw new APIerror(400, "Invalid channel ID");
+    }
+
+    const [subscription, subscriberCount] = await Promise.all([
+        Subscription.findOne({
+            subscriber: req.user._id,
+            channel: channelId,
+        }).select("_id"),
+        Subscription.countDocuments({ channel: channelId }).catch(() => 0),
+    ]);
+
+    return res.status(200).json(
+        new APIresponse(
+            200,
+            {
+                channelId,
+                isSubscribed: Boolean(subscription),
+                subscriberCount,
+            },
+            "Subscription status fetched"
+        )
+    );
+});
+
+export {
+    toggleSubscription,
+    getSubscribedChannel,
+    getUserSubscribed,
+    checkSubscription,
+};

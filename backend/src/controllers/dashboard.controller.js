@@ -10,33 +10,7 @@ import { History } from "../models/history.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
-
-// Helper to safely count documents
-const safeCount = async (model, query) => {
-    try {
-        return await model.countDocuments(query);
-    } catch {
-        return 0;
-    }
-};
-
-// Helper to safely find documents
-const safeFind = async (query) => {
-    try {
-        return await query;
-    } catch {
-        return [];
-    }
-};
-
-// Helper to safely find one
-const safeFindOne = async (query) => {
-    try {
-        return await query;
-    } catch {
-        return null;
-    }
-};
+import { getDashboardData } from "../services/dashboard.service.js";
 
 /**
  * Get comprehensive dashboard data
@@ -48,206 +22,27 @@ const getDashboard = asynchandler(async (req, res) => {
         throw new APIerror(400, "Invalid user ID");
     }
 
-    const user = await User.findById(userId).select(
-        "userName fullName email avatar createdAt"
-    );
-    if (!user) {
-        throw new APIerror(404, "User not found");
-    }
+    const dashboardData = await getDashboardData(userId);
 
-    try {
-        // Calculate date ranges
-        const now = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        // Fetch basic counts in parallel (these are simple and safe)
-        const [
-            videoCount,
-            tweetCount,
-            commentCount,
-            totalVideoLikesGiven,
-            totalTweetLikesGiven,
-            subscriberCount,
-            subscriptionCount,
-        ] = await Promise.all([
-            safeCount(Video, { owner: userId }),
-            safeCount(Tweet, { owner: userId }),
-            safeCount(Comment, { owner: userId }),
-            safeCount(Like, { likedBy: userId, entityType: "Video" }),
-            safeCount(Like, { likedBy: userId, entityType: "Tweet" }),
-            safeCount(Subscription, { channel: userId }),
-            safeCount(Subscription, { subscriber: userId }),
-        ]);
-
-        // Fetch user's videos
-        const userVideos = await safeFind(
-            Video.find({ owner: userId })
-                .select("title thumbnail views duration createdAt")
-                .sort({ createdAt: -1 })
-                .limit(10)
-                .lean()
-        );
-
-        // Calculate total views
-        const totalViews = userVideos.reduce(
-            (sum, v) => sum + (v.views || 0),
-            0
-        );
-
-        // Get watch later count
-        const watchLaterData = await safeFindOne(
-            WatchLater.findOne({ owner: userId }).select("videos")
-        );
-        const watchLaterCount = watchLaterData?.videos?.length || 0;
-
-        // Get history count
-        const historyData = await safeFindOne(
-            History.findOne({ user: userId }).select("videos")
-        );
-        const historyCount = historyData?.videos?.length || 0;
-
-        // Get likes received on user's content
-        let likesOnUserVideos = 0;
-        let likesOnUserTweets = 0;
-        let commentsOnUserVideos = 0;
-
-        if (userVideos.length > 0) {
-            const videoIds = userVideos.map((v) => v._id);
-            likesOnUserVideos = await safeCount(Like, {
-                likedEntity: { $in: videoIds },
-                entityType: "Video",
-            });
-            // Note: Comment model uses 'entity' not 'entityId'
-            commentsOnUserVideos = await safeCount(Comment, {
-                entity: { $in: videoIds },
-                entityType: "Video",
-            });
-        }
-
-        // Get likes on tweets
-        const userTweets = await safeFind(
-            Tweet.find({ owner: userId }).select("_id").lean()
-        );
-        if (userTweets.length > 0) {
-            const tweetIds = userTweets.map((t) => t._id);
-            likesOnUserTweets = await safeCount(Like, {
-                likedEntity: { $in: tweetIds },
-                entityType: "Tweet",
-            });
-        }
-
-        // Calculate engagement rate
-        const totalEngagement =
-            likesOnUserVideos + likesOnUserTweets + commentsOnUserVideos;
-        const engagementRate =
-            totalViews > 0
-                ? parseFloat(((totalEngagement / totalViews) * 100).toFixed(2))
-                : 0;
-
-        // Top performing videos (by views)
-        const topVideos = [...userVideos]
-            .sort((a, b) => (b.views || 0) - (a.views || 0))
-            .slice(0, 5);
-
-        // Try to get recent activity (Activity model may not exist yet)
-        let recentActivity = [];
-        let weekActivityCount = 0;
-        try {
-            // Dynamic import to check if Activity model exists
-            const { Activity } = await import("../models/activity.model.js");
-            if (Activity) {
-                recentActivity = await Activity.find({ user: userId })
-                    .sort({ createdAt: -1 })
-                    .limit(10)
-                    .lean()
-                    .catch(() => []);
-
-                weekActivityCount = await Activity.countDocuments({
-                    user: userId,
-                    createdAt: { $gte: weekAgo },
-                }).catch(() => 0);
-            }
-        } catch {
-            // Activity model doesn't exist yet, use empty data
-            recentActivity = [];
-            weekActivityCount = 0;
-        }
-
-        // Format recent activity with readable messages
-        const formattedActivity = recentActivity.map((act) => ({
+    const formattedActivity = (dashboardData.recentActivity || []).map(
+        (act) => ({
             _id: act._id,
             type: act.type,
             message: getActivityMessage(act),
             time: act.createdAt,
             metadata: act.metadata || {},
-        }));
+        })
+    );
 
-        // Build dashboard response
-        const dashboardData = {
-            user: {
-                _id: user._id,
-                userName: user.userName,
-                fullName: user.fullName,
-                email: user.email,
-                avatar: user.avatar,
-                memberSince: user.createdAt,
-            },
-
-            // Primary stats
-            stats: {
-                totalViews,
-                totalVideos: videoCount,
-                subscriberCount,
-                subscriptionCount,
-                totalLikesReceived: likesOnUserVideos + likesOnUserTweets,
-                totalCommentsReceived: commentsOnUserVideos,
-                engagementRate,
-            },
-
-            // Content stats
-            content: {
-                videos: videoCount,
-                tweets: tweetCount,
-                comments: commentCount,
-                watchLater: watchLaterCount,
-                historyCount,
-            },
-
-            // Engagement stats
-            engagement: {
-                likesGiven: totalVideoLikesGiven + totalTweetLikesGiven,
-                likesReceived: likesOnUserVideos + likesOnUserTweets,
-                commentsReceived: commentsOnUserVideos,
-                weeklyActivity: weekActivityCount,
-            },
-
-            // Top performing content
-            topVideos,
-
-            // Recent activity feed
-            recentActivity: formattedActivity,
-
-            // Quick access counts
-            quickStats: {
-                unreadNotifications: 0,
-                pendingWatchLater: watchLaterCount,
-                historyItems: historyCount,
-            },
-        };
-
-        return res
-            .status(200)
-            .json(
-                new APIresponse(
-                    200,
-                    dashboardData,
-                    "Dashboard fetched successfully"
-                )
-            );
-    } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        throw new APIerror(500, "Failed to fetch dashboard data");
-    }
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                { ...dashboardData, recentActivity: formattedActivity },
+                "Dashboard fetched successfully"
+            )
+        );
 });
 
 /**
