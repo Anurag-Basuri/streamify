@@ -3,7 +3,7 @@ import { toast } from "react-hot-toast";
 import { getAllVideos } from "../services/videoService";
 
 /**
- * Custom hook for fetching and managing video list with pagination
+ * Custom hook for fetching and managing video list with pagination and filters
  * @param {boolean} isAuthenticated - Whether user is authenticated
  * @param {Object} user - Current user object
  * @returns {Object} Video state and controls
@@ -16,6 +16,14 @@ const useVideos = (isAuthenticated, user) => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState(null);
     const abortControllerRef = useRef(null);
+
+    // Filter state
+    const [filters, setFilters] = useState({
+        search: "",
+        duration: "", // short, medium, long
+        date: "", // today, week, month, year
+        sort: "newest", // newest, oldest, views, popular
+    });
 
     const fetchVideos = useCallback(
         async (pageNum, reset = false) => {
@@ -37,7 +45,10 @@ const useVideos = (isAuthenticated, user) => {
                 const data = await getAllVideos({
                     page: pageNum,
                     limit: 12,
-                    sort: "-createdAt",
+                    sort: filters.sort,
+                    search: filters.search,
+                    duration: filters.duration,
+                    date: filters.date,
                 });
 
                 const formattedVideos = data.videos.map((video) => ({
@@ -75,10 +86,10 @@ const useVideos = (isAuthenticated, user) => {
                 setLoadingMore(false);
             }
         },
-        [isAuthenticated, user?._id]
+        [isAuthenticated, user?._id, filters]
     );
 
-    // Initial fetch
+    // Initial fetch and refetch on filter changes
     useEffect(() => {
         setPage(1);
         fetchVideos(1, true);
@@ -110,6 +121,28 @@ const useVideos = (isAuthenticated, user) => {
         fetchVideos(1, true);
     }, [fetchVideos]);
 
+    // Update individual filter
+    const updateFilter = useCallback((key, value) => {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+    }, []);
+
+    // Reset all filters
+    const resetFilters = useCallback(() => {
+        setFilters({
+            search: "",
+            duration: "",
+            date: "",
+            sort: "newest",
+        });
+    }, []);
+
+    // Check if any filters are active
+    const hasActiveFilters =
+        filters.search ||
+        filters.duration ||
+        filters.date ||
+        filters.sort !== "newest";
+
     return {
         videos,
         setVideos,
@@ -121,6 +154,12 @@ const useVideos = (isAuthenticated, user) => {
         loadingMore,
         loadMore,
         refresh,
+        // Filter controls
+        filters,
+        setFilters,
+        updateFilter,
+        resetFilters,
+        hasActiveFilters,
     };
 };
 

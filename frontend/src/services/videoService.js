@@ -12,18 +12,55 @@ const VIDEO_ENDPOINTS = {
     TOGGLE_PUBLISH: (id) => `/api/v1/videos/${id}/publish`,
     USER_VIDEOS: (userId) => `/api/v1/videos/user/${userId}`,
     DOWNLOAD: (id) => `/api/v1/videos/${id}/download`,
+    RECOMMENDATIONS: (videoId) =>
+        videoId
+            ? `/api/v1/videos/recommendations/${videoId}`
+            : `/api/v1/videos/recommendations`,
 };
 
 /**
- * Get all videos with pagination
- * @param {Object} options - { page, limit, sort }
+ * Get all videos with pagination and advanced filters
+ * @param {Object} options - { page, limit, sort, search, duration, date, tags }
  * @returns {Promise<Object>} Paginated video list
  */
-export const getAllVideos = async ({ page = 1, limit = 10, sort = "-createdAt" } = {}) => {
+export const getAllVideos = async ({
+    page = 1,
+    limit = 10,
+    sort = "newest",
+    search = "",
+    duration = "", // short, medium, long
+    date = "", // today, week, month, year
+    tags = [],
+} = {}) => {
     try {
-        const response = await api.get(VIDEO_ENDPOINTS.BASE, {
-            params: { page, limit, sort },
-        });
+        const params = { page, limit, sort };
+        if (search) params.search = search;
+        if (duration) params.duration = duration;
+        if (date) params.date = date;
+        if (tags.length > 0) params.tags = tags.join(",");
+
+        const response = await api.get(VIDEO_ENDPOINTS.BASE, { params });
+        return response.data.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
+ * Get recommended videos (based on current video or trending)
+ * @param {string} videoId - Optional current video ID for context
+ * @param {number} limit - Number of recommendations
+ * @returns {Promise<Object>} Recommended videos
+ */
+export const getRecommendedVideos = async (videoId = null, limit = 10) => {
+    try {
+        const response = await api.get(
+            VIDEO_ENDPOINTS.RECOMMENDATIONS(videoId),
+            {
+                params: { limit },
+            }
+        );
         return response.data.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -58,13 +95,17 @@ export const uploadVideo = async (videoData, onProgress) => {
     formData.append("title", videoData.title);
     formData.append("description", videoData.description);
     formData.append("tags", JSON.stringify(videoData.tags || []));
-    
+
     if (videoData.thumbnail) {
         formData.append("thumbnail", videoData.thumbnail);
     }
 
     try {
-        const response = await api.upload(VIDEO_ENDPOINTS.UPLOAD, formData, onProgress);
+        const response = await api.upload(
+            VIDEO_ENDPOINTS.UPLOAD,
+            formData,
+            onProgress
+        );
         return response.data.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -81,11 +122,14 @@ export const uploadVideo = async (videoData, onProgress) => {
  */
 export const updateVideo = async (videoId, updateData, onProgress) => {
     const formData = new FormData();
-    
+
     if (updateData.title) formData.append("title", updateData.title);
-    if (updateData.description) formData.append("description", updateData.description);
-    if (updateData.tags) formData.append("tags", JSON.stringify(updateData.tags));
-    if (updateData.thumbnail) formData.append("thumbnail", updateData.thumbnail);
+    if (updateData.description)
+        formData.append("description", updateData.description);
+    if (updateData.tags)
+        formData.append("tags", JSON.stringify(updateData.tags));
+    if (updateData.thumbnail)
+        formData.append("thumbnail", updateData.thumbnail);
 
     try {
         const response = await api.upload(
@@ -122,7 +166,9 @@ export const deleteVideo = async (videoId) => {
  */
 export const incrementViews = async (videoId) => {
     try {
-        const response = await api.post(VIDEO_ENDPOINTS.INCREMENT_VIEWS(videoId));
+        const response = await api.post(
+            VIDEO_ENDPOINTS.INCREMENT_VIEWS(videoId)
+        );
         return response.data.data;
     } catch (error) {
         // Don't throw for view increment failures - not critical
@@ -138,7 +184,9 @@ export const incrementViews = async (videoId) => {
  */
 export const togglePublishStatus = async (videoId) => {
     try {
-        const response = await api.patch(VIDEO_ENDPOINTS.TOGGLE_PUBLISH(videoId));
+        const response = await api.patch(
+            VIDEO_ENDPOINTS.TOGGLE_PUBLISH(videoId)
+        );
         return response.data.data;
     } catch (error) {
         if (error.isApiError) throw error;
@@ -152,7 +200,10 @@ export const togglePublishStatus = async (videoId) => {
  * @param {Object} options - { sort, search }
  * @returns {Promise<Object>} User's videos
  */
-export const getUserVideos = async (userId, { sort = "newest", search = "" } = {}) => {
+export const getUserVideos = async (
+    userId,
+    { sort = "newest", search = "" } = {}
+) => {
     try {
         const response = await api.get(VIDEO_ENDPOINTS.USER_VIDEOS(userId), {
             params: { sort, search },
@@ -189,4 +240,5 @@ export default {
     togglePublishStatus,
     getUserVideos,
     getDownloadUrl,
+    getRecommendedVideos,
 };
