@@ -14,4 +14,8 @@ const subscriptionModel = new Schema(
     { timestamps: true }
 );
 
+subscriptionModel.index({ subscriber: 1, channel: 1 }, { unique: true });
+subscriptionModel.index({ channel: 1, createdAt: -1 });
+subscriptionModel.index({ subscriber: 1, createdAt: -1 });
+
 export const Subscription = mongoose.model("Subscription", subscriptionModel);

@@ -22,7 +22,7 @@ const watchlaterSchema = new Schema(
                 remindAt: {
                     type: Date,
                     required: false,
-                }
+                },
             },
         ],
     },
@@ -30,5 +30,8 @@ const watchlaterSchema = new Schema(
         timestamps: true, // Automatically adds createdAt and updatedAt fields
     }
 );
+
+watchlaterSchema.index({ owner: 1 }, { unique: true });
+watchlaterSchema.index({ "videos.video": 1, owner: 1 });
 
 export const WatchLater = mongoose.model("WatchLater", watchlaterSchema);
