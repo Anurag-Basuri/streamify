@@ -9,6 +9,8 @@ import connectDB from "./database/index.js";
 import { verifyCloudinaryConnection } from "./utils/cloudinary.js";
 import { verifyEmailConnection } from "./utils/email.js";
 import { setSocketIO } from "./utils/notifications.js";
+import { initRedis, closeRedis } from "./infrastructure/redis.js";
+import { initQueues, closeQueues } from "./queues/index.js";
 
 // Configuration
 const PORT = process.env.PORT || 8000;
@@ -72,6 +74,22 @@ const gracefulShutdown = async (signal) => {
         console.error("❌ Error closing MongoDB connection:", error.message);
     }
 
+    // Close background workers/queues
+    try {
+        await closeQueues();
+        console.log("✅ Queues closed");
+    } catch (error) {
+        console.error("❌ Error closing queues:", error.message);
+    }
+
+    // Close Redis connection
+    try {
+        await closeRedis();
+        console.log("✅ Redis connection closed");
+    } catch (error) {
+        console.error("❌ Error closing Redis:", error.message);
+    }
+
     console.log("👋 Graceful shutdown complete");
     process.exit(0);
 };
@@ -89,6 +107,14 @@ const startServer = async () => {
 
         // Step 2: Connect to MongoDB
         await connectDB();
+
+        // Step 2b: Connect to Redis (optional)
+        await initRedis().catch((err) => {
+            console.warn("⚠️ Redis connection failed:", err?.message || err);
+        });
+
+        // Step 2c: Initialize background queues/workers (optional, requires Redis)
+        initQueues();
 
         // Step 3: Verify Cloudinary connection (non-blocking)
         verifyCloudinaryConnection().catch((err) => {

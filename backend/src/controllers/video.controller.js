@@ -10,6 +10,7 @@ import {
 import mongoose from "mongoose";
 import fs from "fs";
 import { compressVideo } from "../middlewares/multer.middleware.js";
+import { enqueueUploadNotificationFanout } from "../queues/notification.queue.js";
 
 // Create a new video
 const createVideo = asynchandler(async (req, res) => {
@@ -56,6 +57,12 @@ const createVideo = asynchandler(async (req, res) => {
             },
             owner: req.user._id,
         });
+
+        // Notify subscribers (async via queue when Redis is configured)
+        enqueueUploadNotificationFanout({
+            uploaderId: req.user._id,
+            videoId: video._id,
+        }).catch(() => {});
 
         // Cleanup files
         [videoFile.path, thumbnail.path, compressedPath].forEach((path) => {
