@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +16,8 @@ import {
     FiX,
     FiCheck,
     FiAlertCircle,
+    FiChevronDown,
+    FiChevronUp,
 } from "react-icons/fi";
 import { HiSparkles } from "react-icons/hi";
 import useAuth from "../../hooks/useAuth";
@@ -31,7 +33,12 @@ import {
     deleteTweet,
     updateTweet,
 } from "../../services";
-import { toggleTweetLike } from "../../services/likeService";
+import { toggleTweetLike, toggleCommentLike } from "../../services/likeService";
+import {
+    getComments,
+    addComment,
+    deleteComment,
+} from "../../services/commentService";
 import { formatRelativeTime } from "../../utils";
 
 // ============================================================================
@@ -39,6 +46,7 @@ import { formatRelativeTime } from "../../utils";
 // ============================================================================
 
 const MAX_TWEET_LENGTH = 280;
+const MAX_COMMENT_LENGTH = 500;
 
 // ============================================================================
 // TWEET COMPOSER
@@ -65,7 +73,6 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
 
     const handleTextChange = (e) => {
         setContent(e.target.value);
-        // Auto-resize textarea
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
@@ -91,7 +98,6 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
         >
             <form onSubmit={handleSubmit}>
                 <div className="flex gap-3 sm:gap-4">
-                    {/* Avatar */}
                     <div className="flex-shrink-0">
                         {user?.avatar ? (
                             <img
@@ -109,7 +115,6 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
                         )}
                     </div>
 
-                    {/* Input Area */}
                     <div className="flex-1 min-w-0">
                         <textarea
                             ref={textareaRef}
@@ -120,9 +125,7 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
                             className="w-full bg-transparent text-[var(--text-primary)] placeholder-[var(--text-tertiary)] text-base sm:text-lg resize-none outline-none min-h-[60px] max-h-[300px]"
                         />
 
-                        {/* Actions Row */}
                         <div className="flex items-center justify-between pt-3 border-t border-[var(--divider)] mt-3">
-                            {/* Media buttons */}
                             <div className="flex items-center gap-1">
                                 <button
                                     type="button"
@@ -140,9 +143,7 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
                                 </button>
                             </div>
 
-                            {/* Submit area */}
                             <div className="flex items-center gap-3">
-                                {/* Character count */}
                                 {content.length > 0 && (
                                     <div className="flex items-center gap-2">
                                         {remaining <= 20 && (
@@ -182,7 +183,6 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
                                     </div>
                                 )}
 
-                                {/* Submit button */}
                                 <motion.button
                                     type="submit"
                                     disabled={!canSubmit}
@@ -215,6 +215,353 @@ const TweetComposer = ({ user, onSubmit, isPosting }) => {
 };
 
 // ============================================================================
+// COMMENT COMPONENT
+// ============================================================================
+
+const CommentItem = ({ comment, currentUserId, onDelete, onLike }) => {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
+    const [localLikes, setLocalLikes] = useState(comment.likes || 0);
+    const [isLiked, setIsLiked] = useState(comment.isLiked || false);
+
+    const isOwner = currentUserId === comment.owner?._id;
+
+    const handleLike = async () => {
+        if (isLiking) return;
+        setIsLiking(true);
+
+        // Optimistic update
+        setIsLiked(!isLiked);
+        setLocalLikes((prev) => (isLiked ? prev - 1 : prev + 1));
+
+        try {
+            const result = await onLike(comment._id);
+            if (result) {
+                setLocalLikes(result.likes ?? localLikes);
+                setIsLiked(result.isLiked ?? !isLiked);
+            }
+        } catch {
+            // Revert on error
+            setIsLiked(isLiked);
+            setLocalLikes(comment.likes || 0);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm("Delete this comment?")) return;
+        setIsDeleting(true);
+        try {
+            await onDelete(comment._id);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className={`flex gap-3 p-3 rounded-xl bg-[var(--bg-secondary)]/50 ${
+                isDeleting ? "opacity-50" : ""
+            }`}
+        >
+            <Link
+                to={`/channel/${comment.owner?.userName}`}
+                className="flex-shrink-0"
+            >
+                {comment.owner?.avatar ? (
+                    <img
+                        src={comment.owner.avatar}
+                        alt={comment.owner.userName}
+                        className="w-8 h-8 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">
+                            {comment.owner?.userName
+                                ?.charAt(0)
+                                ?.toUpperCase() || "?"}
+                        </span>
+                    </div>
+                )}
+            </Link>
+
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                        to={`/channel/${comment.owner?.userName}`}
+                        className="font-medium text-sm text-[var(--text-primary)] hover:underline"
+                    >
+                        {comment.owner?.fullName || comment.owner?.userName}
+                    </Link>
+                    <span className="text-xs text-[var(--text-tertiary)]">
+                        {formatRelativeTime(comment.createdAt)}
+                    </span>
+                </div>
+
+                <p className="text-sm text-[var(--text-primary)] mt-1 break-words">
+                    {comment.content}
+                </p>
+
+                <div className="flex items-center gap-4 mt-2">
+                    <button
+                        onClick={handleLike}
+                        disabled={isLiking}
+                        className={`flex items-center gap-1 text-xs transition-colors ${
+                            isLiked
+                                ? "text-pink-500"
+                                : "text-[var(--text-tertiary)] hover:text-pink-500"
+                        }`}
+                    >
+                        <FiHeart
+                            size={14}
+                            className={isLiked ? "fill-current" : ""}
+                        />
+                        <span>{localLikes}</span>
+                    </button>
+
+                    {isOwner && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--error)] transition-colors"
+                        >
+                            <FiTrash2 size={14} />
+                            Delete
+                        </button>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+// ============================================================================
+// COMMENT SECTION
+// ============================================================================
+
+const CommentSection = ({
+    tweetId,
+    currentUser,
+    isAuthenticated,
+    commentsCount,
+    onCommentCountChange,
+}) => {
+    const navigate = useNavigate();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [newComment, setNewComment] = useState("");
+    const [posting, setPosting] = useState(false);
+    const inputRef = useRef(null);
+
+    const fetchComments = useCallback(async () => {
+        if (!tweetId) return;
+        setLoading(true);
+        try {
+            const data = await getComments("Tweet", tweetId, {
+                page: 1,
+                limit: 50,
+            });
+            setComments(data.comments || data || []);
+        } catch (error) {
+            console.error("Failed to fetch comments:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [tweetId]);
+
+    useEffect(() => {
+        if (isExpanded && comments.length === 0) {
+            fetchComments();
+        }
+    }, [isExpanded, fetchComments, comments.length]);
+
+    const handleToggle = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim() || posting) return;
+
+        if (!isAuthenticated) {
+            showInfo("Please login to comment");
+            navigate("/auth");
+            return;
+        }
+
+        setPosting(true);
+        try {
+            const created = await addComment(
+                "Tweet",
+                tweetId,
+                newComment.trim()
+            );
+            // Add the new comment with current user info
+            const commentWithUser = {
+                ...created,
+                owner: {
+                    _id: currentUser?._id,
+                    userName: currentUser?.userName,
+                    fullName: currentUser?.fullName,
+                    avatar: currentUser?.avatar,
+                },
+                likes: 0,
+                isLiked: false,
+            };
+            setComments((prev) => [commentWithUser, ...prev]);
+            setNewComment("");
+            onCommentCountChange?.(1);
+            showSuccess("Comment added!");
+        } catch (error) {
+            showError(error.message || "Failed to add comment");
+        } finally {
+            setPosting(false);
+        }
+    };
+
+    const handleDelete = async (commentId) => {
+        try {
+            await deleteComment(commentId);
+            setComments((prev) => prev.filter((c) => c._id !== commentId));
+            onCommentCountChange?.(-1);
+            showSuccess("Comment deleted");
+        } catch (error) {
+            showError("Failed to delete comment");
+        }
+    };
+
+    const handleLikeComment = async (commentId) => {
+        try {
+            const result = await toggleCommentLike(commentId);
+            return result;
+        } catch {
+            showError("Failed to like comment");
+            return null;
+        }
+    };
+
+    return (
+        <div className="mt-4 border-t border-[var(--divider)] pt-4">
+            {/* Toggle Button */}
+            <button
+                onClick={handleToggle}
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+            >
+                {isExpanded ? (
+                    <FiChevronUp size={16} />
+                ) : (
+                    <FiChevronDown size={16} />
+                )}
+                <span>
+                    {commentsCount || 0}{" "}
+                    {commentsCount === 1 ? "comment" : "comments"}
+                </span>
+            </button>
+
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        {/* Comment Input */}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="mt-4 flex gap-3"
+                        >
+                            <div className="flex-shrink-0">
+                                {currentUser?.avatar ? (
+                                    <img
+                                        src={currentUser.avatar}
+                                        alt=""
+                                        className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                                        <span className="text-xs font-bold text-white">
+                                            {currentUser?.userName
+                                                ?.charAt(0)
+                                                ?.toUpperCase() || "?"}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 flex gap-2">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={newComment}
+                                    onChange={(e) =>
+                                        setNewComment(e.target.value)
+                                    }
+                                    placeholder={
+                                        isAuthenticated
+                                            ? "Write a comment..."
+                                            : "Login to comment"
+                                    }
+                                    disabled={!isAuthenticated || posting}
+                                    maxLength={MAX_COMMENT_LENGTH}
+                                    className="flex-1 bg-[var(--bg-secondary)] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] px-4 py-2 rounded-full text-sm outline-none focus:ring-2 focus:ring-[var(--brand-primary)] disabled:opacity-50"
+                                />
+                                <motion.button
+                                    type="submit"
+                                    disabled={
+                                        !newComment.trim() ||
+                                        posting ||
+                                        !isAuthenticated
+                                    }
+                                    whileTap={{ scale: 0.95 }}
+                                    className="p-2.5 rounded-full bg-[var(--brand-primary)] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--brand-primary-hover)] transition-colors"
+                                >
+                                    {posting ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <FiSend size={16} />
+                                    )}
+                                </motion.button>
+                            </div>
+                        </form>
+
+                        {/* Comments List */}
+                        <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin">
+                            {loading ? (
+                                <div className="flex justify-center py-4">
+                                    <div className="w-6 h-6 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : comments.length === 0 ? (
+                                <p className="text-center text-sm text-[var(--text-tertiary)] py-4">
+                                    No comments yet. Be the first!
+                                </p>
+                            ) : (
+                                <AnimatePresence>
+                                    {comments.map((comment) => (
+                                        <CommentItem
+                                            key={comment._id}
+                                            comment={comment}
+                                            currentUserId={currentUser?._id}
+                                            onDelete={handleDelete}
+                                            onLike={handleLikeComment}
+                                        />
+                                    ))}
+                                </AnimatePresence>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// ============================================================================
 // TWEET OPTIONS MENU
 // ============================================================================
 
@@ -226,7 +573,7 @@ const TweetOptionsMenu = ({ tweet, isOwner, onEdit, onDelete, onClose }) => {
     };
 
     const handleShare = () => {
-        const url = `${window.location.origin}/tweet/${tweet._id}`;
+        const url = `${window.location.origin}/community/${tweet._id}`;
         navigator.clipboard.writeText(url);
         showSuccess("Link copied!");
         onClose();
@@ -282,7 +629,8 @@ const TweetOptionsMenu = ({ tweet, isOwner, onEdit, onDelete, onClose }) => {
 
 const TweetCard = ({
     tweet,
-    currentUserId,
+    currentUser,
+    isAuthenticated,
     onLike,
     onDelete,
     onUpdate,
@@ -294,9 +642,14 @@ const TweetCard = ({
     const [editContent, setEditContent] = useState(tweet.content);
     const [isLiking, setIsLiking] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [localLikes, setLocalLikes] = useState(tweet.likes || 0);
+    const [isLiked, setIsLiked] = useState(tweet.isLiked || false);
+    const [commentsCount, setCommentsCount] = useState(
+        tweet.commentsCount || 0
+    );
     const menuRef = useRef(null);
 
-    const isOwner = currentUserId === tweet.owner?._id;
+    const isOwner = currentUser?._id === tweet.owner?._id;
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -311,9 +664,28 @@ const TweetCard = ({
 
     const handleLike = async () => {
         if (isLiking) return;
+
+        if (!isAuthenticated) {
+            showInfo("Please login to like");
+            navigate("/auth");
+            return;
+        }
+
         setIsLiking(true);
+        // Optimistic update
+        setIsLiked(!isLiked);
+        setLocalLikes((prev) => (isLiked ? prev - 1 : prev + 1));
+
         try {
-            await onLike(tweet._id);
+            const result = await onLike(tweet._id);
+            if (result) {
+                setLocalLikes(result.likes ?? localLikes);
+                setIsLiked(result.state === 1);
+            }
+        } catch {
+            // Revert on error
+            setIsLiked(isLiked);
+            setLocalLikes(tweet.likes || 0);
         } finally {
             setIsLiking(false);
         }
@@ -333,7 +705,7 @@ const TweetCard = ({
         try {
             await onUpdate(tweet._id, editContent);
             setIsEditing(false);
-        } catch (error) {
+        } catch {
             showError("Failed to update");
         }
     };
@@ -347,6 +719,10 @@ const TweetCard = ({
         } finally {
             setIsDeleting(false);
         }
+    };
+
+    const handleCommentCountChange = (delta) => {
+        setCommentsCount((prev) => Math.max(0, prev + delta));
     };
 
     return (
@@ -462,14 +838,15 @@ const TweetCard = ({
 
                     {/* Actions */}
                     <div className="flex items-center gap-6 mt-4 text-[var(--text-tertiary)]">
-                        {/* Comment */}
-                        <button className="flex items-center gap-1.5 hover:text-[var(--brand-primary)] transition-colors group">
+                        {/* Comment toggle is now in CommentSection */}
+                        <button
+                            className="flex items-center gap-1.5 hover:text-[var(--brand-primary)] transition-colors group"
+                            onClick={() => {}} // Comment section handles its own toggle
+                        >
                             <div className="p-1.5 rounded-full group-hover:bg-[var(--brand-primary)]/10 transition-colors">
                                 <FiMessageCircle size={18} />
                             </div>
-                            <span className="text-sm">
-                                {tweet.commentsCount || 0}
-                            </span>
+                            <span className="text-sm">{commentsCount}</span>
                         </button>
 
                         {/* Like */}
@@ -477,7 +854,7 @@ const TweetCard = ({
                             onClick={handleLike}
                             disabled={isLiking}
                             className={`flex items-center gap-1.5 transition-colors group ${
-                                tweet.isLiked
+                                isLiked
                                     ? "text-pink-500"
                                     : "hover:text-pink-500"
                             }`}
@@ -485,26 +862,24 @@ const TweetCard = ({
                             <motion.div
                                 whileTap={{ scale: 1.2 }}
                                 className={`p-1.5 rounded-full transition-colors ${
-                                    tweet.isLiked
+                                    isLiked
                                         ? "bg-pink-500/10"
                                         : "group-hover:bg-pink-500/10"
                                 }`}
                             >
                                 <FiHeart
                                     size={18}
-                                    className={
-                                        tweet.isLiked ? "fill-current" : ""
-                                    }
+                                    className={isLiked ? "fill-current" : ""}
                                 />
                             </motion.div>
-                            <span className="text-sm">{tweet.likes || 0}</span>
+                            <span className="text-sm">{localLikes}</span>
                         </button>
 
                         {/* Share */}
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(
-                                    `${window.location.origin}/tweet/${tweet._id}`
+                                    `${window.location.origin}/community/${tweet._id}`
                                 );
                                 showSuccess("Link copied!");
                             }}
@@ -515,6 +890,15 @@ const TweetCard = ({
                             </div>
                         </button>
                     </div>
+
+                    {/* Comment Section */}
+                    <CommentSection
+                        tweetId={tweet._id}
+                        currentUser={currentUser}
+                        isAuthenticated={isAuthenticated}
+                        commentsCount={commentsCount}
+                        onCommentCountChange={handleCommentCountChange}
+                    />
                 </div>
             </div>
         </motion.article>
@@ -605,7 +989,6 @@ const Tweet = () => {
         setIsPosting(true);
         try {
             const newTweet = await createTweet(content);
-            // Add user info to the new tweet
             const tweetWithUser = {
                 ...newTweet,
                 owner: {
@@ -628,27 +1011,12 @@ const Tweet = () => {
     };
 
     const handleLike = async (tweetId) => {
-        if (!isAuthenticated) {
-            showInfo("Please login to like");
-            navigate("/auth");
-            return;
-        }
-
         try {
             const result = await toggleTweetLike(tweetId);
-            setTweets((prev) =>
-                prev.map((t) =>
-                    t._id === tweetId
-                        ? {
-                              ...t,
-                              likes: result?.likes ?? t.likes,
-                              isLiked: result?.state === 1,
-                          }
-                        : t
-                )
-            );
-        } catch (error) {
+            return result;
+        } catch {
             showError("Like action failed");
+            return null;
         }
     };
 
@@ -657,7 +1025,7 @@ const Tweet = () => {
             await deleteTweet(tweetId);
             setTweets((prev) => prev.filter((t) => t._id !== tweetId));
             showSuccess("Post deleted");
-        } catch (error) {
+        } catch {
             showError("Failed to delete");
         }
     };
@@ -680,7 +1048,7 @@ const Tweet = () => {
     };
 
     return (
-        <PageTransition className="min-h-screen p-4 md:p-6 lg:p-8">
+        <PageTransition className="min-h-screen">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <motion.div
@@ -802,7 +1170,8 @@ const Tweet = () => {
                                 <TweetCard
                                     key={tweet._id}
                                     tweet={tweet}
-                                    currentUserId={user?._id}
+                                    currentUser={user}
+                                    isAuthenticated={isAuthenticated}
                                     onLike={handleLike}
                                     onDelete={handleDelete}
                                     onUpdate={handleUpdate}
