@@ -101,7 +101,7 @@ export {
 } from "./historyService";
 
 // ============================================================================
-// SUBSCRIPTION SERVICE
+// SUBSCRIPTION SERVICE (Video channel subscriptions)
 // ============================================================================
 
 export {
@@ -110,6 +110,25 @@ export {
     getChannelSubscribers,
     getUserSubscriptions,
 } from "./subscriptionService";
+
+// ============================================================================
+// FOLLOW SERVICE (Social follows for tweets)
+// ============================================================================
+
+export {
+    toggleFollow,
+    checkFollow,
+    getFollowers,
+    getFollowing,
+    getMyFollowers,
+    getMyFollowing,
+} from "./followService";
+
+// ============================================================================
+// USER SERVICE
+// ============================================================================
+
+export { getUserProfile } from "./userService";
 
 // ============================================================================
 // TWEET SERVICE

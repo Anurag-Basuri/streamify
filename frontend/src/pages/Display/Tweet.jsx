@@ -33,7 +33,7 @@ import {
     createTweet,
     deleteTweet,
     updateTweet,
-    toggleSubscription,
+    toggleFollow,
 } from "../../services";
 import { toggleTweetLike, toggleCommentLike } from "../../services/likeService";
 import {
@@ -652,33 +652,31 @@ const TweetCard = ({
     const menuRef = useRef(null);
 
     const isOwner = currentUser?._id === tweet.owner?._id;
-    const [isSubscribed, setIsSubscribed] = useState(
-        tweet.isSubscribed || false
-    );
-    const [subscribing, setSubscribing] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(tweet.isFollowing || false);
+    const [followLoading, setFollowLoading] = useState(false);
 
-    const handleSubscribe = async (e) => {
+    const handleFollow = async (e) => {
         e.stopPropagation();
         if (!isAuthenticated) {
             showInfo("Please login to follow");
             navigate("/auth");
             return;
         }
-        if (subscribing || isOwner) return;
+        if (followLoading || isOwner) return;
 
-        setSubscribing(true);
+        setFollowLoading(true);
         // Optimistic update
-        setIsSubscribed(!isSubscribed);
+        setIsFollowing(!isFollowing);
 
         try {
-            await toggleSubscription(tweet.owner?._id);
+            await toggleFollow(tweet.owner?._id);
             // Success - keep optimistic state
         } catch (error) {
             // Revert on error
-            setIsSubscribed(!isSubscribed);
-            showError("Failed to update subscription");
+            setIsFollowing(!isFollowing);
+            showError("Failed to update follow status");
         } finally {
-            setSubscribing(false);
+            setFollowLoading(false);
         }
     };
 
@@ -817,17 +815,17 @@ const TweetCard = ({
                         {/* Follow Button (if not owner) */}
                         {!isOwner && isAuthenticated && (
                             <button
-                                onClick={handleSubscribe}
-                                disabled={subscribing}
+                                onClick={handleFollow}
+                                disabled={followLoading}
                                 className={`ml-2 text-xs font-semibold px-3 py-1 rounded-full transition-all ${
-                                    isSubscribed
+                                    isFollowing
                                         ? "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--error)]/10 hover:text-[var(--error)] hover:content-['Unfollow']"
                                         : "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)]"
                                 }`}
                             >
-                                {subscribing
+                                {followLoading
                                     ? "..."
-                                    : isSubscribed
+                                    : isFollowing
                                     ? "Following"
                                     : "Follow"}
                             </button>

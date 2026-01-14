@@ -25,6 +25,7 @@ const Home = lazy(() => import("../pages/Display/Home.jsx"));
 const SearchResults = lazy(() => import("../pages/Display/SearchResults.jsx"));
 const Tweet = lazy(() => import("../pages/Display/Tweet.jsx"));
 const Subscription = lazy(() => import("../pages/Display/Subscription.jsx"));
+const Channel = lazy(() => import("../pages/Display/Channel.jsx"));
 const VideoPlayer = lazy(() => import("../components/Video/VideoPlayer.jsx"));
 
 // Auth Pages
@@ -85,6 +86,7 @@ const AppRoutes = () => {
             <Route path="/" element={withSuspense(Home)} />
             <Route path="/search" element={withSuspense(SearchResults)} />
             <Route path="/video/:videoID" element={withSuspense(VideoPlayer)} />
+            <Route path="/channel/:username" element={withSuspense(Channel)} />
 
             {/* Auth Routes */}
             <Route path="/auth" element={withSuspense(SignInAndUp)} />
