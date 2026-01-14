@@ -1,14 +1,6 @@
-/**
- * Services Index
- * Central export for all API services
- *
- * Usage:
- * import { api, signIn, getAllVideos } from '@/services';
- */
-
 // ============================================================================
 // API CLIENT
-// ============================================================================
+// ===========================================================================
 
 export { api, apiClient, ApiError, TokenService, API_CONFIG } from "./api";
 
@@ -125,6 +117,7 @@ export {
 
 export {
     getTweets,
+    getFollowingTweets,
     createTweet,
     getUserTweets,
     updateTweet,

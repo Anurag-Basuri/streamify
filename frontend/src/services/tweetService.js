@@ -88,6 +88,7 @@ export const deleteTweet = async (tweetId) => {
 
 export const tweetService = {
     getTweets,
+    getFollowingTweets,
     createTweet,
     getUserTweets,
     updateTweet,

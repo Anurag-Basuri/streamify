@@ -154,6 +154,8 @@ export const TWEETS = {
     CREATE: `${BASE.TWEETS}/create`,
     // GET /:userId - Get user's tweets
     USER_TWEETS: (userId) => `${BASE.TWEETS}/${userId}`,
+    // GET /feed - Get following feed
+    FEED: `${BASE.TWEETS}/feed`,
     // PUT /:tweetId - Update tweet
     UPDATE: (tweetId) => `${BASE.TWEETS}/${tweetId}`,
     // DELETE /:tweetId - Delete tweet
