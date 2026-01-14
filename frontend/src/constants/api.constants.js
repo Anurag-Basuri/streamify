@@ -138,6 +138,8 @@ export const SUBSCRIPTIONS = {
     TOGGLE: (channelId) => `${BASE.SUBSCRIPTIONS}/${channelId}/toggle`,
     // GET /subscribed-channels - Get user's subscribed channels
     USER_SUBSCRIPTIONS: `${BASE.SUBSCRIPTIONS}/subscribed-channels`,
+    // GET /check/:channelId - Check subscription status
+    CHECK: (channelId) => `${BASE.SUBSCRIPTIONS}/check/${channelId}`,
     // GET /:channelId/subscribers - Get channel's subscribers
     CHANNEL_SUBSCRIBERS: (channelId) =>
         `${BASE.SUBSCRIPTIONS}/${channelId}/subscribers`,

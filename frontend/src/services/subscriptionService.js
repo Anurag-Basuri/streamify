@@ -63,29 +63,18 @@ export const getUserSubscriptions = async ({ page = 1, limit = 20 } = {}) => {
 
 /**
  * Check if current user is subscribed to a channel
- * Note: This calls the toggle endpoint with GET-like behavior to check status
- * Based on backend returning subscription status in toggle response
- * For now, we'll check by fetching subscribed channels and checking if channelId is in the list
+ * Uses the dedicated backend check endpoint
  * @param {string} channelId - Channel/User ID to check
- * @returns {Promise<Object>} { isSubscribed: boolean }
+ * @returns {Promise<Object>} { isSubscribed: boolean, subscriberCount: number }
  */
 export const checkSubscription = async (channelId) => {
     try {
-        // Fetch user's subscriptions and check if channelId exists
-        const response = await api.get(SUBSCRIPTIONS.USER_SUBSCRIPTIONS);
-        const subscriptions = response.data.data;
-        const channelList = Array.isArray(subscriptions)
-            ? subscriptions
-            : subscriptions.docs || subscriptions.channels || [];
-
-        const isSubscribed = channelList.some(
-            (sub) => sub._id === channelId || sub.channel?._id === channelId
-        );
-        return { isSubscribed };
+        const response = await api.get(SUBSCRIPTIONS.CHECK(channelId));
+        return response.data.data;
     } catch (error) {
-        // If error fetching subscriptions, assume not subscribed
+        // If error fetching subscription status, assume not subscribed
         console.error("Failed to check subscription:", error);
-        return { isSubscribed: false };
+        return { isSubscribed: false, subscriberCount: 0 };
     }
 };
 
