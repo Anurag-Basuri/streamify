@@ -3,7 +3,7 @@ import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { Tweet } from "../models/tweet.model.js";
-import { Subscription } from "../models/subscription.model.js";
+import { Follow } from "../models/follow.model.js";
 import { Activity } from "../models/activity.model.js";
 
 // Common aggregation pipeline for tweets
@@ -105,12 +105,12 @@ const getCommonTweetPipeline = (userId) => {
                 as: "commentsData",
             },
         },
-        // Lookup subscription status (isSubscribed)
+        // Lookup follow status (isFollowing) for social feed
         ...(userId
             ? [
                   {
                       $lookup: {
-                          from: "subscriptions",
+                          from: "follows",
                           let: { ownerId: "$owner._id" },
                           pipeline: [
                               {
@@ -119,13 +119,13 @@ const getCommonTweetPipeline = (userId) => {
                                           $and: [
                                               {
                                                   $eq: [
-                                                      "$channel",
+                                                      "$followee",
                                                       "$$ownerId",
                                                   ],
                                               },
                                               {
                                                   $eq: [
-                                                      "$subscriber",
+                                                      "$follower",
                                                       new mongoose.Types.ObjectId(
                                                           userId
                                                       ),
@@ -136,7 +136,7 @@ const getCommonTweetPipeline = (userId) => {
                                   },
                               },
                           ],
-                          as: "subscription",
+                          as: "followData",
                       },
                   },
               ]
@@ -151,8 +151,8 @@ const getCommonTweetPipeline = (userId) => {
                 likes: { $size: "$likesData" },
                 isLiked: userId ? { $gt: [{ $size: "$userLike" }, 0] } : false,
                 commentsCount: { $size: "$commentsData" },
-                isSubscribed: userId
-                    ? { $gt: [{ $size: "$subscription" }, 0] }
+                isFollowing: userId
+                    ? { $gt: [{ $size: "$followData" }, 0] }
                     : false,
             },
         },
@@ -268,24 +268,24 @@ const get_latest_tweets = asynchandler(async (req, res) => {
 const get_following_tweets = asynchandler(async (req, res) => {
     const currentUserId = req.user._id;
 
-    // 1. Find channels the user is subscribed to
-    const subscriptions = await Subscription.find({
-        subscriber: currentUserId,
-    }).select("channel");
+    // 1. Find users the current user is following (social follow)
+    const follows = await Follow.find({
+        follower: currentUserId,
+    }).select("followee");
 
-    const subscribedChannelIds = subscriptions.map((sub) => sub.channel);
+    const followedUserIds = follows.map((f) => f.followee);
 
-    if (subscribedChannelIds.length === 0) {
+    if (followedUserIds.length === 0) {
         return res
             .status(200)
             .json(new APIresponse(200, [], "No following tweets found"));
     }
 
-    // 2. Aggregate tweets from those channels
+    // 2. Aggregate tweets from followed users
     const tweets = await Tweet.aggregate([
         {
             $match: {
-                owner: { $in: subscribedChannelIds },
+                owner: { $in: followedUserIds },
             },
         },
         { $sort: { createdAt: -1 } },

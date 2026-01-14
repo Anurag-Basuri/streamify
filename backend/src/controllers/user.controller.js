@@ -413,19 +413,49 @@ const changeCoverImage = asynchandler(async (req, res, next) => {
     }
 });
 
-// Get user channel details;; First aggregation pipeline
+/**
+ * Get public user profile with dual relationship system:
+ * - Followers/Following (social, for tweets)
+ * - Subscribers/Subscriptions (video channel)
+ * Plus content counts (videos, tweets, playlists)
+ */
 const getUserProfile = asynchandler(async (req, res, next) => {
-    const { userName } = req.params;
+    const { username } = req.params;
+    const viewerId = req.user?._id;
 
-    if (!userName?.trim()) {
+    if (!username?.trim()) {
         return next(new APIerror(400, "Username is missing"));
     }
 
     try {
-        const channel = await User.aggregate([
+        const profile = await User.aggregate([
+            // Match user by username (case-insensitive)
             {
-                $match: { userName },
+                $match: {
+                    userName: { $regex: new RegExp(`^${username}$`, "i") },
+                },
             },
+            // ====== SOCIAL FOLLOWS ======
+            // Followers (people who follow this user)
+            {
+                $lookup: {
+                    from: "follows",
+                    localField: "_id",
+                    foreignField: "followee",
+                    as: "followers",
+                },
+            },
+            // Following (people this user follows)
+            {
+                $lookup: {
+                    from: "follows",
+                    localField: "_id",
+                    foreignField: "follower",
+                    as: "following",
+                },
+            },
+            // ====== VIDEO SUBSCRIPTIONS ======
+            // Subscribers (people subscribed to this channel)
             {
                 $lookup: {
                     from: "subscriptions",
@@ -434,45 +464,129 @@ const getUserProfile = asynchandler(async (req, res, next) => {
                     as: "subscribers",
                 },
             },
+            // Subscriptions (channels this user subscribes to)
             {
                 $lookup: {
                     from: "subscriptions",
                     localField: "_id",
                     foreignField: "subscriber",
-                    as: "subscribed",
+                    as: "subscriptions",
                 },
             },
+            // ====== CONTENT COUNTS ======
+            // Videos count (published only for public view)
+            {
+                $lookup: {
+                    from: "videos",
+                    let: { userId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$owner", "$$userId"] },
+                                        { $eq: ["$isPublished", true] },
+                                    ],
+                                },
+                            },
+                        },
+                        { $count: "count" },
+                    ],
+                    as: "videosData",
+                },
+            },
+            // Tweets count
+            {
+                $lookup: {
+                    from: "tweets",
+                    localField: "_id",
+                    foreignField: "owner",
+                    as: "tweets",
+                },
+            },
+            // Playlists count (public only)
+            {
+                $lookup: {
+                    from: "playlists",
+                    let: { userId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$owner", "$$userId"] },
+                                        { $eq: ["$isPublic", true] },
+                                    ],
+                                },
+                            },
+                        },
+                        { $count: "count" },
+                    ],
+                    as: "playlistsData",
+                },
+            },
+            // ====== COMPUTE FIELDS ======
             {
                 $addFields: {
+                    // Social counts
+                    followersCount: { $size: "$followers" },
+                    followingCount: { $size: "$following" },
+                    // Video channel counts
                     subscribersCount: { $size: "$subscribers" },
-                    channelsSubscribedToCount: { $size: "$subscribed" },
-                    isSubscribed: {
-                        $cond: {
-                            if: {
-                                $in: [req.user?._id, "$subscribers.subscriber"],
-                            },
-                            then: true,
-                            else: false,
-                        },
+                    subscriptionsCount: { $size: "$subscriptions" },
+                    // Content counts
+                    videosCount: {
+                        $ifNull: [
+                            { $arrayElemAt: ["$videosData.count", 0] },
+                            0,
+                        ],
                     },
+                    tweetsCount: { $size: "$tweets" },
+                    playlistsCount: {
+                        $ifNull: [
+                            { $arrayElemAt: ["$playlistsData.count", 0] },
+                            0,
+                        ],
+                    },
+                    // Viewer relationship status
+                    isFollowing: viewerId
+                        ? { $in: [viewerId, "$followers.follower"] }
+                        : false,
+                    isSubscribed: viewerId
+                        ? { $in: [viewerId, "$subscribers.subscriber"] }
+                        : false,
+                    isSelf: viewerId ? { $eq: ["$_id", viewerId] } : false,
                 },
             },
+            // ====== FINAL PROJECTION (no sensitive data) ======
             {
                 $project: {
-                    fullName: 1,
+                    _id: 1,
                     userName: 1,
-                    subscribersCount: 1,
-                    channelsSubscribedToCount: 1,
-                    isSubscribed: 1,
+                    fullName: 1,
                     avatar: 1,
                     coverImage: 1,
-                    email: 1,
+                    createdAt: 1,
+                    // Social
+                    followersCount: 1,
+                    followingCount: 1,
+                    isFollowing: 1,
+                    // Video channel
+                    subscribersCount: 1,
+                    subscriptionsCount: 1,
+                    isSubscribed: 1,
+                    // Content
+                    videosCount: 1,
+                    tweetsCount: 1,
+                    playlistsCount: 1,
+                    // Viewer context
+                    isSelf: 1,
                 },
             },
         ]);
 
-        if (!channel.length) {
-            return next(new APIerror(404, "Channel does not exist"));
+        if (!profile.length) {
+            return next(new APIerror(404, "User not found"));
         }
 
         return res
@@ -480,12 +594,12 @@ const getUserProfile = asynchandler(async (req, res, next) => {
             .json(
                 new APIresponse(
                     200,
-                    channel[0],
-                    "User channel fetched successfully"
+                    profile[0],
+                    "User profile fetched successfully"
                 )
             );
     } catch (error) {
-        next(error); // Pass any aggregation errors to error-handling middleware
+        next(error);
     }
 });
 
