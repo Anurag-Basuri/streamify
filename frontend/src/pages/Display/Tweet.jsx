@@ -29,9 +29,11 @@ import {
 } from "../../components/Common/ToastProvider";
 import {
     getTweets,
+    getFollowingTweets,
     createTweet,
     deleteTweet,
     updateTweet,
+    toggleSubscription,
 } from "../../services";
 import { toggleTweetLike, toggleCommentLike } from "../../services/likeService";
 import {
@@ -650,6 +652,35 @@ const TweetCard = ({
     const menuRef = useRef(null);
 
     const isOwner = currentUser?._id === tweet.owner?._id;
+    const [isSubscribed, setIsSubscribed] = useState(
+        tweet.isSubscribed || false
+    );
+    const [subscribing, setSubscribing] = useState(false);
+
+    const handleSubscribe = async (e) => {
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            showInfo("Please login to follow");
+            navigate("/auth");
+            return;
+        }
+        if (subscribing || isOwner) return;
+
+        setSubscribing(true);
+        // Optimistic update
+        setIsSubscribed(!isSubscribed);
+
+        try {
+            await toggleSubscription(tweet.owner?._id);
+            // Success - keep optimistic state
+        } catch (error) {
+            // Revert on error
+            setIsSubscribed(!isSubscribed);
+            showError("Failed to update subscription");
+        } finally {
+            setSubscribing(false);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -782,6 +813,25 @@ const TweetCard = ({
                                 </span>
                             </div>
                         </div>
+
+                        {/* Follow Button (if not owner) */}
+                        {!isOwner && isAuthenticated && (
+                            <button
+                                onClick={handleSubscribe}
+                                disabled={subscribing}
+                                className={`ml-2 text-xs font-semibold px-3 py-1 rounded-full transition-all ${
+                                    isSubscribed
+                                        ? "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--error)]/10 hover:text-[var(--error)] hover:content-['Unfollow']"
+                                        : "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)]"
+                                }`}
+                            >
+                                {subscribing
+                                    ? "..."
+                                    : isSubscribed
+                                    ? "Following"
+                                    : "Follow"}
+                            </button>
+                        )}
 
                         {/* Options Menu */}
                         <div className="relative" ref={menuRef}>
@@ -939,6 +989,7 @@ const TweetSkeleton = () => (
 const Tweet = () => {
     const navigate = useNavigate();
     const { isAuthenticated, user } = useAuth();
+    const [activeTab, setActiveTab] = useState("foryou"); // "foryou" | "following"
     const [tweets, setTweets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -954,7 +1005,9 @@ const Tweet = () => {
                 setRefreshing(true);
             }
 
-            const data = await getTweets({ page: 1, limit: 50 });
+            const fetchFn =
+                activeTab === "following" ? getFollowingTweets : getTweets;
+            const data = await fetchFn({ page: 1, limit: 50 });
             const tweetList = Array.isArray(data)
                 ? data
                 : data.docs || data.tweets || [];
@@ -977,7 +1030,7 @@ const Tweet = () => {
 
     useEffect(() => {
         fetchTweetsData();
-    }, [fetchTweetsData]);
+    }, [fetchTweetsData, activeTab]); // Refetch when tab changes
 
     const handleCreateTweet = async (content) => {
         if (!isAuthenticated) {
@@ -1082,6 +1135,44 @@ const Tweet = () => {
                         />
                     </button>
                 </motion.div>
+
+                {/* Feed Tabs */}
+                {isAuthenticated && (
+                    <div className="flex border-b border-[var(--divider)] mb-6">
+                        <button
+                            onClick={() => setActiveTab("foryou")}
+                            className={`flex-1 pb-3 text-center font-medium relative transition-colors ${
+                                activeTab === "foryou"
+                                    ? "text-[var(--text-primary)]"
+                                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                            }`}
+                        >
+                            For You
+                            {activeTab === "foryou" && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary)] rounded-t-full"
+                                />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("following")}
+                            className={`flex-1 pb-3 text-center font-medium relative transition-colors ${
+                                activeTab === "following"
+                                    ? "text-[var(--text-primary)]"
+                                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                            }`}
+                        >
+                            Following
+                            {activeTab === "following" && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary)] rounded-t-full"
+                                />
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 {/* Composer */}
                 {isAuthenticated ? (

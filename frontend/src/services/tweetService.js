@@ -23,6 +23,23 @@ export const getTweets = async ({ page = 1, limit = 20 } = {}) => {
 };
 
 /**
+ * Get following tweets (personalized feed)
+ * @param {Object} options - { page, limit }
+ * @returns {Promise<Array>} List of tweets from followed users
+ */
+export const getFollowingTweets = async ({ page = 1, limit = 20 } = {}) => {
+    try {
+        const response = await api.get(TWEETS.FEED, {
+            params: { page, limit },
+        });
+        return response.data.data;
+    } catch (error) {
+        if (error.isApiError) throw error;
+        throw ApiError.fromAxiosError(error);
+    }
+};
+
+/**
  * Create a new tweet
  * @param {Object} data - { content }
  * @returns {Promise<Object>} Created tweet
