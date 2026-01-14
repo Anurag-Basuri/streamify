@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 // Models
 import { User } from "../models/user.model.js";
 import { Subscription } from "../models/subscription.model.js";
+import { Activity } from "../models/activity.model.js";
 
 // Utils
 import { asyncHandler } from "../utils/asynchandler.js";
@@ -55,6 +56,16 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     if (subscribed) {
         // If subscription exists, remove it
         await Subscription.deleteOne({ _id: subscribed._id });
+
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "subscription_remove",
+            entityType: "User",
+            entityId: channelId,
+            metadata: { channelName: channel.userName },
+        });
+
         return ok(res, null, "Channel unsubscribed");
     }
 
@@ -69,6 +80,15 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         channel,
         subscriber: req.user,
     }).catch((err) => console.error("Notification error:", err.message));
+
+    // Log activity
+    Activity.log({
+        user: req.user._id,
+        type: "subscription_add",
+        entityType: "User",
+        entityId: channelId,
+        metadata: { channelName: channel.userName },
+    });
 
     return created(res, subscribe, "Channel subscribed");
 });

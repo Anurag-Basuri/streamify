@@ -3,6 +3,7 @@ import { Like } from "../models/like.model.js";
 import { Video } from "../models/video.model.js";
 import { Comment } from "../models/comment.model.js";
 import { Tweet } from "../models/tweet.model.js";
+import { Activity } from "../models/activity.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
@@ -37,6 +38,15 @@ const toggleVideoLike = asynchandler(async (req, res) => {
             entityType: "Video",
         });
 
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "video_unlike",
+            entityType: "Video",
+            entityId: videoId,
+            metadata: { videoTitle: video.title },
+        });
+
         return res
             .status(200)
             .json(new APIresponse(200, { likes, state: 0 }, "Video unliked"));
@@ -60,6 +70,15 @@ const toggleVideoLike = asynchandler(async (req, res) => {
             liker: req.user,
             video,
         }).catch((err) => console.error("Notification error:", err.message));
+
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "video_like",
+            entityType: "Video",
+            entityId: videoId,
+            metadata: { videoTitle: video.title },
+        });
 
         return res
             .status(201)
@@ -110,6 +129,15 @@ const toggleCommentLike = asynchandler(async (req, res) => {
             entityType: "Comment",
         });
 
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "comment_like",
+            entityType: "Comment",
+            entityId: commentId,
+            metadata: { action: "unlike" },
+        });
+
         return res
             .status(200)
             .json(new APIresponse(200, { likes, state: 0 }, "Comment unliked"));
@@ -125,6 +153,15 @@ const toggleCommentLike = asynchandler(async (req, res) => {
         const likes = await Like.countDocuments({
             likedEntity: commentId,
             entityType: "Comment",
+        });
+
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "comment_like",
+            entityType: "Comment",
+            entityId: commentId,
+            metadata: { action: "like" },
         });
 
         return res
@@ -176,6 +213,15 @@ const toggleTweetLike = asynchandler(async (req, res) => {
             entityType: "Tweet",
         });
 
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "tweet_unlike",
+            entityType: "Tweet",
+            entityId: tweetId,
+            metadata: { contentPreview: tweet.content?.substring(0, 50) },
+        });
+
         return res
             .status(200)
             .json(new APIresponse(200, { likes, state: 0 }, "Tweet unliked"));
@@ -191,6 +237,15 @@ const toggleTweetLike = asynchandler(async (req, res) => {
         const likes = await Like.countDocuments({
             likedEntity: tweetId,
             entityType: "Tweet",
+        });
+
+        // Log activity
+        Activity.log({
+            user: req.user._id,
+            type: "tweet_like",
+            entityType: "Tweet",
+            entityId: tweetId,
+            metadata: { contentPreview: tweet.content?.substring(0, 50) },
         });
 
         return res

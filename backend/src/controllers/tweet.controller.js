@@ -4,6 +4,7 @@ import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { Tweet } from "../models/tweet.model.js";
 import { Subscription } from "../models/subscription.model.js";
+import { Activity } from "../models/activity.model.js";
 
 // Common aggregation pipeline for tweets
 const getCommonTweetPipeline = (userId) => {
@@ -168,6 +169,15 @@ const createTweet = asynchandler(async (req, res) => {
     const tweet = await Tweet.create({
         owner: req.user._id,
         content,
+    });
+
+    // Log activity
+    Activity.log({
+        user: req.user._id,
+        type: "tweet_create",
+        entityType: "Tweet",
+        entityId: tweet._id,
+        metadata: { contentPreview: content.substring(0, 50) },
     });
 
     return res
