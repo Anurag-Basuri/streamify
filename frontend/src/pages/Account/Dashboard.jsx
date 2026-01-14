@@ -28,6 +28,7 @@ import {
     FiBookmark,
 } from "react-icons/fi";
 import { HiSparkles } from "react-icons/hi";
+import { FiMessageSquare } from "react-icons/fi";
 import useAuth from "../../hooks/useAuth";
 import { api } from "../../services/api";
 import { PageTransition, EmptyState } from "../../components/Common";
@@ -347,6 +348,13 @@ const Dashboard = () => {
             description: "Customize account",
             to: "/settings",
             color: "bg-gradient-to-br from-gray-500 to-gray-700",
+        },
+        {
+            icon: FiMessageSquare,
+            label: "Community",
+            description: "Posts & Discussions",
+            to: "/community",
+            color: "bg-gradient-to-br from-violet-500 to-purple-600",
         },
     ];
 

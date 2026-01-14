@@ -22,6 +22,7 @@ import {
     FiEdit2,
     FiGrid,
     FiList,
+    FiMessageSquare,
 } from "react-icons/fi";
 import useAuth from "../../hooks/useAuth.js";
 import { updateAvatar, updateCoverImage } from "../../services/authService.js";
@@ -273,6 +274,13 @@ const ContentOverview = ({ content, stats }) => {
             value: 0,
             color: "text-green-500",
             link: "/playlist",
+        },
+        {
+            icon: FiMessageSquare,
+            label: "Posts",
+            value: content.tweets || 0,
+            color: "text-violet-500",
+            link: "/community",
         },
     ];
 
