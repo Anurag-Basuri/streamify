@@ -9,6 +9,7 @@ import {
     get_user_tweet,
     updateTweet,
     get_latest_tweets,
+    get_following_tweets,
 } from "../controllers/tweet.controller.js";
 import { validateResult } from "../middlewares/validate.middleware.js";
 
@@ -16,6 +17,9 @@ const router = express.Router();
 
 // Get the latest tweets (public, verifyAccessToken is lenient - sets req.user if token exists)
 router.get("/", verifyAccessToken, get_latest_tweets);
+
+// Get following feed (protected)
+router.get("/feed", requireAuth, get_following_tweets);
 
 // Protected routes below - requireAuth is strict, requires valid token
 router.use(requireAuth);

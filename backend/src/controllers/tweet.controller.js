@@ -3,6 +3,160 @@ import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { Tweet } from "../models/tweet.model.js";
+import { Subscription } from "../models/subscription.model.js";
+
+// Common aggregation pipeline for tweets
+const getCommonTweetPipeline = (userId) => {
+    return [
+        // Lookup owner details
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            userName: 1,
+                            fullName: 1,
+                            avatar: 1,
+                        },
+                    },
+                ],
+            },
+        },
+        { $unwind: "$owner" },
+        // Lookup likes count
+        {
+            $lookup: {
+                from: "likes",
+                let: { tweetId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$likedEntity", "$$tweetId"] },
+                                    { $eq: ["$entityType", "Tweet"] },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: "likesData",
+            },
+        },
+        // Lookup if current user has liked
+        ...(userId
+            ? [
+                  {
+                      $lookup: {
+                          from: "likes",
+                          let: { tweetId: "$_id" },
+                          pipeline: [
+                              {
+                                  $match: {
+                                      $expr: {
+                                          $and: [
+                                              {
+                                                  $eq: [
+                                                      "$likedEntity",
+                                                      "$$tweetId",
+                                                  ],
+                                              },
+                                              { $eq: ["$entityType", "Tweet"] },
+                                              {
+                                                  $eq: [
+                                                      "$likedBy",
+                                                      new mongoose.Types.ObjectId(
+                                                          userId
+                                                      ),
+                                                  ],
+                                              },
+                                          ],
+                                      },
+                                  },
+                              },
+                          ],
+                          as: "userLike",
+                      },
+                  },
+              ]
+            : []),
+        // Lookup comments count
+        {
+            $lookup: {
+                from: "comments",
+                let: { tweetId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$entity", "$$tweetId"] },
+                                    { $eq: ["$entityType", "Tweet"] },
+                                ],
+                            },
+                        },
+                    },
+                ],
+                as: "commentsData",
+            },
+        },
+        // Lookup subscription status (isSubscribed)
+        ...(userId
+            ? [
+                  {
+                      $lookup: {
+                          from: "subscriptions",
+                          let: { ownerId: "$owner._id" },
+                          pipeline: [
+                              {
+                                  $match: {
+                                      $expr: {
+                                          $and: [
+                                              {
+                                                  $eq: [
+                                                      "$channel",
+                                                      "$$ownerId",
+                                                  ],
+                                              },
+                                              {
+                                                  $eq: [
+                                                      "$subscriber",
+                                                      new mongoose.Types.ObjectId(
+                                                          userId
+                                                      ),
+                                                  ],
+                                              },
+                                          ],
+                                      },
+                                  },
+                              },
+                          ],
+                          as: "subscription",
+                      },
+                  },
+              ]
+            : []),
+        // Project final shape
+        {
+            $project: {
+                content: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                owner: 1,
+                likes: { $size: "$likesData" },
+                isLiked: userId ? { $gt: [{ $size: "$userLike" }, 0] } : false,
+                commentsCount: { $size: "$commentsData" },
+                isSubscribed: userId
+                    ? { $gt: [{ $size: "$subscription" }, 0] }
+                    : false,
+            },
+        },
+    ];
+};
 
 const createTweet = asynchandler(async (req, res) => {
     const { content } = req.body;
@@ -86,114 +240,12 @@ const deleteTweet = asynchandler(async (req, res) => {
 });
 
 const get_latest_tweets = asynchandler(async (req, res) => {
-    // Get current user ID if authenticated (may be undefined for guests)
     const currentUserId = req.user?._id;
 
     const tweets = await Tweet.aggregate([
         { $sort: { createdAt: -1 } },
-        { $limit: 50 },
-        // Lookup owner details
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner",
-            },
-        },
-        { $unwind: "$owner" },
-        // Lookup likes count
-        {
-            $lookup: {
-                from: "likes",
-                let: { tweetId: "$_id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$likedEntity", "$$tweetId"] },
-                                    { $eq: ["$entityType", "Tweet"] },
-                                ],
-                            },
-                        },
-                    },
-                ],
-                as: "likesData",
-            },
-        },
-        // Lookup if current user has liked (only if user is authenticated)
-        ...(currentUserId
-            ? [
-                  {
-                      $lookup: {
-                          from: "likes",
-                          let: { tweetId: "$_id" },
-                          pipeline: [
-                              {
-                                  $match: {
-                                      $expr: {
-                                          $and: [
-                                              {
-                                                  $eq: [
-                                                      "$likedEntity",
-                                                      "$$tweetId",
-                                                  ],
-                                              },
-                                              { $eq: ["$entityType", "Tweet"] },
-                                              {
-                                                  $eq: [
-                                                      "$likedBy",
-                                                      currentUserId,
-                                                  ],
-                                              },
-                                          ],
-                                      },
-                                  },
-                              },
-                          ],
-                          as: "userLike",
-                      },
-                  },
-              ]
-            : []),
-        // Lookup comments count
-        {
-            $lookup: {
-                from: "comments",
-                let: { tweetId: "$_id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$entity", "$$tweetId"] },
-                                    { $eq: ["$entityType", "Tweet"] },
-                                ],
-                            },
-                        },
-                    },
-                ],
-                as: "commentsData",
-            },
-        },
-        // Project final shape
-        {
-            $project: {
-                content: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                "owner._id": 1,
-                "owner.userName": 1,
-                "owner.avatar": 1,
-                "owner.fullName": 1,
-                likes: { $size: "$likesData" },
-                isLiked: currentUserId
-                    ? { $gt: [{ $size: "$userLike" }, 0] }
-                    : false,
-                commentsCount: { $size: "$commentsData" },
-            },
-        },
+        { $limit: 100 }, // Increased limit slightly
+        ...getCommonTweetPipeline(currentUserId),
     ]);
 
     return res
@@ -203,10 +255,50 @@ const get_latest_tweets = asynchandler(async (req, res) => {
         );
 });
 
+const get_following_tweets = asynchandler(async (req, res) => {
+    const currentUserId = req.user._id;
+
+    // 1. Find channels the user is subscribed to
+    const subscriptions = await Subscription.find({
+        subscriber: currentUserId,
+    }).select("channel");
+
+    const subscribedChannelIds = subscriptions.map((sub) => sub.channel);
+
+    if (subscribedChannelIds.length === 0) {
+        return res
+            .status(200)
+            .json(new APIresponse(200, [], "No following tweets found"));
+    }
+
+    // 2. Aggregate tweets from those channels
+    const tweets = await Tweet.aggregate([
+        {
+            $match: {
+                owner: { $in: subscribedChannelIds },
+            },
+        },
+        { $sort: { createdAt: -1 } },
+        { $limit: 100 },
+        ...getCommonTweetPipeline(currentUserId),
+    ]);
+
+    return res
+        .status(200)
+        .json(
+            new APIresponse(
+                200,
+                tweets,
+                "Following tweets fetched successfully"
+            )
+        );
+});
+
 export {
     createTweet,
     get_user_tweet,
     updateTweet,
     deleteTweet,
     get_latest_tweets,
+    get_following_tweets,
 };
