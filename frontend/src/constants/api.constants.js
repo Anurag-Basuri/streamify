@@ -14,6 +14,7 @@ const BASE = {
     COMMENTS: "/api/v1/comments",
     LIKES: "/api/v1/likes",
     SUBSCRIPTIONS: "/api/v1/subscriptions",
+    FOLLOWS: "/api/v1/follows",
     TWEETS: "/api/v1/tweets",
     DASHBOARD: "/api/v1/dashboard",
     NOTIFICATIONS: "/api/v1/notifications",
@@ -146,6 +147,25 @@ export const SUBSCRIPTIONS = {
 };
 
 // ============================================================================
+// FOLLOW ENDPOINTS (Social follows for tweets)
+// ============================================================================
+
+export const FOLLOWS = {
+    // POST /:userId/toggle - Toggle follow
+    TOGGLE: (userId) => `${BASE.FOLLOWS}/${userId}/toggle`,
+    // GET /check/:userId - Check follow status
+    CHECK: (userId) => `${BASE.FOLLOWS}/check/${userId}`,
+    // GET /:userId/followers - Get user's followers
+    FOLLOWERS: (userId) => `${BASE.FOLLOWS}/${userId}/followers`,
+    // GET /:userId/following - Get user's following
+    FOLLOWING: (userId) => `${BASE.FOLLOWS}/${userId}/following`,
+    // GET /followers - Get current user's followers
+    MY_FOLLOWERS: `${BASE.FOLLOWS}/followers`,
+    // GET /following - Get current user's following
+    MY_FOLLOWING: `${BASE.FOLLOWS}/following`,
+};
+
+// ============================================================================
 // TWEET ENDPOINTS
 // ============================================================================
 
@@ -205,6 +225,7 @@ export const ENDPOINTS = {
     COMMENTS,
     LIKES,
     SUBSCRIPTIONS,
+    FOLLOWS,
     TWEETS,
     DASHBOARD,
     NOTIFICATIONS,

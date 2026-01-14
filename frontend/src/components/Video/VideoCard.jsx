@@ -106,13 +106,19 @@ const VideoCard = ({
                 </h3>
 
                 {/* Owner Info */}
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div
+                    className="flex items-center gap-2 sm:gap-3 cursor-pointer group/owner"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/channel/${video.owner?.userName}`);
+                    }}
+                >
                     <div className="flex-shrink-0">
                         {video.owner?.avatar ? (
                             <img
                                 src={video.owner.avatar}
                                 alt={video.owner.userName}
-                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-[var(--brand-primary)]"
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-[var(--brand-primary)] group-hover/owner:border-[var(--brand-primary-hover)] transition-colors"
                             />
                         ) : (
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">
@@ -121,7 +127,7 @@ const VideoCard = ({
                         )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] truncate">
+                        <span className="text-xs sm:text-sm font-medium text-[var(--text-primary)] truncate group-hover/owner:text-[var(--brand-primary)] transition-colors">
                             {video.owner?.userName}
                         </span>
                         <span className="text-[10px] sm:text-xs text-[var(--text-tertiary)]">
