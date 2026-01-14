@@ -10,6 +10,7 @@ import { HeroSection } from "../../components/Home/HeroSection.jsx";
 import { VideoCardSkeleton } from "../../components/Video/VideoCardSkeleton.jsx";
 import VideoCard from "../../components/Video/VideoCard.jsx";
 import { VideoGridSection } from "../../components/Home/VideoGridSection.jsx";
+import { HomeFilters } from "../../components/Home/HomeFilters.jsx"; // Import Filters
 
 const Home = () => {
     const { user, isAuthenticated } = useAuth();
@@ -30,15 +31,36 @@ const Home = () => {
     const watchLater = useWatchLater(user);
     const observerTarget = useRef(null);
     const [page, setPage] = useState(1);
+    const [activeFilter, setActiveFilter] = useState("all"); // Filter state
 
-    const { videos, setVideos, isLoading, hasMore, loadingMore } = useVideos(
-        isAuthenticated,
-        user
-    );
+    // Pass filters to useVideos
+    const {
+        videos,
+        setVideos,
+        isLoading,
+        hasMore,
+        loadingMore,
+        updateFilter, // Get updateFilter from hook
+    } = useVideos(isAuthenticated, user);
+
     const { playlists, setPlaylists } = useUserData(
         isAuthenticated,
         apiConfig,
         watchLater
+    );
+
+    // Handle filter change
+    const handleFilterChange = useCallback(
+        (filterId) => {
+            setActiveFilter(filterId);
+            if (filterId === "all") {
+                updateFilter("tags", []); // Clear tags
+            } else {
+                updateFilter("tags", [filterId]); // Set tag filter
+            }
+            // Reset page or other state if needed (useVideos handles data reset)
+        },
+        [updateFilter]
     );
 
     useEffect(() => {
@@ -211,9 +233,27 @@ const Home = () => {
                     />
                 ))
             ) : (
-                <div className="col-span-full text-center py-12">
-                    <p className="text-[var(--text-tertiary)] text-lg">
-                        No videos available
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-20 h-20 mb-4 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">
+                        <svg
+                            className="w-10 h-10 text-[var(--text-tertiary)]"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            />
+                        </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                        No videos found
+                    </h3>
+                    <p className="text-[var(--text-tertiary)] max-w-sm">
+                        Try adjusting your filters or search for something else.
                     </p>
                 </div>
             ),
@@ -222,11 +262,21 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <HeroSection />
 
-                <div className="mt-10">
-                    <h2 className="text-2xl font-bold mb-6">Latest Videos</h2>
+                <div className="mt-8 space-y-6">
+                    <div className="flex flex-col gap-4">
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--text-primary)] to-[var(--text-secondary)] bg-clip-text text-transparent px-4 md:px-0">
+                            Discover
+                        </h2>
+
+                        <HomeFilters
+                            activeFilter={activeFilter}
+                            onFilterChange={handleFilterChange}
+                        />
+                    </div>
+
                     <VideoGridSection
                         videoGridContent={videoGridContent}
                         hasMore={hasMore}
@@ -240,58 +290,82 @@ const Home = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                             onClick={() => setShowPlaylistModal(false)}
                         >
                             <motion.div
-                                initial={{ scale: 0.95 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0.95 }}
-                                className="bg-[var(--bg-elevated)] border border-[var(--border-light)] p-6 rounded-xl max-w-md w-full mx-4 shadow-xl"
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="bg-[var(--bg-elevated)] border border-[var(--border-light)] p-6 rounded-2xl max-w-md w-full shadow-2xl relative overflow-hidden"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <h3 className="text-xl font-bold mb-4 text-[var(--text-primary)]">
+                                {/* Modal Background Effect */}
+                                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-[var(--brand-primary)]/20 blur-3xl rounded-full" />
+                                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full" />
+
+                                <h3 className="text-xl font-bold mb-6 text-[var(--text-primary)] relative z-10">
                                     Add to Playlist
                                 </h3>
 
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        value={newPlaylistName}
-                                        onChange={(e) =>
-                                            setNewPlaylistName(e.target.value)
-                                        }
-                                        placeholder="New playlist name"
-                                        className="w-full p-3 rounded-xl bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent"
-                                    />
-                                    <button
-                                        onClick={() =>
-                                            handlePlaylistOperations("create")
-                                        }
-                                        className="mt-3 w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white p-3 rounded-xl font-medium transition-colors"
-                                    >
-                                        Create & Add
-                                    </button>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h4 className="font-medium mb-2 text-[var(--text-secondary)]">
-                                        Existing Playlists
-                                    </h4>
-                                    {playlists.map((playlist) => (
-                                        <button
-                                            key={playlist._id}
-                                            onClick={() =>
-                                                handlePlaylistOperations(
-                                                    "add",
-                                                    playlist._id
+                                <div className="mb-6 relative z-10">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newPlaylistName}
+                                            onChange={(e) =>
+                                                setNewPlaylistName(
+                                                    e.target.value
                                                 )
                                             }
-                                            className="w-full text-left p-3 hover:bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] transition-colors"
+                                            placeholder="Create new playlist..."
+                                            className="flex-1 p-3 rounded-xl bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent outline-none transition-all"
+                                        />
+                                        <button
+                                            onClick={() =>
+                                                handlePlaylistOperations(
+                                                    "create"
+                                                )
+                                            }
+                                            disabled={!newPlaylistName.trim()}
+                                            className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-xl font-medium transition-colors"
                                         >
-                                            {playlist.name}
+                                            Create
                                         </button>
-                                    ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar relative z-10">
+                                    <h4 className="text-sm font-semibold mb-3 text-[var(--text-secondary)] uppercase tracking-wider">
+                                        Your Playlists
+                                    </h4>
+                                    {playlists.length > 0 ? (
+                                        playlists.map((playlist) => (
+                                            <button
+                                                key={playlist._id}
+                                                onClick={() =>
+                                                    handlePlaylistOperations(
+                                                        "add",
+                                                        playlist._id
+                                                    )
+                                                }
+                                                className="w-full text-left p-3 hover:bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] transition-all flex items-center justify-between group border border-transparent hover:border-[var(--border-light)]"
+                                            >
+                                                <span className="font-medium truncate">
+                                                    {playlist.name}
+                                                </span>
+                                                <span className="text-xs text-[var(--text-tertiary)] bg-[var(--bg-tertiary)] px-2 py-1 rounded-md group-hover:bg-[var(--bg-primary)] transition-colors">
+                                                    {playlist.videos?.length ||
+                                                        0}{" "}
+                                                    videos
+                                                </span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-6 text-[var(--text-tertiary)]">
+                                            No playlists found
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </motion.div>
@@ -301,11 +375,14 @@ const Home = () => {
                 {hasMore && (
                     <div
                         ref={observerTarget}
-                        className="h-20 flex items-center justify-center"
+                        className="h-24 flex items-center justify-center mt-8"
                     >
                         {loadingMore && (
-                            <div className="loader-container">
-                                <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                                <div className="w-5 h-5 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
+                                <span className="text-sm font-medium">
+                                    Loading more videos...
+                                </span>
                             </div>
                         )}
                     </div>
