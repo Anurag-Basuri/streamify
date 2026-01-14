@@ -1,19 +1,31 @@
-import { asynchandler } from "../utils/asynchandler.js";
-import { APIerror } from "../utils/APIerror.js";
-import { APIresponse } from "../utils/APIresponse.js";
-import { Video } from "../models/video.model.js";
-import { Like } from "../models/like.model.js";
+import mongoose from "mongoose";
+import fs from "fs";
+
+// Models
+import { Video, Like } from "../models/index.js";
+
+// Utils
+import {
+    asyncHandler,
+    ok,
+    created,
+    badRequest,
+    notFound,
+    forbidden,
+    validateObjectId,
+    ensureExists,
+    ensureOwner,
+    ApiError,
+} from "../utils/index.js";
 import {
     uploadOnCloudinary,
     generateCloudinarySignedUrl,
 } from "../utils/cloudinary.js";
-import mongoose from "mongoose";
-import fs from "fs";
 import { compressVideo } from "../middlewares/multer.middleware.js";
 import { enqueueUploadNotificationFanout } from "../queues/notification.queue.js";
 
 // Create a new video
-const createVideo = asynchandler(async (req, res) => {
+const createVideo = asyncHandler(async (req, res) => {
     // Define compressedPath here so it's accessible in the catch block
     let compressedPath;
 
@@ -23,12 +35,12 @@ const createVideo = asynchandler(async (req, res) => {
 
         // Validate files
         if (!videoFile || !thumbnail) {
-            throw new APIerror(400, "Both video and thumbnail are required");
+            badRequest("Both video and thumbnail are required");
         }
 
         // File path validation
         if (!fs.existsSync(videoFile.path) || !fs.existsSync(thumbnail.path)) {
-            throw new APIerror(400, "Uploaded files not found");
+            badRequest("Uploaded files not found");
         }
 
         // Process video
@@ -69,9 +81,7 @@ const createVideo = asynchandler(async (req, res) => {
             fs.existsSync(path) && fs.unlinkSync(path);
         });
 
-        return res
-            .status(201)
-            .json(new APIresponse(201, video, "Video uploaded successfully"));
+        return created(res, video, "Video uploaded successfully");
     } catch (error) {
         // Cleanup on error
         [
@@ -84,19 +94,17 @@ const createVideo = asynchandler(async (req, res) => {
 
         // Handle specific errors
         if (error.code === 11000) {
-            throw new APIerror(400, "Duplicate video entry detected");
+            badRequest("Duplicate video entry detected");
         }
         throw error;
     }
 });
 
 // Get a single video by ID
-const getVideoById = asynchandler(async (req, res) => {
+const getVideoById = asyncHandler(async (req, res) => {
     const { videoID } = req.params;
 
-    if (!mongoose.isValidObjectId(videoID)) {
-        throw new APIerror(400, "Invalid Video ID");
-    }
+    validateObjectId(videoID, "Video ID");
 
     const video = await Video.findById(videoID).populate(
         "owner",
@@ -104,7 +112,7 @@ const getVideoById = asynchandler(async (req, res) => {
     );
 
     if (!video) {
-        throw new APIerror(404, "Video not found");
+        notFound("Video");
     }
 
     // Get like count for this video
@@ -129,26 +137,16 @@ const getVideoById = asynchandler(async (req, res) => {
     videoData.likesCount = likesCount;
     videoData.isLiked = isLiked;
 
-    return res
-        .status(200)
-        .json(
-            new APIresponse(
-                200,
-                videoData,
-                "Video details fetched successfully"
-            )
-        );
+    return ok(res, videoData, "Video details fetched successfully");
 });
 
 // Update video details
-const updateVideo = asynchandler(async (req, res) => {
+const updateVideo = asyncHandler(async (req, res) => {
     const { videoID } = req.params;
     const updates = {};
 
     // Validate video ID
-    if (!mongoose.isValidObjectId(videoID)) {
-        throw new APIerror(400, "Invalid Video ID");
-    }
+    validateObjectId(videoID, "Video ID");
 
     // Validate video ownership
     const video = await Video.findById(videoID).populate("owner");
