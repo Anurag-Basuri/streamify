@@ -4,7 +4,7 @@
 # ============================================
 
 # Stage 1: Install production dependencies
-FROM node:20-alpine AS deps
+FROM node:25-alpine AS deps
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN npm ci --only=production --ignore-scripts && \
     npm cache clean --force
 
 # Stage 2: Production runner
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 
 # Install system dependencies
 #  - ffmpeg: video processing
