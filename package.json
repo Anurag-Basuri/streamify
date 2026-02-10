@@ -1,0 +1,24 @@
+{
+  "name": "streamify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Streamify — Video Streaming Platform (Monorepo)",
+  "author": "Anurag Basuri",
+  "license": "ISC",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,css,md}\"",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.4.0"
+  }
+}
