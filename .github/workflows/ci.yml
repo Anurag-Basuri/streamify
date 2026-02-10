@@ -159,7 +159,7 @@ jobs:
           cache-from: type=gha
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: streamify-${{ matrix.service }}:scan
           format: "table"
@@ -169,7 +169,7 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Run Trivy (SARIF for GitHub Security)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: streamify-${{ matrix.service }}:scan
           format: "sarif"

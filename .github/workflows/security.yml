@@ -81,7 +81,7 @@ jobs:
         run: docker pull ${{ matrix.image }} || echo "⚠️ Image not found, skipping scan"
 
       - name: Run Trivy scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: ${{ matrix.image }}
           format: "sarif"
