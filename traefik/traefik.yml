@@ -1,0 +1,80 @@
+# ============================================
+# Traefik v3 — Static Configuration
+# ============================================
+# Docs: https://doc.traefik.io/traefik/
+
+# ---- API & Dashboard ----
+api:
+  dashboard: true
+  insecure: true # Dashboard on :8080 (protect via firewall/VPN in production)
+
+# ---- Ping (Health Check) ----
+ping:
+  entryPoint: web
+
+# ---- Entry Points ----
+entryPoints:
+  web:
+    address: ":80"
+    # Global HTTP → HTTPS redirect handled via middleware in dynamic.yml
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+    # Enable HTTP/2
+    http2:
+      maxConcurrentStreams: 250
+    # Forwarded headers — trust Docker network
+    forwardedHeaders:
+      insecure: true
+  traefik:
+    address: ":8080"
+
+# ---- Providers ----
+providers:
+  # Auto-discover services via Docker labels
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false # Only route containers with traefik.enable=true
+    network: streamify
+    watch: true
+  # Load middleware and other dynamic config from file
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+# ---- Certificate Resolvers (Let's Encrypt) ----
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Email set via environment variable in docker-compose
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+      # Uncomment for staging/testing (avoids rate limits):
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+
+# ---- Logging ----
+log:
+  level: INFO
+  format: common
+
+accessLog:
+  format: common
+  filters:
+    statusCodes:
+      - "400-599"
+    retryAttempts: true
+  fields:
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Forwarded-For: keep
+        X-Real-Ip: keep
+
+# ---- Global Settings ----
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false

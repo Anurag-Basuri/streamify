@@ -1,0 +1,88 @@
+# ============================================
+# Traefik v3 — Dynamic Configuration
+# ============================================
+# Security middleware chain applied to all routers
+# ============================================
+
+http:
+  middlewares:
+    # ---- HTTPS Redirect ----
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # ---- Security Headers ----
+    security-headers:
+      headers:
+        # HSTS — force HTTPS for 1 year, include subdomains
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+
+        # Prevent clickjacking
+        frameDeny: true
+
+        # Prevent MIME sniffing
+        contentTypeNosniff: true
+
+        # XSS protection
+        browserXssFilter: true
+
+        # Referrer policy
+        referrerPolicy: "strict-origin-when-cross-origin"
+
+        # Permissions Policy
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=()"
+
+        # Content Security Policy (adjust as needed for your app)
+        contentSecurityPolicy: >-
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval';
+          style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+          font-src 'self' https://fonts.gstatic.com;
+          img-src 'self' data: https: blob:;
+          media-src 'self' https: blob:;
+          connect-src 'self' https: wss:;
+          frame-src 'self';
+
+        # Remove server identity headers
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+
+    # ---- Rate Limiting ----
+    rate-limit:
+      rateLimit:
+        average: 100 # requests per second
+        burst: 200
+        period: 1s
+
+    # ---- Compression ----
+    compress:
+      compress:
+        excludedContentTypes:
+          - text/event-stream
+
+    # ---- Combined Security Chain ----
+    security-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - rate-limit
+          - compress
+
+  # ---- TLS Configuration ----
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      sniStrict: true
