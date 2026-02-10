@@ -1,0 +1,190 @@
+# ============================================
+# Streamify CD Pipeline
+# ============================================
+# Triggers: Push to main or develop (not PRs)
+# Jobs: Build images → Push to GHCR → Deploy
+# ============================================
+
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+# Only one deploy at a time
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}-frontend
+
+jobs:
+  # ──────────────────────────────────────────
+  # Job 1: Build & Push Docker Images to GHCR
+  # ──────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      backend-tag: ${{ steps.meta-backend.outputs.tags }}
+      frontend-tag: ${{ steps.meta-frontend.outputs.tags }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate version tag
+        id: version
+        run: |
+          VERSION=$(date +'%Y%m%d')-$(echo ${{ github.sha }} | cut -c1-7)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- Backend ----
+      - name: Extract backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,prefix=sha-
+
+      - name: Build & push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+          platforms: linux/amd64
+
+      # ---- Frontend ----
+      - name: Extract frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,prefix=sha-
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+          platforms: linux/amd64
+
+  # ──────────────────────────────────────────
+  # Job 2: Deploy
+  # ──────────────────────────────────────────
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Print deployment info
+        run: |
+          echo "🚀 Deployment Summary"
+          echo "====================="
+          echo "Version:     ${{ needs.build-and-push.outputs.version }}"
+          echo "Backend:     ${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.version }}"
+          echo "Frontend:    ${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.version }}"
+          echo "Environment: production"
+          echo "Commit:      ${{ github.sha }}"
+          echo "Actor:       ${{ github.actor }}"
+
+      # ──────────────────────────────────────
+      # DEPLOYMENT PLACEHOLDER
+      # ──────────────────────────────────────
+      # Uncomment ONE of the following blocks depending on your deployment target.
+      #
+      # ── Option A: SSH to VPS ──
+      # - name: Deploy to VPS
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_KEY }}
+      #     script: |
+      #       cd /opt/streamify
+      #       docker compose pull
+      #       docker compose up -d --remove-orphans
+      #       docker image prune -f
+      #
+      # ── Option B: AWS ECS ──
+      # - name: Deploy to ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      #   with:
+      #     task-definition: task-definition.json
+      #     service: streamify-service
+      #     cluster: streamify-cluster
+      #
+      # ── Option C: Docker Compose via SSH ──
+      # - name: Copy compose files
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_KEY }}
+      #     source: "docker-compose.yml,.env.docker"
+      #     target: "/opt/streamify"
+      #
+      # - name: Deploy via SSH
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_KEY }}
+      #     script: |
+      #       cd /opt/streamify
+      #       export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.version }}
+      #       export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.version }}
+      #       docker compose pull
+      #       docker compose up -d --remove-orphans
+      #       docker image prune -f
+
+      - name: Deployment complete
+        run: echo "✅ Images pushed to GHCR. Configure deployment target above to auto-deploy."
