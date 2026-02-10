@@ -1,0 +1,84 @@
+# ============================================
+# Streamify — Docker Compose (Production + Traefik)
+# ============================================
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   OR: make prod
+# ============================================
+# Adds Traefik reverse proxy with:
+#   - Automatic Let's Encrypt SSL certificates
+#   - HTTP → HTTPS redirect
+#   - Security middleware (HSTS, headers, rate limiting)
+#   - Dashboard at :8080 (Basic Auth protected)
+# ============================================
+
+services:
+  # ---- Traefik (Edge Reverse Proxy) ----
+  traefik:
+    image: traefik:v3.3
+    container_name: streamify-traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Dashboard (restrict in firewall for production)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik_certs:/letsencrypt
+    environment:
+      - TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL=${ACME_EMAIL:-admin@example.com}
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - streamify
+    labels:
+      # ---- Dashboard Router ----
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=traefik"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-admin:$$apr1$$xyz$$placeholder}"
+
+  # ---- Frontend — Traefik labels ----
+  frontend:
+    ports: [] # Remove host port binding — Traefik handles external traffic
+    labels:
+      - "traefik.enable=true"
+      # ---- HTTPS Router ----
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend.middlewares=security-chain@file"
+      # ---- HTTP → HTTPS Redirect Router ----
+      - "traefik.http.routers.frontend-http.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.frontend-http.entrypoints=web"
+      - "traefik.http.routers.frontend-http.middlewares=https-redirect@file"
+      # ---- Service ----
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # ---- Backend — No external ports in production ----
+  backend:
+    ports: [] # Remove host port binding — accessed internally via Nginx
+    environment:
+      - CORS_ORIGIN=https://${DOMAIN:-localhost}
+
+  # ---- MongoDB — No external ports in production ----
+  mongo:
+    ports: [] # Remove host port binding — internal only
+
+  # ---- Redis — No external ports in production ----
+  redis:
+    ports: [] # Remove host port binding — internal only
+
+# ---- Additional Volumes ----
+volumes:
+  traefik_certs:
+    driver: local
