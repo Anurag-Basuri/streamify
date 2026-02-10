@@ -1,114 +1,110 @@
 # ============================================
-# Streamify — Docker Compose (Production)
+# Streamify — Docker Compose (Base)
 # ============================================
 # Usage:
-#   docker compose up -d          (start all services)
-#   docker compose down           (stop all services)
-#   docker compose logs -f        (follow logs)
+#   Development: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ============================================
 
 services:
-  # ---- Frontend (Nginx + React SPA) ----
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: streamify-frontend
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - streamify
+    # ---- Frontend (Nginx) ----
+    frontend:
+        build:
+            context: .
+            dockerfile: infra/docker/frontend.Dockerfile
+        container_name: streamify-frontend
+        ports:
+            - "80:80"
+        depends_on:
+            backend:
+                condition: service_healthy
+        restart: unless-stopped
+        networks:
+            - streamify
 
-  # ---- Backend (Node.js + Express) ----
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: streamify-backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env.docker
-    environment:
-      - NODE_ENV=production
-      - PORT=8000
-      - MONGODB_URL=mongodb://mongo:27017/streamify
-      - DB_NAME=streamify
-      - REDIS_URL=redis://redis:6379
-      - CORS_ORIGIN=http://localhost
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: "1.0"
-        reservations:
-          memory: 256M
-          cpus: "0.25"
-    networks:
-      - streamify
+    # ---- Backend (Node.js) ----
+    backend:
+        build:
+            context: .
+            dockerfile: infra/docker/backend.Dockerfile
+        container_name: streamify-backend
+        ports:
+            - "8000:8000"
+        env_file:
+            - .env.docker
+        environment:
+            - NODE_ENV=production
+            - MONGODB_URL=mongodb://mongo:27017/streamify
+            - DB_NAME=streamify
+            - REDIS_URL=redis://redis:6379
+            - CORS_ORIGIN=http://localhost
+        depends_on:
+            mongo:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+                    cpus: "1.0"
+                reservations:
+                    memory: 256M
+                    cpus: "0.25"
+        restart: unless-stopped
+        networks:
+            - streamify
 
-  # ---- MongoDB ----
-  mongo:
-    image: mongo:7
-    container_name: streamify-mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-      - mongo_config:/data/configdb
-    environment:
-      - MONGO_INITDB_DATABASE=streamify
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-    networks:
-      - streamify
+    # ---- MongoDB ----
+    mongo:
+        image: mongo:7
+        container_name: streamify-mongo
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongo_data:/data/db
+            - mongo_config:/data/configdb
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+            start_period: 30s
+        restart: unless-stopped
+        networks:
+            - streamify
 
-  # ---- Redis ----
-  redis:
-    image: redis:7-alpine
-    container_name: streamify-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - streamify
+    # ---- Redis ----
+    redis:
+        image: redis:7-alpine
+        container_name: streamify-redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 30s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+        networks:
+            - streamify
 
 # ---- Volumes ----
 volumes:
-  mongo_data:
-    driver: local
-  mongo_config:
-    driver: local
-  redis_data:
-    driver: local
-  traefik_certs:
-    driver: local
+    mongo_data:
+        driver: local
+    mongo_config:
+        driver: local
+    redis_data:
+        driver: local
+    traefik_certs:
+        driver: local
 
 # ---- Networks ----
 networks:
-  streamify:
-    driver: bridge
+    streamify:
+        driver: bridge
