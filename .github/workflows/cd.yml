@@ -32,7 +32,7 @@ jobs:
             backend: ${{ steps.filter.outputs.backend }}
             frontend: ${{ steps.filter.outputs.frontend }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - uses: dorny/paths-filter@v3
               id: filter
               with:
@@ -54,7 +54,7 @@ jobs:
         needs: changes
         if: needs.changes.outputs.backend == 'true'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Login to GHCR
               uses: docker/login-action@v3
@@ -101,7 +101,7 @@ jobs:
         needs: changes
         if: needs.changes.outputs.frontend == 'true'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Login to GHCR
               uses: docker/login-action@v3
