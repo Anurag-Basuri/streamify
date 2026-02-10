@@ -6,7 +6,7 @@
 # ============================================
 
 # ---- Stage 1: Install Dependencies ----
-FROM node:20-alpine AS deps
+FROM node:25-alpine AS deps
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN npm ci --omit=dev --workspace=@streamify/backend --include-workspace-root &&
     npm cache clean --force
 
 # ---- Stage 2: Production Image ----
-FROM node:20-alpine AS runner
+FROM node:25-alpine AS runner
 
 # Install system dependencies
 RUN apk add --no-cache \
