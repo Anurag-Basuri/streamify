@@ -1,28 +1,50 @@
 # ============================================
-# Streamify — Makefile
-# Common Docker commands for development
+# Streamify Monorepo — Makefile
 # ============================================
 
-.PHONY: help up prod dev down build logs clean restart status certs
+.PHONY: help up prod dev down build logs clean restart status certs install lint
 
 help: ## Show this help message
 	@echo.
-	@echo   Streamify Docker Commands
-	@echo   =========================
+	@echo   Streamify Monorepo Commands
+	@echo   ===========================
 	@echo.
+	@echo   DOCKER
+	@echo   ------
 	@echo   make up        Start all services (basic, no SSL)
 	@echo   make prod      Start production with Traefik + SSL
 	@echo   make dev       Start in dev mode (hot-reload)
 	@echo   make down      Stop and remove containers
-	@echo   make build     Rebuild all images
+	@echo   make build     Rebuild all Docker images
 	@echo   make logs      Tail all container logs
 	@echo   make clean     Remove containers, volumes, images
 	@echo   make restart   Restart all services
 	@echo   make status    Show container status
 	@echo   make certs     Show SSL certificate status
 	@echo.
+	@echo   DEVELOPMENT
+	@echo   -----------
+	@echo   make install   Install all workspace dependencies
+	@echo   make lint      Lint all workspaces (via Turbo)
+	@echo   make format    Format all files (Prettier)
+	@echo   make turbo-build Build all workspaces (via Turbo)
+	@echo.
 
-## ---- Production ----
+## ---- Development (Local) ----
+
+install: ## Install all workspace dependencies
+	npm install
+
+lint: ## Lint all workspaces via Turborepo
+	npx turbo lint
+
+format: ## Format all files with Prettier
+	npm run format
+
+turbo-build: ## Build all workspaces via Turborepo
+	npx turbo build
+
+## ---- Docker: Production ----
 
 up: ## Start all services (basic, no Traefik)
 	docker compose up -d
@@ -43,7 +65,7 @@ prod: ## Start production with Traefik + SSL
 build: ## Rebuild all Docker images
 	docker compose build --no-cache
 
-## ---- Development ----
+## ---- Docker: Development ----
 
 dev: ## Start in development mode with hot-reload
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up
@@ -54,7 +76,7 @@ dev: ## Start in development mode with hot-reload
 	@echo   Mongo Express: http://localhost:8081
 	@echo.
 
-## ---- Management ----
+## ---- Docker: Management ----
 
 down: ## Stop and remove all containers
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.dev.yml down 2>/dev/null || docker compose down

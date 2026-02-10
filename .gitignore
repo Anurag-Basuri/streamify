@@ -1,0 +1,56 @@
+# ============================================
+# Streamify Monorepo — .gitignore
+# ============================================
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.docker.example
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Turbo cache
+.turbo/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Docker
+infra/docker/*.tar
+
+# SSL Certificates (managed by Docker volume)
+infra/traefik/acme.json
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.local
+tmp/

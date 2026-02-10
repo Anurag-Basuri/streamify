@@ -1,79 +1,73 @@
 # ============================================
-# Streamify — Docker Compose (Development)
+# Streamify — Docker Compose (Development Overrides)
 # ============================================
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 #   OR: make dev
 # ============================================
-# This file overrides docker-compose.yml for local development:
-#   - Backend uses nodemon with source bind-mount for hot-reload
-#   - Frontend runs Vite dev server with HMR instead of Nginx
-#   - Mongo Express UI available at http://localhost:8081
-# ============================================
 
 services:
-  # ---- Backend (Dev Mode with Hot Reload) ----
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: deps
-    container_name: streamify-backend-dev
-    command: >
-      sh -c "
-        apk add --no-cache ffmpeg curl &&
-        npx nodemon --experimental-json-modules src/index.js
-      "
-    ports:
-      - "8000:8000"
-      - "9229:9229" # Node.js debugger port
-    volumes:
-      - ./backend/src:/app/src:delegated
-      - ./backend/package.json:/app/package.json
-    environment:
-      - NODE_ENV=development
-    restart: "no"
-    deploy:
-      resources: {}
+    # ---- Backend (Dev mode with hot-reload) ----
+    backend:
+        build:
+            context: .
+            dockerfile: infra/docker/backend.Dockerfile
+            target: deps
+        container_name: streamify-backend-dev
+        command: >
+            sh -c "cd /app/apps/backend &&
+                   npx nodemon -r dotenv/config --experimental-json-modules src/index.js"
+        volumes:
+            - ./apps/backend/src:/app/apps/backend/src
+            - ./packages/shared/src:/app/packages/shared/src
+        environment:
+            - NODE_ENV=development
+            - MONGODB_URL=mongodb://mongo:27017/streamify-dev
+            - DB_NAME=streamify-dev
+            - REDIS_URL=redis://redis:6379
+            - CORS_ORIGIN=http://localhost:5173
+        ports:
+            - "8000:8000"
+            - "9229:9229" # Node.js debugger
+        deploy:
+            resources: {}
 
-  # ---- Frontend (Vite Dev Server with HMR) ----
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: build
-    container_name: streamify-frontend-dev
-    command: npx vite --host 0.0.0.0 --port 5173
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend/src:/app/src:delegated
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/vite.config.js:/app/vite.config.js
-      - ./frontend/tailwind.config.js:/app/tailwind.config.js
-      - ./frontend/postcss.config.js:/app/postcss.config.js
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      backend:
-        condition: service_started
-    restart: "no"
-    healthcheck:
-      disable: true
+    # ---- Frontend (Vite Dev Server) ----
+    frontend:
+        build: {}
+        image: node:20-alpine
+        container_name: streamify-frontend-dev
+        working_dir: /app/apps/frontend
+        command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+        volumes:
+            - ./apps/frontend:/app/apps/frontend
+            - ./packages/shared:/app/packages/shared
+            - ./package.json:/app/package.json
+            - frontend_node_modules:/app/apps/frontend/node_modules
+        ports:
+            - "5173:5173"
+        environment:
+            - NODE_ENV=development
+        depends_on:
+            - backend
 
-  # ---- Mongo Express (Database Admin UI) ----
-  mongo-express:
-    image: mongo-express:latest
-    container_name: streamify-mongo-express
-    ports:
-      - "8081:8081"
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_PORT=27017
-      - ME_CONFIG_BASICAUTH=false
-    depends_on:
-      mongo:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - streamify
+    # ---- Mongo Express (DB Management UI) ----
+    mongo-express:
+        image: mongo-express:latest
+        container_name: streamify-mongo-express
+        ports:
+            - "8081:8081"
+        environment:
+            - ME_CONFIG_MONGODB_SERVER=mongo
+            - ME_CONFIG_MONGODB_PORT=27017
+            - ME_CONFIG_BASICAUTH=false
+        depends_on:
+            mongo:
+                condition: service_healthy
+        restart: unless-stopped
+        networks:
+            - streamify
+
+volumes:
+    frontend_node_modules:
+        driver: local

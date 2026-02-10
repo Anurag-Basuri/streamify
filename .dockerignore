@@ -1,25 +1,35 @@
+# ============================================
+# Streamify Monorepo — .dockerignore
+# ============================================
+
 # Git
-.git
+.git/
 .gitignore
+
+# Dependencies (installed inside container)
+node_modules/
+**/node_modules/
+
+# Build outputs
+apps/frontend/dist/
+.turbo/
 
 # Environment files
 .env
 .env.*
 !.env.docker.example
 
-# IDE
-.vscode
-.idea
+# CI/CD
+.github/
 
-# OS files
-.DS_Store
-Thumbs.db
+# IDE
+.vscode/
+.idea/
 
 # Documentation
 *.md
 !README.md
-LICENSE
-mermaid_urls.txt
 
-# Node modules (each service has its own)
-**/node_modules
+# Logs
+logs/
+*.log
