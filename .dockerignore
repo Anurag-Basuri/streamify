@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+!.env.docker.example
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+LICENSE
+mermaid_urls.txt
+
+# Node modules (each service has its own)
+**/node_modules

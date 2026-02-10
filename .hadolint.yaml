@@ -1,0 +1,14 @@
+# ============================================
+# Hadolint — Dockerfile Linter Configuration
+# ============================================
+# Docs: https://github.com/hadolint/hadolint
+
+ignored:
+  # DL3018: Pin versions in apk add (alpine packages change frequently, pinning is impractical)
+  - DL3018
+  # DL3008: Pin versions in apt-get (same reason for debian-based images)
+  - DL3008
+
+trustedRegistries:
+  - docker.io
+  - ghcr.io
