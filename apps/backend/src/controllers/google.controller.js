@@ -1,6 +1,7 @@
 // Google OAuth Controller
 // Handles Google Sign-In token verification and user creation/login
 import { OAuth2Client } from "google-auth-library";
+import crypto from "crypto";
 import { User } from "../models/user.model.js";
 import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
@@ -60,6 +61,8 @@ export const googleAuth = asynchandler(async (req, res, next) => {
             const username =
                 email.split("@")[0] + "_" + Date.now().toString(36);
 
+            const oauthPassword = crypto.randomBytes(24).toString("hex");
+
             user = await User.create({
                 userName: username,
                 fullName: name,
@@ -67,13 +70,8 @@ export const googleAuth = asynchandler(async (req, res, next) => {
                 googleId,
                 avatar: picture,
                 isEmailVerified: true, // Google accounts are verified
-                // Password is not required for Google users
-                password: undefined,
+                password: oauthPassword,
             });
-
-            // Remove password requirement validation for Google users
-            user.password = null;
-            await user.save({ validateBeforeSave: false });
         }
 
         // Generate tokens

@@ -113,4 +113,16 @@ const uploadFields = multer({
     { name: "thumbnail", maxCount: 1 },
 ]);
 
-export { uploadAvatar, uploadCoverImage, uploadFields, compressVideo };
+const uploadSingleFile = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+}).single("file");
+
+export {
+    uploadAvatar,
+    uploadCoverImage,
+    uploadFields,
+    uploadSingleFile,
+    compressVideo,
+};
