@@ -7,6 +7,7 @@ import { asynchandler } from "../utils/asynchandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
 import { v2 as cloudinary } from "cloudinary";
+import { COOKIE_OPTIONS } from "../constants.js";
 import {
     sendVerificationEmail,
     sendPasswordChangedEmail,
@@ -111,10 +112,7 @@ const loginUser = asynchandler(async (req, res, next) => {
         "-password -refreshToken"
     );
 
-    const options = {
-        httpOnly: true,
-        secure: true,
-    };
+    const options = { ...COOKIE_OPTIONS };
 
     res.status(200)
         .cookie("accessToken", accessToken, options)
@@ -136,12 +134,7 @@ const logoutUser = asynchandler(async (req, res, next) => {
     });
 
     // Clear cookies
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        path: "/",
-    };
+    const options = { ...COOKIE_OPTIONS };
     res.clearCookie("accessToken", options);
     res.clearCookie("refreshToken", options);
 
@@ -168,10 +161,7 @@ const refreshAccessToken = asynchandler(async (req, res, next) => {
             return next(new APIerror(401, "Invalid or expired refresh token"));
         }
 
-        const options = {
-            httpOnly: true,
-            secure: true,
-        };
+        const options = { ...COOKIE_OPTIONS };
 
         const { accessToken, refreshToken } =
             await generate_Access_Refresh_token(user._id);

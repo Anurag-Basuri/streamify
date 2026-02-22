@@ -7,15 +7,14 @@ import { APIerror } from "../utils/APIerror.js";
 import { APIresponse } from "../utils/APIresponse.js";
 import { asynchandler } from "../utils/asynchandler.js";
 import { generate_Access_Refresh_token } from "../utils/tokens.js";
+import { COOKIE_OPTIONS } from "../constants.js";
 
 // Initialize Google OAuth client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Cookie options for tokens
 const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    ...COOKIE_OPTIONS,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 

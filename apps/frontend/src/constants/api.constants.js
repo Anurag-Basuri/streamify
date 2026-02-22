@@ -18,7 +18,7 @@ const BASE = {
     TWEETS: "/api/v1/tweets",
     DASHBOARD: "/api/v1/dashboard",
     NOTIFICATIONS: "/api/v1/notifications",
-    HEALTHCHECK: "/api/v1/healthcheck",
+    HEALTHCHECK: "/health",
 };
 
 // ============================================================================
@@ -64,16 +64,21 @@ export const USERS = {
 export const VIDEOS = {
     LIST: BASE.VIDEOS,
     GET: (id) => `${BASE.VIDEOS}/${id}`,
-    CREATE: BASE.VIDEOS,
-    UPDATE: (id) => `${BASE.VIDEOS}/${id}`,
+    CREATE: `${BASE.VIDEOS}/upload`,
+    UPDATE: (id) => `${BASE.VIDEOS}/update/${id}`,
     DELETE: (id) => `${BASE.VIDEOS}/${id}`,
 
     // Video actions
-    TOGGLE_PUBLISH: (id) => `${BASE.VIDEOS}/toggle/publish/${id}`,
-    INCREMENT_VIEW: (id) => `${BASE.VIDEOS}/view/${id}`,
+    TOGGLE_PUBLISH: (id) => `${BASE.VIDEOS}/${id}/publish`,
+    INCREMENT_VIEW: (id) => `${BASE.VIDEOS}/${id}/views`,
 
     // User's videos
     USER_VIDEOS: (userId) => `${BASE.VIDEOS}/user/${userId}`,
+    RECOMMENDATIONS: (videoId) =>
+        videoId
+            ? `${BASE.VIDEOS}/recommendations/${videoId}`
+            : `${BASE.VIDEOS}/recommendations`,
+    DOWNLOAD: (id) => `${BASE.VIDEOS}/${id}/download`,
 };
 
 // ============================================================================
@@ -83,29 +88,45 @@ export const VIDEOS = {
 export const PLAYLISTS = {
     LIST: BASE.PLAYLISTS,
     GET: (id) => `${BASE.PLAYLISTS}/${id}`,
-    CREATE: BASE.PLAYLISTS,
-    UPDATE: (id) => `${BASE.PLAYLISTS}/${id}`,
-    DELETE: (id) => `${BASE.PLAYLISTS}/${id}`,
+    CREATE: `${BASE.PLAYLISTS}/create`,
+    UPDATE: (id) => `${BASE.PLAYLISTS}/update/${id}`,
+    DELETE: (id) => `${BASE.PLAYLISTS}/delete/${id}`,
 
     // Playlist videos
     ADD_VIDEO: (playlistId, videoId) =>
-        `${BASE.PLAYLISTS}/add/${videoId}/${playlistId}`,
+        `${BASE.PLAYLISTS}/${playlistId}/videos/${videoId}`,
     REMOVE_VIDEO: (playlistId, videoId) =>
-        `${BASE.PLAYLISTS}/remove/${videoId}/${playlistId}`,
+        `${BASE.PLAYLISTS}/remove/${playlistId}/videos/${videoId}`,
+    REORDER: (playlistId) => `${BASE.PLAYLISTS}/${playlistId}/reorder`,
 
     // User's playlists
-    USER_PLAYLISTS: (userId) => `${BASE.PLAYLISTS}/user/${userId}`,
+    USER_PLAYLISTS: BASE.PLAYLISTS,
+};
 
-    // Watch later
-    WATCH_LATER: `${BASE.PLAYLISTS}/watch-later`,
-    WATCH_LATER_TOGGLE: (videoId) => `${BASE.PLAYLISTS}/watch-later/${videoId}`,
-    WATCH_LATER_STATUS: (videoId) =>
-        `${BASE.PLAYLISTS}/watch-later/status/${videoId}`,
+// ============================================================================
+// WATCH LATER ENDPOINTS
+// ============================================================================
 
-    // Watch history
-    HISTORY: `${BASE.PLAYLISTS}/history`,
-    HISTORY_ADD: (videoId) => `${BASE.PLAYLISTS}/history/${videoId}`,
-    HISTORY_CLEAR: `${BASE.PLAYLISTS}/history/clear`,
+export const WATCH_LATER = {
+    LIST: "/api/v1/watchlater",
+    ADD: (videoId) => `/api/v1/watchlater/${videoId}`,
+    REMOVE: (videoId) => `/api/v1/watchlater/${videoId}`,
+    CLEAR: "/api/v1/watchlater/clear",
+    STATS: "/api/v1/watchlater/stats",
+    UPDATE_REMINDER: (videoId) => `/api/v1/watchlater/${videoId}/reminder`,
+};
+
+// ============================================================================
+// HISTORY ENDPOINTS
+// ============================================================================
+
+export const HISTORY = {
+    LIST: "/api/v1/history",
+    ADD: (videoId) => `/api/v1/history/add/${videoId}`,
+    REMOVE: (videoId) => `/api/v1/history/${videoId}`,
+    CLEAR: "/api/v1/history/clear",
+    BATCH_REMOVE: "/api/v1/history/batch",
+    STATS: "/api/v1/history/stats",
 };
 
 // ============================================================================
@@ -113,10 +134,17 @@ export const PLAYLISTS = {
 // ============================================================================
 
 export const COMMENTS = {
-    VIDEO_COMMENTS: (videoId) => `${BASE.COMMENTS}/${videoId}`,
-    CREATE: (videoId) => `${BASE.COMMENTS}/${videoId}`,
-    UPDATE: (commentId) => `${BASE.COMMENTS}/c/${commentId}`,
-    DELETE: (commentId) => `${BASE.COMMENTS}/c/${commentId}`,
+    LIST: (entityType, entityId) =>
+        `${BASE.COMMENTS}/${entityType}/${entityId}`,
+    CREATE: (entityType, entityId) =>
+        `${BASE.COMMENTS}/${entityType}/${entityId}`,
+    UPDATE: (commentId) => `${BASE.COMMENTS}/${commentId}`,
+    DELETE: (commentId) => `${BASE.COMMENTS}/${commentId}`,
+    COUNT: (entityType, entityId) =>
+        `${BASE.COMMENTS}/count/${entityType}/${entityId}`,
+    REPLIES: (commentId) => `${BASE.COMMENTS}/replies/${commentId}`,
+    PIN: (commentId) => `${BASE.COMMENTS}/${commentId}/pin`,
+    HEART: (commentId) => `${BASE.COMMENTS}/${commentId}/heart`,
 };
 
 // ============================================================================
@@ -124,10 +152,11 @@ export const COMMENTS = {
 // ============================================================================
 
 export const LIKES = {
-    TOGGLE_VIDEO: (videoId) => `${BASE.LIKES}/toggle/v/${videoId}`,
-    TOGGLE_COMMENT: (commentId) => `${BASE.LIKES}/toggle/c/${commentId}`,
-    TOGGLE_TWEET: (tweetId) => `${BASE.LIKES}/toggle/t/${tweetId}`,
+    TOGGLE_VIDEO: (videoId) => `${BASE.LIKES}/toggle/video/${videoId}`,
+    TOGGLE_COMMENT: (commentId) => `${BASE.LIKES}/toggle/comment/${commentId}`,
+    TOGGLE_TWEET: (tweetId) => `${BASE.LIKES}/toggle/tweet/${tweetId}`,
     LIKED_VIDEOS: `${BASE.LIKES}/videos`,
+    FILTER: `${BASE.LIKES}/filter`,
 };
 
 // ============================================================================
@@ -222,6 +251,8 @@ export const ENDPOINTS = {
     USERS,
     VIDEOS,
     PLAYLISTS,
+    WATCH_LATER,
+    HISTORY,
     COMMENTS,
     LIKES,
     SUBSCRIPTIONS,
