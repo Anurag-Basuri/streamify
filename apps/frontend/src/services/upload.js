@@ -19,7 +19,7 @@ export const uploadFile = async (file, type, onProgress) => {
             formData,
             onProgress
         );
-        return response.data.url;
+        return response.data?.data?.url || response.data?.url;
     } catch (error) {
         if (error.isApiError) throw error;
         throw ApiError.fromAxiosError(error);

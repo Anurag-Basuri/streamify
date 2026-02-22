@@ -25,6 +25,7 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 import historyRouter from "./routes/history.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
 import activityRouter from "./routes/activity.routes.js";
+import uploadRouter from "./routes/upload.routes.js";
 
 // Import utilities
 import { getConnectionStatus } from "./database/index.js";
@@ -185,6 +186,7 @@ app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/history", historyRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/activity", activityRouter);
+app.use("/api/v1/upload", uploadRouter);
 
 // ===========================================
 // HEALTH & STATUS ENDPOINTS
