@@ -31,7 +31,7 @@ jobs:
             shared: ${{ steps.filter.outputs.shared }}
             infra: ${{ steps.filter.outputs.infra }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - uses: dorny/paths-filter@v3
               id: filter
               with:
@@ -55,10 +55,10 @@ jobs:
         needs: changes
         if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true'
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: "npm"
@@ -86,10 +86,10 @@ jobs:
                     - service: frontend
                       dockerfile: infra/docker/frontend.Dockerfile
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Lint Dockerfile
-              uses: hadolint/hadolint-action@v3.1.0
+              uses: hadolint/hadolint-action@v3.3.0
               with:
                   dockerfile: ${{ matrix.dockerfile }}
 
