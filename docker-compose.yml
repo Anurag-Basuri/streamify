@@ -22,54 +22,59 @@ services:
         networks:
             - streamify
 
-    # ---- Backend (Node.js) ----
+    # ---- Backend (Spring Boot) ----
     backend:
         build:
-            context: .
-            dockerfile: infra/docker/backend.Dockerfile
+            context: ./apps/backend-spring
+            dockerfile: Dockerfile
         container_name: streamify-backend
         ports:
-            - "8000:8000"
+            - "8080:8080"
+            - "8085:8085"
         env_file:
             - .env.docker
         environment:
-            - NODE_ENV=production
-            - MONGODB_URL=mongodb://mongo:27017/streamify
-            - DB_NAME=streamify
-            - REDIS_URL=redis://redis:6379
+            - SPRING_PROFILES_ACTIVE=prod
+            - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/streamify
+            - SPRING_DATASOURCE_USERNAME=streamify
+            - SPRING_DATASOURCE_PASSWORD=streamify
+            - SPRING_DATA_REDIS_HOST=redis
+            - SPRING_DATA_REDIS_PORT=6379
             - CORS_ORIGIN=http://localhost
         depends_on:
-            mongo:
+            postgres:
                 condition: service_healthy
             redis:
                 condition: service_healthy
         deploy:
             resources:
                 limits:
-                    memory: 1G
+                    memory: 1.5G
                     cpus: "1.0"
                 reservations:
-                    memory: 256M
+                    memory: 512M
                     cpus: "0.25"
         restart: unless-stopped
         networks:
             - streamify
 
-    # ---- MongoDB ----
-    mongo:
-        image: mongo:7
-        container_name: streamify-mongo
+    # ---- PostgreSQL ----
+    postgres:
+        image: postgres:16-alpine
+        container_name: streamify-postgres
         ports:
-            - "27017:27017"
+            - "5432:5432"
+        environment:
+            - POSTGRES_DB=streamify
+            - POSTGRES_USER=streamify
+            - POSTGRES_PASSWORD=streamify
         volumes:
-            - mongo_data:/data/db
-            - mongo_config:/data/configdb
+            - postgres_data:/var/lib/postgresql/data
         healthcheck:
-            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-            interval: 30s
-            timeout: 10s
+            test: ["CMD-SHELL", "pg_isready -U streamify -d streamify"]
+            interval: 10s
+            timeout: 5s
             retries: 5
-            start_period: 30s
         restart: unless-stopped
         networks:
             - streamify
@@ -95,9 +100,7 @@ services:
 
 # ---- Volumes ----
 volumes:
-    mongo_data:
-        driver: local
-    mongo_config:
+    postgres_data:
         driver: local
     redis_data:
         driver: local

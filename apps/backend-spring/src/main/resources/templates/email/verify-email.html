@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Verify Your Email</title>
+</head>
+<body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;">
+    <tr>
+        <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a2e;border-radius:12px;overflow:hidden;">
+                <tr>
+                    <td style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:30px;text-align:center;">
+                        <h1 style="color:#fff;margin:0;font-size:28px;">🎬 Streamify</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:40px 30px;">
+                        <h2 style="color:#e0e0e0;margin:0 0 20px;">Hey <span th:text="${userName}">User</span>! 👋</h2>
+                        <p style="color:#a0a0a0;font-size:16px;line-height:1.6;">
+                            Thanks for signing up for Streamify. Please verify your email address to get started.
+                        </p>
+                        <div style="text-align:center;margin:30px 0;">
+                            <a th:href="${verificationUrl}"
+                               style="display:inline-block;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:600;">
+                                Verify My Email
+                            </a>
+                        </div>
+                        <p style="color:#666;font-size:13px;">
+                            This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background:#111;padding:20px 30px;text-align:center;">
+                        <p style="color:#555;font-size:12px;margin:0;">© 2026 Streamify. All rights reserved.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

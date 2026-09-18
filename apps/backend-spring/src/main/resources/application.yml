@@ -1,0 +1,137 @@
+# ============================================
+# Streamify — Spring Boot Application Config
+# ============================================
+
+server:
+  port: ${PORT:8000}
+
+spring:
+  application:
+    name: streamify
+  threads:
+    virtual:
+      enabled: true
+
+  # ---- PostgreSQL (Neon Serverless) ----
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/streamify}
+    username: ${DATABASE_USERNAME:}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+        jdbc:
+          time_zone: UTC
+
+  # ---- Flyway Migrations ----
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  # ---- Redis ----
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+
+  # ---- Mail (SMTP) ----
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+
+  # ---- Servlet / Multipart ----
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2GB
+
+  # ---- Jackson JSON ----
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+# ============================================
+# Custom Application Properties
+# ============================================
+
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGIN:http://localhost:5173}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
+  jwt:
+    access-token-secret: ${ACCESS_TOKEN_SECRET:change-me-to-a-secure-random-key-min-32-chars}
+    refresh-token-secret: ${REFRESH_TOKEN_SECRET:change-me-to-a-secure-random-key-min-32-chars}
+    access-token-expiry-ms: 900000      # 15 minutes
+    refresh-token-expiry-ms: 604800000  # 7 days
+
+  cloudinary:
+    cloud-name: ${CLOUD_NAME:}
+    api-key: ${API_KEY:}
+    api-secret: ${API_SECRET:}
+
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+
+  mail:
+    from: ${EMAIL_FROM:Streamify <noreply@streamify.com>}
+
+  socketio:
+    host: ${SOCKETIO_HOST:0.0.0.0}
+    port: ${SOCKETIO_PORT:8085}
+
+  ffmpeg:
+    path: ${FFMPEG_PATH:ffmpeg}
+
+# ---- Swagger / OpenAPI ----
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+# ---- Actuator ----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ---- Logging ----
+logging:
+  level:
+    com.streamify: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

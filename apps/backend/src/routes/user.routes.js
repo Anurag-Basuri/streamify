@@ -33,6 +33,11 @@ import {
     uploadFields,
 } from "../middlewares/multer.middleware.js";
 
+// router instance
+// GET
+// POST
+// PATCH
+// DELETE
 const router = Router();
 
 // ===========================================
@@ -84,6 +89,9 @@ router.post(
     validateResult,
     registerUser
 );
+
+// streamify.in/api/v1/users/login
+// router.post("/login", loginUser);
 
 // Login user
 router.post("/login", loginValidationRules, validateResult, loginUser);
@@ -161,6 +169,8 @@ router.patch(
     uploadCoverImage,
     changeCoverImage
 );
+
+// 
 
 // Update account details
 router.patch(

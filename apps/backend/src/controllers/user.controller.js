@@ -94,6 +94,10 @@ const registerUser = asynchandler(async (req, res, next) => {
 const loginUser = asynchandler(async (req, res, next) => {
     const { email, password } = req.body;
 
+    if(!email || !password) {
+        return next(new APIerror(400, "Email and password are required"));
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
         return next(new APIerror(404, "User does not exist"));
